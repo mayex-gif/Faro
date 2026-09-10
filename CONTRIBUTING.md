@@ -1,96 +1,155 @@
+# Guía de contribución
 
-# Flujo de trabajo (Metodología Git Flow)
+Este documento define cómo trabajamos en el repositorio para que los 7 desarrolladores puedan integrar su código sin generar conflictos ni romper producción.
 
-Para coordinar el código de los 7 desarrolladores sin generar conflictos, debes implementar el flujo de trabajo basado en *Git Flow*.
+No usamos la extensión `git flow`: todos los comandos son Git estándar, así nadie necesita instalar nada extra.
 
-  
+---
 
-Asegúrate de tener la **rama main intacta** y crea una rama llamada ***develop***, la cual servirá para que el equipo integre sus avances diarios de forma segura.
+## 1. Requisitos previos
 
-  
+- **Git** instalado.
+- **Docker** y **Docker Compose**, para levantar el proyecto completo (backend + frontend + base de datos) de forma idéntica en todas las máquinas.
 
-Instruye al equipo para que ***nunca*** trabajen directamente sobre develop, sino que **creen ramas derivativas** por cada tarea (por ejemplo, feature/login o feature/mapa).
+---
 
-  
+## 2. Flujo de trabajo (basado en Git Flow, con Git puro)
 
-### Ramas de apoyo o temporales
+La rama **main** contiene únicamente código en producción. La rama **develop** es donde el equipo integra sus avances diarios. **Nunca se trabaja directamente sobre main ni sobre develop** — todo cambio nace en una rama derivada.
 
-*Feature*: Sirve para crear una nueva funcionalidad. Nace de develop y vuelve a unirse a develop.
+### Tipos de rama
 
-*Release*: Permite preparar una nueva versión para producción. Nace de develop y se fusiona tanto en main como en develop.
+| Rama | Nace de | Se fusiona en | Uso |
+|---|---|---|---|
+| `feature/*` | develop | develop | Nueva funcionalidad (ej. `feature/login`, `feature/mapa`) |
+| `release/*` | develop | main y develop | Preparar una versión para producción |
+| `hotfix/*` | main | main y develop | Corregir un error urgente detectado en producción |
 
-*Hotfix*: Corrige un error urgente detectado en producción. Nace de main y se fusiona en main y en develop.
+### Reglas de protección configuradas en GitHub
 
-  
-  
+- **`main`**: requiere **2 aprobaciones**, sin force-push, sin borrado de rama.
+- **`develop`**: requiere **1 aprobación** (ajustable a 2 si el equipo lo prefiere más adelante).
+- **`feature/*`, `release/*`, `hotfix/*`**: sin restricciones — cada dev puede pushear libremente a su propia rama mientras trabaja.
 
-#### 1. El inicio del día (Sincronizar tu equipo)
+> Importante: los números de aprobación de esta tabla tienen que coincidir siempre con lo configurado en Settings → Rules del repo. Si alguien cambia la regla en GitHub, hay que actualizar este documento en el mismo PR.
 
-Antes de escribir código, te aseguras de tener lo último que tus compañeros han subido a la rama de desarrollo (develop).
+---
 
-  
+## 3. Rutina diaria
 
-```
+### 3.1 Sincronizar con el equipo
 
+```bash
 git checkout develop
-
 git pull origin develop
-
 ```
 
-  
-  
+### 3.2 Crear tu rama de tarea
 
-#### 2. Creas la rama para tu tarea (Feature)
-
-En lugar de crear una rama común, usas el comando de Git Flow para indicar que vas a programar una nueva funcionalidad. Esto crea automáticamente una rama llamada feature/boton-paypal basada en develop.
-
-  
-```
-git flow feature start boton-paypal
-```
-  
-
-#### 3. Trabajas en tu código (Tu rutina normal)
-
-Aquí programas el botón, haces tus pruebas locales y guardas tus cambios como siempre.
-
-  
-
+```bash
+git checkout -b feature/boton-paypal
 ```
 
+### 3.3 Trabajar y commitear
+
+```bash
 git add .
-
 git commit -m "Formulario y diseño del botón de PayPal"
-
 ```
 
-  
+Repetí add/commit las veces que necesites mientras avanzás en la tarea.
 
-#### 4. Subes tu trabajo para revisión
+### 3.4 Publicar tu rama
 
-Cuando terminas, "publicas" tu rama en GitHub para que tus compañeros revisen tu código a través de un Pull Request (PR) hacia la rama develop (no a main).
-En GitHub: Vas a la web, abres el PR hacia la rama develop (no a main). Recordá que **el sistema exige al menos 1 aprobación** de un compañero para poder fusionarlo, garantizando así la calidad del código mediante la revisión de pares.
-
-  
+```bash
+git push -u origin feature/boton-paypal
 ```
-git flow feature publish boton-paypal
+
+En GitHub: abrí el Pull Request hacia **develop** (nunca hacia main). Recordá que el sistema exige **1 aprobación** para fusionarlo en develop.
+
+### 3.5 Finalizar la tarea
+
+Una vez aprobado y fusionado en la nube (merge del PR en GitHub):
+
+```bash
+git checkout develop
+git pull origin develop
+git branch -d feature/boton-paypal             # borra la rama local
+git push origin --delete feature/boton-paypal  # borra la rama remota (opcional si tildaste "Delete branch" en GitHub)
 ```
-  
 
-En GitHub: Vas a la web, abres el PR, tu equipo lo aprueba y se fusiona (merge) en develop.
+---
 
-  
+## 4. Releases
 
-#### 5. Finalizas la tarea
+Cuando develop tiene suficientes cambios probados como para pasar a producción:
 
-Una vez aprobado y fusionado en la nube, limpias tu computadora local para cerrar el ciclo de esa función.
-
-  
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b release/1.2.0
 ```
-git flow feature finish boton-paypal
-```
-  
-  
 
-(Este comando borra la rama local feature/boton-paypal y te regresa automáticamente a develop).
+En esta rama solo se hacen ajustes finales (versión, changelog, fixes menores) — no funcionalidades nuevas.
+
+```bash
+git add .
+git commit -m "Prepara release 1.2.0"
+git push -u origin release/1.2.0
+```
+
+Abrí un PR de `release/1.2.0` hacia **main** (2 aprobaciones). Al mergearlo:
+
+```bash
+git checkout main
+git pull origin main
+git tag -a v1.2.0 -m "Versión 1.2.0"
+git push origin v1.2.0
+```
+
+Después, abrí también un PR (o mergeá directo si el equipo lo permite) de `release/1.2.0` hacia **develop**, para que los ajustes de la release vuelvan a develop. Por último, borrá la rama `release/1.2.0`.
+
+## 5. Hotfixes
+
+Para un error urgente detectado en producción:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b hotfix/fix-login
+git add .
+git commit -m "Corrige error de login en producción"
+git push -u origin hotfix/fix-login
+```
+
+Abrí un PR hacia **main** (2 aprobaciones). Una vez mergeado, abrí otro PR de `hotfix/fix-login` hacia **develop** para que el fix no se pierda en la próxima release. Después, borrá la rama `hotfix/fix-login`.
+
+---
+
+## 6. Cómo levantar el proyecto localmente
+
+1. Clonar el repo y copiar las variables de entorno:
+   ```bash
+   git clone <URL-del-repo>
+   cd <carpeta-del-repo>
+   cp .env.example .env
+   ```
+2. Levantar todo con Docker:
+   ```bash
+   docker compose up --build
+   ```
+3. Servicios disponibles:
+   - Backend: http://localhost:8080
+   - Frontend: http://localhost:5173
+   - Base de datos Postgres: `localhost:5432` (credenciales en `.env`)
+
+No se necesita instalar Java, Node ni Postgres localmente — todo corre dentro de los contenedores.
+
+---
+
+## 7. Convenciones de commits y PRs
+
+- Mensajes de commit en español, en modo imperativo: `Agrega validación de email`, no `Agregando` o `Agregado`.
+- Cada PR debe describir brevemente qué cambia y por qué.
+- Si el PR cierra una tarea del tablero, referenciarla en la descripción (ej. `Closes #23`).
+- Antes de abrir el PR, asegurate de tener los últimos cambios de develop mergeados en tu rama (`git merge develop` o `git rebase develop`), para evitar conflictos grandes al momento de aprobar.
