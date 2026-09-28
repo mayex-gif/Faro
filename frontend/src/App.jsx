@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listarPuntos } from './api/infraestructura'
 import TablaPuntos from './components/TablaPuntos'
 import './App.css'
+import FormularioPunto from './components/FormularioPunto'
 
 function App() {
   const [puntos, setPuntos] = useState([])
@@ -28,7 +29,7 @@ function App() {
   return (
     <main className="pagina">
       <h1>Puntos de Infraestructura</h1>
-
+      <FormularioPunto onGuardado={cargarPuntos} />
       {error && <p className="error">❌ No se pudo cargar la lista: {error}</p>}
       {cargando ? <p>Cargando...</p> : <TablaPuntos puntos={puntos} />}
     </main>
