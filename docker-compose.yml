@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.4
     container_name: faro-db
     restart: unless-stopped
     environment:
@@ -43,7 +43,7 @@ services:
     depends_on:
       - backend
     environment:
-      VITE_API_URL: http://localhost:5173
+      VITE_API_URL: http://localhost:8080
     ports:
       - "5173:5173"
     volumes:

@@ -1,6 +1,7 @@
 package com.faro.backend.controllers;
 
 import com.faro.backend.dto.PuntoInfraestructuraDTO;
+import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
 import com.faro.backend.services.PuntoInfraestructuraService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
