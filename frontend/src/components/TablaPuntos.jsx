@@ -23,8 +23,11 @@ function describirUbicacion(ubicacion) {
   }
 }
 
-// Componente: recibe la lista de puntos (por props) y dibuja la tabla
-function TablaPuntos({ puntos }) {
+// Props:
+// - puntos: la lista a mostrar
+// - idEditando: el id del punto que se está editando (para resaltar su fila)
+// - onEditar / onEliminar: funciones que App nos pasa para avisarle qué botón se tocó
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar }) {
   if (puntos.length === 0) {
     return <p className="mensaje-vacio">Todavía no hay puntos cargados.</p>
   }
@@ -38,11 +41,12 @@ function TablaPuntos({ puntos }) {
           <th>Datos técnicos</th>
           <th>Estado</th>
           <th>Ubicación</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         {puntos.map((punto) => (
-          <tr key={punto.id}>
+          <tr key={punto.id} className={punto.id === idEditando ? 'fila-editando' : ''}>
             <td>{punto.nombre}</td>
             <td>{NOMBRES_TIPO[punto.tipo] ?? punto.tipo}</td>
             <td>{punto.datosTecnicos || '—'}</td>
@@ -54,6 +58,16 @@ function TablaPuntos({ puntos }) {
               )}
             </td>
             <td>{describirUbicacion(punto.ubicacion)}</td>
+            <td>
+              <div className="acciones">
+                <button type="button" className="boton-tabla" onClick={() => onEditar(punto)}>
+                  Editar
+                </button>
+                <button type="button" className="boton-tabla boton-borrar" onClick={() => onEliminar(punto)}>
+                  Borrar
+                </button>
+              </div>
+            </td>
           </tr>
         ))}
       </tbody>

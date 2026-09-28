@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { crearPunto } from '../api/infraestructura'
+import { actualizarPunto, crearPunto } from '../api/infraestructura'
 
-// Valores con los que arranca el formulario (y a los que vuelve después de guardar)
+// Valores con los que arranca el formulario cuando se crea un punto nuevo
 const FORMULARIO_VACIO = {
   nombre: '',
   tipo: 'LUMINARIA',
@@ -11,22 +11,44 @@ const FORMULARIO_VACIO = {
   longitud: '',
 }
 
-function FormularioPunto({ onGuardado }) {
-  const [datos, setDatos] = useState(FORMULARIO_VACIO)
+// Convierte un punto que viene del backend en los valores del formulario
+function puntoAFormulario(punto) {
+  const esPunto = punto.ubicacion?.type === 'Point'
+  const [longitud, latitud] = esPunto ? punto.ubicacion.coordinates : ['', ''] // GeoJSON: [longitud, latitud]
+  return {
+    nombre: punto.nombre ?? '',
+    tipo: punto.tipo ?? 'LUMINARIA',
+    datosTecnicos: punto.datosTecnicos ?? '',
+    estadoOperativo: punto.estadoOperativo ?? true,
+    latitud: String(latitud),
+    longitud: String(longitud),
+  }
+}
+
+// Props:
+// - puntoEditando: el punto a editar, o null si estamos creando uno nuevo
+// - onGuardado: se llama cuando se guardó bien
+// - onCancelar: se llama al tocar "Cancelar" (solo al editar)
+function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
+  const editando = puntoEditando != null
+  // Las líneas y polígonos no se pueden editar con latitud/longitud: se conservan como están
+  const ubicacionCompleja = editando && puntoEditando.ubicacion?.type !== 'Point'
+
+  // El formulario arranca vacío, o con los datos del punto si estamos editando
+  const [datos, setDatos] = useState(() => (editando ? puntoAFormulario(puntoEditando) : FORMULARIO_VACIO))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
 
-  // Una sola función para todos los campos: usa el "name" del campo
-  // para saber qué dato actualizar
+  // Una sola función para todos los campos: usa el "name" del campo para saber qué actualizar
   function cambiar(evento) {
     const { name, value, type, checked } = evento.target
     setDatos({ ...datos, [name]: type === 'checkbox' ? checked : value })
   }
 
-  // Revisa que los datos tengan sentido antes de mandarlos.
-  // Devuelve un mensaje de error, o null si está todo bien.
+  // Devuelve un mensaje de error, o null si está todo bien
   function validar() {
     if (datos.nombre.trim() === '') return 'El nombre es obligatorio.'
+    if (ubicacionCompleja) return null // no se tocan latitud/longitud
     if (datos.latitud === '' || datos.longitud === '') return 'La latitud y la longitud son obligatorias.'
     const latitud = Number(datos.latitud)
     const longitud = Number(datos.longitud)
@@ -36,7 +58,7 @@ function FormularioPunto({ onGuardado }) {
   }
 
   async function enviar(evento) {
-    evento.preventDefault() // evita que el navegador recargue la página (comportamiento por defecto de un form)
+    evento.preventDefault() // evita que el navegador recargue la página
 
     const problema = validar()
     if (problema) {
@@ -44,24 +66,26 @@ function FormularioPunto({ onGuardado }) {
       return
     }
 
-    // Armamos el punto con el formato que espera el backend (ubicación en GeoJSON)
     const punto = {
       nombre: datos.nombre.trim(),
       tipo: datos.tipo,
       datosTecnicos: datos.datosTecnicos.trim(),
       estadoOperativo: datos.estadoOperativo,
-      ubicacion: {
-        type: 'Point',
-        coordinates: [Number(datos.longitud), Number(datos.latitud)], // GeoJSON: [longitud, latitud]
-      },
+      ubicacion: ubicacionCompleja
+        ? puntoEditando.ubicacion // conservamos la línea/polígono original
+        : { type: 'Point', coordinates: [Number(datos.longitud), Number(datos.latitud)] },
     }
 
     setGuardando(true)
     setError(null)
     try {
-      await crearPunto(punto)
-      setDatos(FORMULARIO_VACIO) // limpiamos el formulario
-      onGuardado() // le avisamos a App que recargue la tabla
+      if (editando) {
+        await actualizarPunto(puntoEditando.id, punto) // PUT
+      } else {
+        await crearPunto(punto) // POST
+        setDatos(FORMULARIO_VACIO)
+      }
+      onGuardado()
     } catch (e) {
       setError(`No se pudo guardar: ${e.message}`)
     } finally {
@@ -70,8 +94,8 @@ function FormularioPunto({ onGuardado }) {
   }
 
   return (
-    <form className="formulario" onSubmit={enviar}>
-      <h2>Nuevo punto</h2>
+    <form className={editando ? 'formulario formulario-editando' : 'formulario'} onSubmit={enviar}>
+      <h2>{editando ? `Editando: ${puntoEditando.nombre}` : 'Nuevo punto'}</h2>
 
       <div className="campos">
         <label>
@@ -90,17 +114,20 @@ function FormularioPunto({ onGuardado }) {
 
         <label>
           Latitud *
-          <input name="latitud" type="number" step="any" value={datos.latitud} onChange={cambiar} placeholder="Ej: -34.6037" />
+          <input name="latitud" type="number" step="any" value={datos.latitud} onChange={cambiar}
+            placeholder="Ej: -34.6037" disabled={ubicacionCompleja} />
         </label>
 
         <label>
           Longitud *
-          <input name="longitud" type="number" step="any" value={datos.longitud} onChange={cambiar} placeholder="Ej: -58.3816" />
+          <input name="longitud" type="number" step="any" value={datos.longitud} onChange={cambiar}
+            placeholder="Ej: -58.3816" disabled={ubicacionCompleja} />
         </label>
 
         <label className="campo-ancho">
           Datos técnicos
-          <textarea name="datosTecnicos" value={datos.datosTecnicos} onChange={cambiar} rows={2} placeholder="Ej: LED 100W, poste de 8 m" />
+          <textarea name="datosTecnicos" value={datos.datosTecnicos} onChange={cambiar} rows={2}
+            placeholder="Ej: LED 100W, poste de 8 m" />
         </label>
 
         <label className="campo-check">
@@ -109,11 +136,25 @@ function FormularioPunto({ onGuardado }) {
         </label>
       </div>
 
+      {ubicacionCompleja && (
+        <p className="aviso">
+          ℹ️ La ubicación de este punto es una línea o un polígono: se conserva como está.
+          Se va a poder modificar desde el mapa.
+        </p>
+      )}
+
       {error && <p className="error">{error}</p>}
 
-      <button type="submit" disabled={guardando}>
-        {guardando ? 'Guardando...' : 'Guardar'}
-      </button>
+      <div className="botones">
+        <button type="submit" disabled={guardando}>
+          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Guardar'}
+        </button>
+        {editando && (
+          <button type="button" className="boton-secundario" onClick={onCancelar}>
+            Cancelar
+          </button>
+        )}
+      </div>
     </form>
   )
 }

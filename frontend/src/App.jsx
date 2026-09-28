@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
-import { listarPuntos } from './api/infraestructura'
+import { eliminarPunto, listarPuntos } from './api/infraestructura'
+import FormularioPunto from './components/FormularioPunto'
 import TablaPuntos from './components/TablaPuntos'
 import './App.css'
-import FormularioPunto from './components/FormularioPunto'
 
 function App() {
   const [puntos, setPuntos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  // El punto que se está editando, o null si el formulario está en modo "nuevo"
+  const [puntoEditando, setPuntoEditando] = useState(null)
 
-  // Pide la lista al backend. La dejamos en una función aparte
-  // porque después la vamos a volver a usar (al crear, editar o borrar).
+  // Pide la lista al backend
   function cargarPuntos() {
     setCargando(true)
     listarPuntos()
@@ -26,12 +27,54 @@ function App() {
     cargarPuntos()
   }, [])
 
+  // Botón "Editar" de la tabla: pasamos el formulario a modo edición y subimos hasta él
+  function editar(punto) {
+    setPuntoEditando(punto)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Cuando el formulario guardó bien: salimos del modo edición y recargamos la tabla
+  function alGuardar() {
+    setPuntoEditando(null)
+    cargarPuntos()
+  }
+
+  // Botón "Borrar" de la tabla
+  async function eliminar(punto) {
+    const confirmado = window.confirm(`¿Seguro que querés borrar "${punto.nombre}"? No se puede deshacer.`)
+    if (!confirmado) return
+    try {
+      await eliminarPunto(punto.id)
+      if (puntoEditando?.id === punto.id) setPuntoEditando(null)
+      cargarPuntos()
+    } catch (e) {
+      setError(`No se pudo borrar: ${e.message}`)
+    }
+  }
+
   return (
     <main className="pagina">
       <h1>Puntos de Infraestructura</h1>
-      <FormularioPunto onGuardado={cargarPuntos} />
-      {error && <p className="error">❌ No se pudo cargar la lista: {error}</p>}
-      {cargando ? <p>Cargando...</p> : <TablaPuntos puntos={puntos} />}
+
+      {/* La "key" hace que el formulario se reinicie cada vez que cambia el punto a editar */}
+      <FormularioPunto
+        key={puntoEditando?.id ?? 'nuevo'}
+        puntoEditando={puntoEditando}
+        onGuardado={alGuardar}
+        onCancelar={() => setPuntoEditando(null)}
+      />
+
+      {error && <p className="error">❌ {error}</p>}
+      {cargando ? (
+        <p>Cargando...</p>
+      ) : (
+        <TablaPuntos
+          puntos={puntos}
+          idEditando={puntoEditando?.id}
+          onEditar={editar}
+          onEliminar={eliminar}
+        />
+      )}
     </main>
   )
 }

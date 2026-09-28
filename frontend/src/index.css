@@ -172,3 +172,55 @@ code {
     grid-template-columns: 1fr;
   }
 }
+.acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.boton-tabla {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.boton-tabla:hover {
+  background: var(--code-bg);
+}
+
+.boton-borrar {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.boton-borrar:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.fila-editando td {
+  background: var(--accent-bg);
+}
+
+.formulario-editando {
+  border-color: var(--accent);
+}
+
+.botones {
+  display: flex;
+  gap: 8px;
+}
+
+.formulario .boton-secundario {
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+}
+
+.aviso {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
