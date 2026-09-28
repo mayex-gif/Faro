@@ -1,30 +1,37 @@
 import { useEffect, useState } from 'react'
 import { listarPuntos } from './api/infraestructura'
+import TablaPuntos from './components/TablaPuntos'
+import './App.css'
 
 function App() {
-  // "Estados": datos que, cuando cambian, hacen que React vuelva a dibujar la pantalla
   const [puntos, setPuntos] = useState([])
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
-  // useEffect con [] al final = "hacé esto una sola vez, cuando la pantalla aparece"
-  useEffect(() => {
+  // Pide la lista al backend. La dejamos en una función aparte
+  // porque después la vamos a volver a usar (al crear, editar o borrar).
+  function cargarPuntos() {
+    setCargando(true)
     listarPuntos()
-      .then(setPuntos)
+      .then((datos) => {
+        setPuntos(datos)
+        setError(null)
+      })
       .catch((e) => setError(e.message))
+      .finally(() => setCargando(false))
+  }
+
+  useEffect(() => {
+    cargarPuntos()
   }, [])
 
-  if (error) return <p>❌ {error}</p>
-
   return (
-    <div>
-      <h1>Prueba de conexión</h1>
-      <p>El backend devolvió {puntos.length} puntos:</p>
-      <ul>
-        {puntos.map((p) => (
-          <li key={p.id}>{p.nombre} ({p.tipo})</li>
-        ))}
-      </ul>
-    </div>
+    <main className="pagina">
+      <h1>Puntos de Infraestructura</h1>
+
+      {error && <p className="error">❌ No se pudo cargar la lista: {error}</p>}
+      {cargando ? <p>Cargando...</p> : <TablaPuntos puntos={puntos} />}
+    </main>
   )
 }
 
