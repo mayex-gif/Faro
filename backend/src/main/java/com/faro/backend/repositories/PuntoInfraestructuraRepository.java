@@ -22,11 +22,11 @@ public interface PuntoInfraestructuraRepository extends JpaRepository<PuntoInfra
     // 2. CONSULTAS ESPACIALES CON POSTGIS (JTS)
     // Esta consulta es vital para el mapa: devuelve solo los lugares que caen dentro
     // de un polígono o área específica (el recuadro visible del mapa en React).
-    @Query("SELECT p FROM PuntoInfraestructura p WHERE within(p.ubicacion, :area) = true")
+    @Query("SELECT p FROM PuntoInfraestructura p WHERE st_within(p.ubicacion, :area) = true")
     List<PuntoInfraestructura> findInfraestructuraEnArea(@Param("area") Geometry area);
 
     // Si más adelante necesitan buscar "lugares a menos de X metros de un punto"
     // (por ejemplo, para saber qué cuadrilla está más cerca)
-    @Query("SELECT p FROM PuntoInfraestructura p WHERE distance(p.ubicacion, :punto) < :distancia")
+    @Query("SELECT p FROM PuntoInfraestructura p WHERE st_distance(p.ubicacion, :punto) < :distancia")
     List<PuntoInfraestructura> findInfraestructuraCercana(@Param("punto") Geometry punto, @Param("distancia") double distancia);
 }

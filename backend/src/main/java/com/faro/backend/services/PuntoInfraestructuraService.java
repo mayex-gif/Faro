@@ -1,6 +1,7 @@
 package com.faro.backend.services;
 
 import com.faro.backend.dto.PuntoInfraestructuraDTO;
+import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
 import com.faro.backend.models.PuntoInfraestructura;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
 import org.springframework.stereotype.Service;

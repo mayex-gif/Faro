@@ -59,9 +59,14 @@
             <artifactId>hibernate-spatial</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.n52.jackson</groupId>
-            <artifactId>jackson-datatype-jts</artifactId>
-            <version>1.2.10</version>
+            <groupId>org.locationtech.jts.io</groupId>
+            <artifactId>jts-io-common</artifactId>
+            <version>1.20.0</version>
+        </dependency>
+		<dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.1</version>
         </dependency>
 	</dependencies>
 
