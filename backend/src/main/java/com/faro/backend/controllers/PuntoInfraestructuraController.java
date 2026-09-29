@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/infraestructura")
 @Tag(name = "Infraestructura", description = "ABM de Puntos de Infraestructura (Espacios verdes, calles, luminarias)") // Documentación Swagger

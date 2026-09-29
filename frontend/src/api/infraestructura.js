@@ -1,7 +1,7 @@
 // Funciones para hablar con el backend de Puntos de Infraestructura.
 // Todas usan rutas /api/..., que Vite reenvía al backend (ver vite.config.js).
 
-const URL_BASE = '/api/infraestructura'
+const URL_BASE = 'http://localhost:8080/api/infraestructura'
 
 // Función común: hace el pedido, revisa si salió bien y devuelve los datos
 async function pedir(url, opciones = {}) {
