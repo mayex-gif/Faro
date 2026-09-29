@@ -24,12 +24,13 @@ La rama **main** contiene únicamente código en producción. La rama **develop*
 | `feature/*` | develop | develop | Nueva funcionalidad (ej. `feature/login`, `feature/mapa`) |
 | `release/*` | develop | main y develop | Preparar una versión para producción |
 | `hotfix/*` | main | main y develop | Corregir un error urgente detectado en producción |
+| `fix/*` | develop | develop | Corrección de errores, ajustes de configuración o parches de entorno |
 
 ### Reglas de protección configuradas en GitHub
 
-- **`main`**: requiere **2 aprobaciones**, sin force-push, sin borrado de rama.
+- **`main`**: requiere **1 aprobaciones**, sin force-push, sin borrado de rama, (ajustable a 2 si el equipo lo prefiere más adelante).
 - **`develop`**: requiere **1 aprobación** (ajustable a 2 si el equipo lo prefiere más adelante).
-- **`feature/*`, `release/*`, `hotfix/*`**: sin restricciones — cada dev puede pushear libremente a su propia rama mientras trabaja.
+- **`feature/*`, `release/*`, `hotfix/*`, `fix/*`**: sin restricciones — cada dev puede pushear libremente a su propia rama mientras trabaja.
 
 > Importante: los números de aprobación de esta tabla tienen que coincidir siempre con lo configurado en Settings → Rules del repo. Si alguien cambia la regla en GitHub, hay que actualizar este documento en el mismo PR.
 
@@ -153,3 +154,12 @@ No se necesita instalar Java, Node ni Postgres localmente — todo corre dentro 
 - Cada PR debe describir brevemente qué cambia y por qué.
 - Si el PR cierra una tarea del tablero, referenciarla en la descripción (ej. `Closes #23`).
 - Antes de abrir el PR, asegurate de tener los últimos cambios de develop mergeados en tu rama (`git merge develop` o `git rebase develop`), para evitar conflictos grandes al momento de aprobar.
+
+
+## 8. Recomendación para correr el proyecto en fase de desarrollo
+- Unicamente usar docker para correr la base de datos.
+- Correr tanto el backend como el frontend de manera local para ver como se actualizan los cambios en tiempo de ejecución.
+
+- Comando para ejecutar el frontend en local: `..\FARO\frontend> npm run dev`
+- Comando para ejecutar el backend en local: `..\FARO\backend> mvn spring-boot:run`
+- Comando para ejecutar la base de datos en docker: `..\FARO>docker-compose up -d db`
