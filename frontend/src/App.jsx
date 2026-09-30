@@ -2,80 +2,160 @@ import { useEffect, useState } from 'react'
 import { eliminarPunto, listarPuntos } from './api/infraestructura'
 import FormularioPunto from './components/FormularioPunto'
 import TablaPuntos from './components/TablaPuntos'
+import Icono from './components/Icono'
 import './App.css'
 
 function App() {
   const [puntos, setPuntos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
-  // El punto que se está editando, o null si el formulario está en modo "nuevo"
+  const [mensaje, setMensaje] = useState('')
+  // El punto que se está editando, o null si el formulario está en modo "nuevo".
   const [puntoEditando, setPuntoEditando] = useState(null)
 
-  // Pide la lista al backend
   function cargarPuntos() {
-    setCargando(true)
-    listarPuntos()
+    return listarPuntos()
       .then((datos) => {
         setPuntos(datos)
         setError(null)
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        console.error(e)
+        setError('No pudimos cargar los lugares. Revisá la conexión e intentá nuevamente.')
+      })
       .finally(() => setCargando(false))
+  }
+
+  // En el primer render ya estamos cargando; los eventos activan el indicador al recargar.
+  function recargarPuntos() {
+    setCargando(true)
+    cargarPuntos()
   }
 
   useEffect(() => {
     cargarPuntos()
   }, [])
 
-  // Botón "Editar" de la tabla: pasamos el formulario a modo edición y subimos hasta él
   function editar(punto) {
     setPuntoEditando(punto)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setMensaje('')
+    document.getElementById('formulario-punto').scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    })
   }
 
-  // Cuando el formulario guardó bien: salimos del modo edición y recargamos la tabla
-  function alGuardar() {
+  function alGuardar(texto) {
     setPuntoEditando(null)
-    cargarPuntos()
+    setMensaje(texto)
+    recargarPuntos()
   }
 
-  // Botón "Borrar" de la tabla
   async function eliminar(punto) {
     const confirmado = window.confirm(`¿Seguro que querés borrar "${punto.nombre}"? No se puede deshacer.`)
     if (!confirmado) return
+    setMensaje('')
     try {
       await eliminarPunto(punto.id)
       if (puntoEditando?.id === punto.id) setPuntoEditando(null)
-      cargarPuntos()
+      setMensaje('El lugar se eliminó correctamente.')
+      recargarPuntos()
     } catch (e) {
-      setError(`No se pudo borrar: ${e.message}`)
+      console.error(e)
+      setError('No pudimos eliminar el lugar. Intentá nuevamente.')
     }
   }
 
   return (
-    <main className="pagina">
-      <h1>Puntos de Infraestructura</h1>
+    <div className="aplicacion">
+      <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
-      {/* La "key" hace que el formulario se reinicie cada vez que cambia el punto a editar */}
-      <FormularioPunto
-        key={puntoEditando?.id ?? 'nuevo'}
-        puntoEditando={puntoEditando}
-        onGuardado={alGuardar}
-        onCancelar={() => setPuntoEditando(null)}
-      />
+      <aside className="barra-lateral" aria-label="Identidad y navegación de FARO">
+        <div className="marca">
+          <img src="/logo-faro.png" alt="" className="marca-logo" width="64" height="64" />
+          <div>
+            <span className="marca-nombre">FARO</span>
+            <span className="marca-descripcion">Mantenimiento municipal</span>
+          </div>
+        </div>
 
-      {error && <p className="error">❌ {error}</p>}
-      {cargando ? (
-        <p>Cargando...</p>
-      ) : (
-        <TablaPuntos
-          puntos={puntos}
-          idEditando={puntoEditando?.id}
-          onEditar={editar}
-          onEliminar={eliminar}
-        />
-      )}
-    </main>
+        <nav aria-label="Navegación principal">
+          <p className="nav-titulo">GESTIÓN DEL ESPACIO PÚBLICO</p>
+          <a className="nav-enlace nav-activo" href="#contenido" aria-current="page">
+            <Icono nombre="infraestructura" />
+            Infraestructura
+          </a>
+        </nav>
+
+        <div className="municipio">
+          <span className="municipio-linea" />
+          <p>Municipalidad de<br /><strong>Estación General Paz</strong></p>
+          <span>Córdoba, Argentina</span>
+        </div>
+      </aside>
+
+      <div className="area-principal">
+        <header className="barra-superior">
+          <p>Gestión municipal <span aria-hidden="true">/</span> <strong>Infraestructura</strong></p>
+          <span className="etiqueta-contexto">Corralón municipal</span>
+        </header>
+
+        <main className="pagina" id="contenido" tabIndex={-1}>
+          <div className="encabezado-pagina">
+            <p className="sobre-titulo">REGISTRO DE LUGARES</p>
+            <h1>Puntos de infraestructura</h1>
+            <p>Registrá y mantené actualizada la información de luminarias, espacios verdes y calles.</p>
+          </div>
+
+          <FormularioPunto
+            key={puntoEditando?.id ?? 'nuevo'}
+            puntoEditando={puntoEditando}
+            onGuardado={alGuardar}
+            onCancelar={() => setPuntoEditando(null)}
+          />
+
+          <div className="notificaciones" aria-live="polite" aria-atomic="true">
+            {mensaje && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensaje}</p>}
+          </div>
+
+          <section className="panel listado" aria-labelledby="titulo-listado" aria-busy={cargando}>
+            <div className="panel-encabezado">
+              <div>
+                <h2 id="titulo-listado">Lugares registrados</h2>
+                <p>Consultá los datos y el estado operativo de cada lugar.</p>
+              </div>
+              {!cargando && !error && (
+                <span className="contador">{puntos.length} {puntos.length === 1 ? 'lugar' : 'lugares'}</span>
+              )}
+            </div>
+
+            {error && (
+              <div className="mensaje mensaje-error" role="alert">
+                <div><strong>No se pudo completar la operación</strong><p>{error}</p></div>
+                <button type="button" className="boton boton-secundario" onClick={recargarPuntos}>
+                  Volver a cargar
+                </button>
+              </div>
+            )}
+
+            {cargando ? (
+              <div className="estado-listado" role="status">
+                <span className="indicador-carga" aria-hidden="true" />
+                <p>Cargando lugares…</p>
+              </div>
+            ) : (
+              <TablaPuntos puntos={puntos} idEditando={puntoEditando?.id}
+                onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)} />
+            )}
+          </section>
+
+          <footer className="pie-pagina">
+            <span>FARO · Gestión del mantenimiento municipal</span>
+            <span>Estación General Paz</span>
+          </footer>
+        </main>
+      </div>
+    </div>
   )
 }
 

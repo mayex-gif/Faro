@@ -69,3 +69,7 @@ docker compose down -v
 ## Cómo contribuir
 
 Antes de tu primera tarea, leé [CONTRIBUTING.md](./CONTRIBUTING.md): ahí está el flujo de ramas (Git Flow), las reglas de aprobación de Pull Requests y las convenciones de commits.
+
+## Guia de interfaz
+
+Para desarrollar las siguientes pantallas, consultar la [guia de estilos del frontend](./frontend/GUIA_ESTILOS.md). Define la paleta aprobada, tipografia, espacios, componentes, estados y criterios de accesibilidad de la interfaz del RF01.
