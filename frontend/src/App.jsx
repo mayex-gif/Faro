@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
 import { eliminarPunto, listarPuntos } from './api/infraestructura'
+import FiltrosPuntos from './components/FiltrosPuntos'
 import FormularioPunto from './components/FormularioPunto'
 import TablaPuntos from './components/TablaPuntos'
+import { FILTROS_VACIOS, filtrarPuntos } from './utils/filtros'
 import './App.css'
 
 function App() {
   const [puntos, setPuntos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
-  // El punto que se está editando, o null si el formulario está en modo "nuevo"
   const [puntoEditando, setPuntoEditando] = useState(null)
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS)
+
+  // No es un estado: se calcula de nuevo cada vez que cambian los puntos o los filtros
+  const puntosFiltrados = filtrarPuntos(puntos, filtros)
 
   // Pide la lista al backend
   function cargarPuntos() {
@@ -64,16 +69,31 @@ function App() {
         onCancelar={() => setPuntoEditando(null)}
       />
 
+      <h2>Listado</h2>
+      <FiltrosPuntos
+        filtros={filtros}
+        onCambiar={setFiltros}
+        onLimpiar={() => setFiltros(FILTROS_VACIOS)}
+      />
+
       {error && <p className="error">❌ {error}</p>}
       {cargando ? (
         <p>Cargando...</p>
       ) : (
-        <TablaPuntos
-          puntos={puntos}
-          idEditando={puntoEditando?.id}
-          onEditar={editar}
-          onEliminar={eliminar}
-        />
+        <>
+          {puntos.length > 0 && (
+            <p className="contador">
+              Mostrando {puntosFiltrados.length} de {puntos.length} puntos
+            </p>
+          )}
+          <TablaPuntos
+            puntos={puntosFiltrados}
+            mensajeVacio={puntos.length === 0 ? 'Todavía no hay puntos cargados.' : 'Ningún punto coincide con los filtros.'}
+            idEditando={puntoEditando?.id}
+            onEditar={editar}
+            onEliminar={eliminar}
+          />
+        </>
       )}
     </main>
   )
