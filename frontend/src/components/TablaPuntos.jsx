@@ -1,18 +1,18 @@
-// Nombres "lindos" para mostrar cada tipo
+import Icono from './Icono'
+
 const NOMBRES_TIPO = {
   ESPACIO_VERDE: 'Espacio verde',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }
 
-// Convierte la ubicación (GeoJSON) en un texto corto para la tabla
 function describirUbicacion(ubicacion) {
-  if (!ubicacion) return '—'
+  if (!ubicacion) return 'Sin ubicación'
   switch (ubicacion.type) {
     case 'Point': {
-      // Ojo: GeoJSON guarda [longitud, latitud]
+      // GeoJSON guarda [longitud, latitud].
       const [longitud, latitud] = ubicacion.coordinates
-      return `Punto (${latitud.toFixed(4)}, ${longitud.toFixed(4)})`
+      return `${latitud.toFixed(4)}, ${longitud.toFixed(4)}`
     }
     case 'LineString':
       return `Línea de ${ubicacion.coordinates.length} puntos`
@@ -23,55 +23,71 @@ function describirUbicacion(ubicacion) {
   }
 }
 
-// Props:
-// - puntos: la lista a mostrar
-// - idEditando: el id del punto que se está editando (para resaltar su fila)
-// - onEditar / onEliminar: funciones que App nos pasa para avisarle qué botón se tocó
-function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, mensajeVacio = 'Todavía no hay puntos cargados.' }) {
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, errorCarga }) {
   if (puntos.length === 0) {
-    return <p className="mensaje-vacio">{mensajeVacio}</p>
+    // Un fallo de conexión no significa que la base esté vacía.
+    if (errorCarga) return null
+    return (
+      <div className="estado-listado estado-vacio">
+        <span className="icono-vacio"><Icono nombre="lugar" /></span>
+        <h3>Todavía no hay lugares registrados</h3>
+        <p>Registrá el primer lugar con el formulario de arriba.<br />Después vas a poder consultar y actualizar sus datos acá.</p>
+        <a className="enlace" href="#nombre">Registrar el primer lugar <span aria-hidden="true">→</span></a>
+      </div>
+    )
   }
 
   return (
-    <table className="tabla">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Tipo</th>
-          <th>Datos técnicos</th>
-          <th>Estado</th>
-          <th>Ubicación</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {puntos.map((punto) => (
-          <tr key={punto.id} className={punto.id === idEditando ? 'fila-editando' : ''}>
-            <td>{punto.nombre}</td>
-            <td>{NOMBRES_TIPO[punto.tipo] ?? punto.tipo}</td>
-            <td>{punto.datosTecnicos || '—'}</td>
-            <td>
-              {punto.estadoOperativo ? (
-                <span className="estado estado-ok">Funciona</span>
-              ) : (
-                <span className="estado estado-falla">Fuera de servicio</span>
-              )}
-            </td>
-            <td>{describirUbicacion(punto.ubicacion)}</td>
-            <td>
-              <div className="acciones">
-                <button type="button" className="boton-tabla" onClick={() => onEditar(punto)}>
-                  Editar
-                </button>
-                <button type="button" className="boton-tabla boton-borrar" onClick={() => onEliminar(punto)}>
-                  Borrar
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <>
+      <p className="ayuda-tabla" id="ayuda-tabla">Deslizá la tabla hacia los lados para ver todas las columnas.</p>
+      <div className="tabla-contenedor" role="region" aria-labelledby="titulo-listado"
+        aria-describedby="ayuda-tabla" tabIndex={0}>
+        <table className="tabla">
+          <caption className="solo-lectores">Puntos de infraestructura y su estado operativo</caption>
+          <thead>
+            <tr>
+              <th scope="col">Lugar</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Datos técnicos</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Ubicación</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {puntos.map((punto) => (
+              <tr key={punto.id} className={punto.id === idEditando ? 'fila-editando' : ''}>
+                <th scope="row">
+                  <span className="nombre-lugar">{punto.nombre}</span>
+                  {punto.id === idEditando && <span className="marca-edicion">En edición</span>}
+                </th>
+                <td><span className="tipo-lugar">{NOMBRES_TIPO[punto.tipo] ?? punto.tipo}</span></td>
+                <td className="datos-tabla">{punto.datosTecnicos || 'Sin datos técnicos'}</td>
+                <td>
+                  <span className={punto.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
+                    <span className="estado-punto" aria-hidden="true" />
+                    {punto.estadoOperativo ? 'Funciona' : 'Fuera de servicio'}
+                  </span>
+                </td>
+                <td className="ubicacion-tabla">{describirUbicacion(punto.ubicacion)}</td>
+                <td>
+                  <div className="acciones">
+                    <button type="button" className="boton boton-tabla" onClick={() => onEditar(punto)}
+                      aria-label={`Editar ${punto.nombre}`}>
+                      <Icono nombre="editar" />Editar
+                    </button>
+                    <button type="button" className="boton boton-tabla boton-borrar" onClick={() => onEliminar(punto)}
+                      aria-label={`Borrar ${punto.nombre}`}>
+                      <Icono nombre="borrar" />Borrar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
