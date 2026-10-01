@@ -192,3 +192,13 @@
   outline-offset: 2px; 
   border-color: var(--foco);
 }
+/* ===== Órdenes de trabajo ===== */
+.nav-enlace + .nav-enlace { margin-top: 4px; }
+.numero-orden { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
+.fecha-tabla { white-space: nowrap; }
+
+/* Prioridad: color + texto (nunca solo color) */
+.prioridad-baja { color: var(--texto-secundario); background: #F1F4F5; }
+.prioridad-media { color: var(--enlace); background: #EAF6F8; }
+.prioridad-alta { color: #9A4A12; background: #FDF0E7; }
+.prioridad-urgente { color: var(--error); background: #FFF0EE; }
