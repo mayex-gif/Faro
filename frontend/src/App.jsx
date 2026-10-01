@@ -131,9 +131,16 @@ function App() {
                 <p>Consultá los datos y el estado operativo de cada lugar.</p>
               </div>
               {!cargando && !error && (
-                <span className="contador">{puntos.length} {puntos.length === 1 ? 'lugar' : 'lugares'}</span>
+                <span className="contador">Mostrando {puntosFiltrados.length} de {puntos.length} puntos</span>
               )}
             </div>
+
+            {/* AQUÍ ESTÁ LA INTEGRACIÓN MANUAL: Agregamos los filtros de develop dentro del panel de la nueva UI */}
+            <FiltrosPuntos
+              filtros={filtros}
+              onCambiar={setFiltros}
+              onLimpiar={() => setFiltros(FILTROS_VACIOS)}
+            />
 
             {error && (
               <div className="mensaje mensaje-error" role="alert">
@@ -150,8 +157,10 @@ function App() {
                 <p>Cargando lugares…</p>
               </div>
             ) : (
-              <TablaPuntos puntos={puntos} idEditando={puntoEditando?.id}
-                onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)} />
+              <TablaPuntos puntos={puntosFiltrados} idEditando={puntoEditando?.id}
+                onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)} 
+                mensajeVacio={puntos.length === 0 ? 'Todavía no hay puntos cargados.' : 'Ningún punto coincide con los filtros.'} 
+              />
             )}
           </section>
 

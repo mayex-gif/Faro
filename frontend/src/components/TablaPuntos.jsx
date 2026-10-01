@@ -10,12 +10,13 @@ function describirUbicacion(ubicacion) {
   if (!ubicacion) return 'Sin ubicación'
   switch (ubicacion.type) {
     case 'Point': {
-      // GeoJSON guarda [longitud, latitud].
+      // Agregamos seguridad por si el backend manda mal las coordenadas
+      if (!ubicacion.coordinates || ubicacion.coordinates.length < 2) return 'Ubicación inválida'
       const [longitud, latitud] = ubicacion.coordinates
       return `${latitud.toFixed(4)}, ${longitud.toFixed(4)}`
     }
     case 'LineString':
-      return `Línea de ${ubicacion.coordinates.length} puntos`
+      return `Línea de ${ubicacion.coordinates?.length || 0} puntos`
     case 'Polygon':
       return 'Polígono'
     default:
@@ -23,16 +24,29 @@ function describirUbicacion(ubicacion) {
   }
 }
 
-function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, errorCarga }) {
-  if (puntos.length === 0) {
-    // Un fallo de conexión no significa que la base esté vacía.
+// 1. Agregamos mensajeVacio a las props recibidas
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, errorCarga, mensajeVacio }) {
+  
+  // 2. Control de seguridad: verificamos que puntos exista antes de leer .length
+  if (!puntos || puntos.length === 0) {
     if (errorCarga) return null
+    
+    // Validamos si el vacío es por filtros o porque realmente no hay datos
+    const esFiltroVacio = mensajeVacio && mensajeVacio.includes('filtros')
+
     return (
       <div className="estado-listado estado-vacio">
         <span className="icono-vacio"><Icono nombre="lugar" /></span>
-        <h3>Todavía no hay lugares registrados</h3>
-        <p>Registrá el primer lugar con el formulario de arriba.<br />Después vas a poder consultar y actualizar sus datos acá.</p>
-        <a className="enlace" href="#nombre">Registrar el primer lugar <span aria-hidden="true">→</span></a>
+        {/* Usamos el mensaje dinámico que manda App.jsx */}
+        <h3>{mensajeVacio || 'Todavía no hay lugares registrados'}</h3>
+        
+        {/* Solo invitamos a registrar un lugar si NO es un filtro vacío */}
+        {!esFiltroVacio && (
+          <>
+            <p>Registrá el primer lugar con el formulario de arriba.<br />Después vas a poder consultar y actualizar sus datos acá.</p>
+            <a className="enlace" href="#nombre">Registrar el primer lugar <span aria-hidden="true">→</span></a>
+          </>
+        )}
       </div>
     )
   }

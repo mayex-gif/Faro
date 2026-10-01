@@ -140,13 +140,13 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
                 <label htmlFor="latitud">Latitud <span aria-hidden="true">*</span></label>
                 <input id="latitud" name="latitud" type="number" step="any" min="-90" max="90"
                   value={datos.latitud} onChange={cambiar} disabled={ubicacionCompleja}
-                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" />
+                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" placeholder="Ej: -31.1448"/>
               </div>
               <div className="campo">
                 <label htmlFor="longitud">Longitud <span aria-hidden="true">*</span></label>
                 <input id="longitud" name="longitud" type="number" step="any" min="-180" max="180"
                   value={datos.longitud} onChange={cambiar} disabled={ubicacionCompleja}
-                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" />
+                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" placeholder="Ej: -64.1441"/>
               </div>
             </div>
             <label className="campo-check" htmlFor="estado-operativo">
