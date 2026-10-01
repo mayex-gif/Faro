@@ -6,14 +6,21 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '
 // - idEditando: id de la OT en edición (para resaltar su fila)
 // - onEditar: función a llamar al tocar "Editar" (si no se pasa, no se muestra la columna)
 // - errorCarga: true si falló la carga (para no decir "no hay órdenes" cuando en realidad hubo un error)
-function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga }) {
+function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, sinCoincidencias, onLimpiarFiltros }) {
   if (ordenes.length === 0) {
     if (errorCarga) return null
     return (
       <div className="estado-listado estado-vacio">
         <span className="icono-vacio"><Icono nombre="orden" /></span>
-        <h3>Todavía no hay órdenes de trabajo</h3>
-        <p>Cuando registres una orden, vas a poder consultarla y modificarla acá.</p>
+        <h3>{sinCoincidencias ? 'Ninguna orden coincide con los filtros' : 'Todavía no hay órdenes de trabajo'}</h3>
+        <p>{sinCoincidencias
+          ? 'Probá con otros criterios o limpiá los filtros para ver todas las órdenes.'
+          : 'Cuando registres una orden, vas a poder consultarla y modificarla acá.'}</p>
+        {sinCoincidencias && (
+          <button type="button" className="boton boton-secundario" onClick={onLimpiarFiltros}>
+            Ver todas las órdenes
+          </button>
+        )}
       </div>
     )
   }

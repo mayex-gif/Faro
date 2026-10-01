@@ -2,7 +2,8 @@
 // Si el backend responde con error, lee su respuesta ({ estado, mensaje, errores })
 // para que la pantalla pueda mostrarle al usuario el motivo real.
 
-export const API_BASE = 'http://localhost:8080/api'
+// Usa el proxy /api de Vite, tanto en Docker como en desarrollo local.
+export const API_BASE = '/api'
 
 // Error con más información que un Error común: el código HTTP y los errores por campo
 export class ErrorApi extends Error {

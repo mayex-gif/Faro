@@ -96,3 +96,10 @@ cd backend
 ```
 
 También se pueden correr desde VS Code con la extensión **Extension Pack for Java** (botón ▶️ al lado de cada test).
+
+## Filtros del frontend
+
+Ver [alcance, dependencia del módulo de OT y pasos de prueba](frontend/FILTROS_LISTADOS.md).
+
+Pruebas de filtros (datos en memoria, sin base de datos): desde `frontend`, ejecutar `npm test`.
+Con el entorno Docker encendido: `docker compose exec -T frontend npm test`.
