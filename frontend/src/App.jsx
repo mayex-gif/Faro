@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { eliminarPunto, listarPuntos } from './api/infraestructura'
+import FiltrosPuntos from './components/FiltrosPuntos'
 import FormularioPunto from './components/FormularioPunto'
 import TablaPuntos from './components/TablaPuntos'
 import Icono from './components/Icono'
+import { FILTROS_VACIOS, filtrarPuntos } from './utils/filtros'
 import './App.css'
 
 function App() {
@@ -12,6 +14,10 @@ function App() {
   const [mensaje, setMensaje] = useState('')
   // El punto que se está editando, o null si el formulario está en modo "nuevo".
   const [puntoEditando, setPuntoEditando] = useState(null)
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS)
+
+  // No es un estado: se calcula de nuevo cada vez que cambian los puntos o los filtros
+  const puntosFiltrados = filtrarPuntos(puntos, filtros)
 
   function cargarPuntos() {
     return listarPuntos()

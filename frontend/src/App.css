@@ -157,3 +157,32 @@
   .icono-panel { display: none; }
   .formulario-pie .botones { flex-direction: column-reverse; }
 }
+
+.error {
+  color: #b91c1c;
+  margin-bottom: 16px;
+}
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filtros input,
+.filtros select {
+  font: inherit;
+  font-size: 15px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.filtros input {
+  flex: 1 1 260px;
+}
+
+.contador {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
