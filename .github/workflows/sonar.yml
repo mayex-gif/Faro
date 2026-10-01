@@ -9,7 +9,23 @@ on:
 jobs:
   build:
     name: Build and analyze
-    runs-on: ubuntu-latest # Cambié a ubuntu-latest porque es más rápido y compatible con contenedores/Java
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: faro
+          POSTGRES_USER: faro
+          POSTGRES_PASSWORD: faro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U faro -d faro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -29,11 +45,14 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }} # Actualizado para que busque en backend
+          key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      
+
       - name: Build and analyze
-        working-directory: ./backend # Esto es clave: le dice que entre a la carpeta backend antes de ejecutar Maven
+        working-directory: ./backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=mayex-gif_Faro
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/faro
+          SPRING_DATASOURCE_USERNAME: faro
+          SPRING_DATASOURCE_PASSWORD: faro
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=mayex-gif_Faro -Dsonar.organization=mayex-gif
