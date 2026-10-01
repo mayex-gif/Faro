@@ -69,3 +69,27 @@ docker compose down -v
 ## Cómo contribuir
 
 Antes de tu primera tarea, leé [CONTRIBUTING.md](./CONTRIBUTING.md): ahí está el flujo de ramas (Git Flow), las reglas de aprobación de Pull Requests y las convenciones de commits.
+
+
+## Tests del backend
+
+Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.
+
+### Correr todos los tests
+`BackendApplicationTests` levanta Spring completo y necesita la base de datos, así que primero hay que levantarla:
+
+```bash
+docker compose up db -d
+cd backend
+.\mvnw.cmd test      # Windows
+./mvnw test          # Linux / Mac
+```
+
+### Correr solo los tests unitarios (no necesitan base de datos)
+
+```bash
+cd backend
+.\mvnw.cmd test -Dtest="PuntoInfraestructuraServiceTest,GeometriaJsonTest"
+```
+
+También se pueden correr desde VS Code con la extensión **Extension Pack for Java** (botón ▶️ al lado de cada test).
