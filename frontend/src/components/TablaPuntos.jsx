@@ -27,9 +27,9 @@ function describirUbicacion(ubicacion) {
 // - puntos: la lista a mostrar
 // - idEditando: el id del punto que se está editando (para resaltar su fila)
 // - onEditar / onEliminar: funciones que App nos pasa para avisarle qué botón se tocó
-function TablaPuntos({ puntos, idEditando, onEditar, onEliminar }) {
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, mensajeVacio = 'Todavía no hay puntos cargados.' }) {
   if (puntos.length === 0) {
-    return <p className="mensaje-vacio">Todavía no hay puntos cargados.</p>
+    return <p className="mensaje-vacio">{mensajeVacio}</p>
   }
 
   return (
