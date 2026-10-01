@@ -202,3 +202,6 @@
 .prioridad-media { color: var(--enlace); background: #EAF6F8; }
 .prioridad-alta { color: #9A4A12; background: #FDF0E7; }
 .prioridad-urgente { color: var(--error); background: #FFF0EE; }
+/* Errores de validación por campo */
+.error-campo { margin-top: 4px; color: var(--error); font-size: 0.8125rem; font-weight: 600; }
+.campo [aria-invalid="true"] { border-color: var(--error); box-shadow: 0 0 0 1px var(--error); }

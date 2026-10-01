@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react'
 import { listarOrdenes } from '../api/ordenesTrabajo'
+import { listarPuntos } from '../api/infraestructura'
+import FormularioOrden from '../components/FormularioOrden'
 import TablaOrdenes from '../components/TablaOrdenes'
+import Icono from '../components/Icono'
 
 function PaginaOrdenes() {
   const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  const [mensaje, setMensaje] = useState('')
+  // La OT que se está editando, o null si el formulario está en modo "nueva"
+  const [ordenEditando, setOrdenEditando] = useState(null)
+  // Lugares para el desplegable del formulario
+  const [lugares, setLugares] = useState([])
+  const [errorLugares, setErrorLugares] = useState(false)
 
   function cargarOrdenes() {
     return listarOrdenes()
@@ -25,9 +34,33 @@ function PaginaOrdenes() {
     cargarOrdenes()
   }
 
+  // Al abrir la pantalla: traemos las OT y los lugares (ordenados alfabéticamente)
   useEffect(() => {
     cargarOrdenes()
+    listarPuntos()
+      .then((datos) => setLugares([...datos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))))
+      .catch((e) => {
+        console.error(e)
+        setErrorLugares(true)
+      })
   }, [])
+
+  // Botón "Editar" de la tabla
+  function editar(orden) {
+    setOrdenEditando(orden)
+    setMensaje('')
+    document.getElementById('formulario-orden').scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
+
+  // Cuando el formulario guardó bien
+  function alGuardar(texto) {
+    setOrdenEditando(null)
+    setMensaje(texto)
+    recargarOrdenes()
+  }
 
   return (
     <>
@@ -35,6 +68,20 @@ function PaginaOrdenes() {
         <p className="sobre-titulo">TRABAJOS DEL CORRALÓN</p>
         <h1>Órdenes de trabajo</h1>
         <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son y qué tan urgentes.</p>
+      </div>
+
+      {/* La "key" reinicia el formulario cada vez que cambia la OT a editar */}
+      <FormularioOrden
+        key={ordenEditando?.id ?? 'nueva'}
+        lugares={lugares}
+        errorLugares={errorLugares}
+        ordenEditando={ordenEditando}
+        onGuardado={alGuardar}
+        onCancelar={() => setOrdenEditando(null)}
+      />
+
+      <div className="notificaciones" aria-live="polite" aria-atomic="true">
+        {mensaje && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensaje}</p>}
       </div>
 
       <section className="panel listado" aria-labelledby="titulo-listado-ordenes" aria-busy={cargando}>
@@ -65,7 +112,8 @@ function PaginaOrdenes() {
             <p>Cargando órdenes…</p>
           </div>
         ) : (
-          <TablaOrdenes ordenes={ordenes} errorCarga={Boolean(error)} />
+          <TablaOrdenes ordenes={ordenes} idEditando={ordenEditando?.id}
+            onEditar={editar} errorCarga={Boolean(error)} />
         )}
       </section>
     </>
