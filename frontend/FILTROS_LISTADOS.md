@@ -31,7 +31,7 @@ Si aumenta el volumen de registros, el equipo deberá implementar filtrado y pag
 en el servidor; el contador actual corresponde a la lista completa descargada.
 
 El estado de las OT **depende de la tarjeta 3 (motor de flujo configurable)**.
-El PR #13 aún no tiene ese campo. No inventar estados fijos ni marcar toda la tarjeta 5
+El módulo de OT integrado desde el PR #13 aún no tiene ese campo. No inventar estados fijos ni marcar toda la tarjeta 5
 como finalizada: presentar al Scrum Master el alcance de frontend disponible.
 
 “Diseño de pantallas base en Figma” es otra actividad pendiente en Trello.
@@ -75,3 +75,10 @@ Guía visual: [GUIA_ESTILOS.md](GUIA_ESTILOS.md).
 - Combinación de criterios, búsqueda sin tildes, fechas inclusivas, rango invertido, limpieza y navegación por teclado.
 - Edición y cancelación conservan los filtros; al guardar una nueva prioridad se recalcula el listado.
 - Verificación funcional contra un backend real con una base temporal separada. Los contenedores y la base temporal se retiraron al terminar.
+
+## Actualización de integración — 2/10/2026
+
+- Integrados los últimos cambios de develop, incluidos JaCoCo y los tests de controladores.
+- Se conserva la interfaz de filtros y la guía de estilos, sin cambios funcionales nuevos.
+- Verificación después de la integración: 15 pruebas de frontend, ESLint y compilación de producción aprobados.
+- El resultado de SonarCloud y de las pruebas del backend se verifica en los controles del PR #14.
