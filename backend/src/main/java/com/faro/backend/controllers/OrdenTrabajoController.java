@@ -1,5 +1,6 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.services.OrdenTrabajoService;
@@ -46,5 +47,12 @@ public class OrdenTrabajoController {
     @Operation(summary = "Modificar una orden de trabajo")
     public OrdenTrabajoDTO modificar(@PathVariable Long id, @Valid @RequestBody OrdenTrabajoRequestDTO request) {
         return service.modificar(id, request);
+    }
+
+    @PatchMapping("/{id}/estado")
+    @Operation(summary = "Cambiar el estado de una orden de trabajo",
+            description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409).")
+    public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request) {
+        return service.cambiarEstado(id, request);
     }
 }

@@ -1,7 +1,9 @@
 package com.faro.backend.services;
 
+import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
+import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.OrdenTrabajo;
@@ -9,6 +11,7 @@ import com.faro.backend.models.PuntoInfraestructura;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
+import com.faro.backend.repositories.TransicionEstadoRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +25,16 @@ public class OrdenTrabajoService {
     private final OrdenTrabajoRepository ordenRepository;
     private final PuntoInfraestructuraRepository lugarRepository;
     private final EstadoOrdenRepository estadoRepository;
+    private final TransicionEstadoRepository transicionRepository;
 
     public OrdenTrabajoService(OrdenTrabajoRepository ordenRepository,
                                PuntoInfraestructuraRepository lugarRepository,
-                               EstadoOrdenRepository estadoRepository) {
+                               EstadoOrdenRepository estadoRepository,
+                               TransicionEstadoRepository transicionRepository) {
         this.ordenRepository = ordenRepository;
         this.lugarRepository = lugarRepository;
         this.estadoRepository = estadoRepository;
+        this.transicionRepository = transicionRepository;
     }
 
     // ===================== CONSULTAS =====================
@@ -71,7 +77,33 @@ public class OrdenTrabajoService {
     @Transactional
     public OrdenTrabajoDTO modificar(Long id, OrdenTrabajoRequestDTO request) {
         OrdenTrabajo orden = buscarOrden(id);
+        // Una OT cerrada (Finalizada, Cancelada) ya es historia: no se edita más
+        if (orden.getEstado() != null && orden.getEstado().isCierre()) {
+            throw new OperacionNoPermitidaException(
+                    "No se puede modificar una orden en estado " + orden.getEstado().getNombre());
+        }
         copiarDatos(request, orden);
+        return convertirADto(ordenRepository.save(orden));
+    }
+
+    // ===================== CAMBIO DE ESTADO (el "árbitro") =====================
+
+    /** Pasa una OT a otro estado, SOLO si existe el camino en la tabla de transiciones. */
+    @Transactional
+    public OrdenTrabajoDTO cambiarEstado(Long id, CambioEstadoRequestDTO request) {
+        OrdenTrabajo orden = buscarOrden(id);
+        EstadoOrden nuevo = estadoRepository.findById(request.estadoId())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Estado no encontrado"));
+        EstadoOrden actual = orden.getEstado();
+
+        // La pregunta clave del motor: ¿existe la flecha de "actual" a "nuevo"?
+        if (actual == null || !transicionRepository.existsByOrigenIdAndDestinoId(actual.getId(), nuevo.getId())) {
+            String desde = (actual == null) ? "sin estado" : actual.getNombre();
+            throw new OperacionNoPermitidaException(
+                    "No se puede pasar una orden de " + desde + " a " + nuevo.getNombre());
+        }
+
+        orden.setEstado(nuevo);
         return convertirADto(ordenRepository.save(orden));
     }
 
