@@ -6,9 +6,11 @@ Tarea: [5. Listado y Filtros Básicos de OT y Lugares](https://trello.com/c/4lwW
 
 La rama `feature/filtros-ordenes-trabajo` nace de `develop` actualizado y utiliza
 el módulo de OT de Santino del [PR #13](https://github.com/mayex-gif/Faro/pull/13),
-todavía pendiente de aprobación al iniciar este trabajo.
-Aprobar e integrar primero ese PR; luego revisar los cambios propios de filtros hacia
-`develop`. No integrar el módulo de OT dos veces ni atribuirlo a esta tarea.
+que estaba pendiente de aprobación al iniciar este trabajo.
+El PR #13 se integró en `develop` el 2/10/2026. Ese mismo día se actualizaron los
+filtros con los cambios aprobados de `origin/develop`, sin conflictos.
+La comparación del PR #14 ya muestra solamente filtros y documentación propios.
+El módulo de OT corresponde al trabajo de Santino.
 
 ## Qué agrega el frontend
 
