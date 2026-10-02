@@ -3,8 +3,10 @@ package com.faro.backend.services;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
+import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
 import org.springframework.data.domain.Sort;
@@ -19,11 +21,14 @@ public class OrdenTrabajoService {
 
     private final OrdenTrabajoRepository ordenRepository;
     private final PuntoInfraestructuraRepository lugarRepository;
+    private final EstadoOrdenRepository estadoRepository;
 
     public OrdenTrabajoService(OrdenTrabajoRepository ordenRepository,
-                               PuntoInfraestructuraRepository lugarRepository) {
+                               PuntoInfraestructuraRepository lugarRepository,
+                               EstadoOrdenRepository estadoRepository) {
         this.ordenRepository = ordenRepository;
         this.lugarRepository = lugarRepository;
+        this.estadoRepository = estadoRepository;
     }
 
     // ===================== CONSULTAS =====================
@@ -59,6 +64,7 @@ public class OrdenTrabajoService {
     public OrdenTrabajoDTO crear(OrdenTrabajoRequestDTO request) {
         OrdenTrabajo orden = new OrdenTrabajo();
         copiarDatos(request, orden);
+        orden.setEstado(buscarEstadoInicial()); // toda OT nueva arranca en el estado inicial
         return convertirADto(ordenRepository.save(orden));
     }
 
@@ -76,6 +82,11 @@ public class OrdenTrabajoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Orden de trabajo no encontrada"));
     }
 
+    private EstadoOrden buscarEstadoInicial() {
+        return estadoRepository.findFirstByInicialTrue()
+                .orElseThrow(() -> new IllegalStateException("No hay un estado inicial configurado"));
+    }
+
     // Pasa los datos de la "comanda" a la entidad. Verifica que el lugar exista.
     private void copiarDatos(OrdenTrabajoRequestDTO request, OrdenTrabajo orden) {
         PuntoInfraestructura lugar = lugarRepository.findById(request.lugarId())
@@ -89,6 +100,7 @@ public class OrdenTrabajoService {
     }
 
     private OrdenTrabajoDTO convertirADto(OrdenTrabajo orden) {
+        EstadoOrden estado = orden.getEstado(); // puede ser null solo en OT viejas, antes del inicializador
         return new OrdenTrabajoDTO(
                 orden.getId(),
                 orden.getDescripcion(),
@@ -97,7 +109,10 @@ public class OrdenTrabajoService {
                 orden.getPrioridad(),
                 orden.getLugar().getId(),
                 orden.getLugar().getNombre(),
-                orden.getFechaCreacion()
+                orden.getFechaCreacion(),
+                estado != null ? estado.getId() : null,
+                estado != null ? estado.getNombre() : null,
+                estado != null ? estado.getColor() : null
         );
     }
 }

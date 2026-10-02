@@ -53,7 +53,7 @@ class OrdenTrabajoControllerTest {
     private OrdenTrabajoDTO ordenDeEjemplo(Long id) {
         return new OrdenTrabajoDTO(id, "Podar el árbol de la esquina", TipoTrabajo.PODA,
                 OrigenOrden.RECLAMO_VECINAL, PrioridadOrden.ALTA, 1L, "Plaza San Martín",
-                LocalDateTime.of(2026, 10, 1, 10, 30));
+                LocalDateTime.of(2026, 10, 1, 10, 30), 1L, "Pendiente", "#566A73");
     }
 
     // ---------- GET ----------

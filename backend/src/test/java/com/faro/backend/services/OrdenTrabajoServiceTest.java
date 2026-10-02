@@ -3,11 +3,13 @@ package com.faro.backend.services;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
 import com.faro.backend.models.PuntoInfraestructura;
 import com.faro.backend.models.TipoTrabajo;
+import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,10 @@ class OrdenTrabajoServiceTest {
     @Mock
     private PuntoInfraestructuraRepository lugarRepository;
 
-    @InjectMocks // el Service de verdad, con los DOS repositories falsos
+    @Mock
+    private EstadoOrdenRepository estadoRepository;
+
+    @InjectMocks // el Service de verdad, con los TRES repositories falsos
     private OrdenTrabajoService service;
 
     // ===================== Ayudantes =====================
@@ -131,6 +136,9 @@ class OrdenTrabajoServiceTest {
     void crear_conLugarExistente_guardaLaOrdenConSusDatos() {
         PuntoInfraestructura plaza = lugar(3L, "Plaza San Martín");
         when(lugarRepository.findById(3L)).thenReturn(Optional.of(plaza));
+        EstadoOrden pendiente = new EstadoOrden("Pendiente", "#566A73", true, false, 1);
+        pendiente.setId(1L);
+        when(estadoRepository.findFirstByInicialTrue()).thenReturn(Optional.of(pendiente));
         // simulamos a la base: lo que llega a save() vuelve con id 10
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(invocacion -> {
             OrdenTrabajo guardada = invocacion.getArgument(0);
@@ -148,6 +156,8 @@ class OrdenTrabajoServiceTest {
         assertEquals(OrigenOrden.RECLAMO_VECINAL, resultado.origen());
         assertEquals(PrioridadOrden.ALTA, resultado.prioridad());
         assertEquals("Plaza San Martín", resultado.lugarNombre());
+        assertEquals("Pendiente", resultado.estadoNombre()); // arrancó en el estado inicial
+        assertEquals("#566A73", resultado.estadoColor());
 
         // Y con el captor revisamos QUÉ se le pidió guardar a la base
         ArgumentCaptor<OrdenTrabajo> captor = ArgumentCaptor.forClass(OrdenTrabajo.class);
@@ -163,6 +173,18 @@ class OrdenTrabajoServiceTest {
                 () -> service.crear(pedido("Cortar pasto", 99L)));
 
         assertEquals("Lugar no encontrado", error.getMessage());
+        verify(ordenRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_sinEstadoInicialConfigurado_lanzaErrorYNoGuarda() {
+        when(lugarRepository.findById(3L)).thenReturn(Optional.of(lugar(3L, "Plaza")));
+        when(estadoRepository.findFirstByInicialTrue()).thenReturn(Optional.empty());
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.crear(pedido("Cortar pasto", 3L)));
+
+        assertEquals("No hay un estado inicial configurado", error.getMessage());
         verify(ordenRepository, never()).save(any());
     }
 
