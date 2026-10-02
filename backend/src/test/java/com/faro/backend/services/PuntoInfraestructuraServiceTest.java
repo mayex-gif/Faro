@@ -1,5 +1,7 @@
 package com.faro.backend.services;
-
+import com.faro.backend.exceptions.OperacionNoPermitidaException;
+import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.dto.PuntoInfraestructuraDTO;
 import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
 import com.faro.backend.models.PuntoInfraestructura;
@@ -32,7 +34,8 @@ class PuntoInfraestructuraServiceTest {
 
     @Mock // Mockito crea un Repository FALSO
     private PuntoInfraestructuraRepository repository;
-
+    @Mock // Repository de OT FALSO: lo usa eliminarLugar para ver si el lugar tiene OT
+    private OrdenTrabajoRepository ordenRepository;
     @InjectMocks // Mockito crea el Service DE VERDAD y le pasa el Repository falso
     private PuntoInfraestructuraService service;
 
@@ -162,10 +165,30 @@ class PuntoInfraestructuraServiceTest {
 
     // ===================== BAJA =====================
 
-    @Test
-    void eliminarLugar_leDiceAlRepositoryQueBorre() {
+        @Test
+    void eliminarLugar_sinOrdenes_loBorra() {
+        when(repository.existsById(3L)).thenReturn(true);
+        when(ordenRepository.existsByLugarId(3L)).thenReturn(false);
+
         service.eliminarLugar(3L);
 
         verify(repository).deleteById(3L);
+    }
+
+    @Test
+    void eliminarLugar_conOrdenes_lanzaErrorYNoBorra() {
+        when(repository.existsById(3L)).thenReturn(true);
+        when(ordenRepository.existsByLugarId(3L)).thenReturn(true);
+
+        assertThrows(OperacionNoPermitidaException.class, () -> service.eliminarLugar(3L));
+        verify(repository, never()).deleteById(any());
+    }
+
+    @Test
+    void eliminarLugar_inexistente_lanzaNoEncontrado() {
+        when(repository.existsById(99L)).thenReturn(false);
+
+        assertThrows(RecursoNoEncontradoException.class, () -> service.eliminarLugar(99L));
+        verify(repository, never()).deleteById(any());
     }
 }

@@ -6,6 +6,7 @@ const trazos = {
   guardar: 'M20 6 9 17l-5-5',
   editar: 'm16 3 5 5-12 12-6 1 1-6Z M14 5l5 5',
   borrar: 'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
+    orden: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 11h6 M9 15h6 M9 19h3',
 }
 
 function Icono({ nombre, className = '' }) {
