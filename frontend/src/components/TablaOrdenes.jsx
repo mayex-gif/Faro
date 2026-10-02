@@ -6,7 +6,13 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '
 // - idEditando: id de la OT en edición (para resaltar su fila)
 // - onEditar: función a llamar al tocar "Editar" (si no se pasa, no se muestra la columna)
 // - errorCarga: true si falló la carga (para no decir "no hay órdenes" cuando en realidad hubo un error)
-function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga }) {
+// - estados: los estados posibles, cada uno con "siguientes" (ids de los estados a los que se puede pasar)
+// - onCambiarEstado: función a llamar al tocar "Pasar a ..." → onCambiarEstado(orden, estadoNuevo)
+// - idCambiandoEstado: id de la OT que está cambiando de estado (sus botones se deshabilitan)
+function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado }) {
+  // "Diccionario" id → estado, para encontrar rápido el estado de cada OT
+  const estadosPorId = new Map(estados.map((estado) => [estado.id, estado]))
+
   if (ordenes.length === 0) {
     if (errorCarga) return null
     return (
@@ -23,7 +29,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga }) {
       <p className="ayuda-tabla" id="ayuda-tabla-ordenes">Deslizá la tabla hacia los lados para ver todas las columnas.</p>
       <div className="tabla-contenedor" role="region" aria-labelledby="titulo-listado-ordenes"
         aria-describedby="ayuda-tabla-ordenes" tabIndex={0}>
-        <table className="tabla">
+        <table className="tabla tabla-ordenes">
           <caption className="solo-lectores">Órdenes de trabajo registradas</caption>
           <thead>
             <tr>
@@ -32,12 +38,21 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga }) {
               <th scope="col">Tipo</th>
               <th scope="col">Origen</th>
               <th scope="col">Prioridad</th>
+              <th scope="col">Estado</th>
               <th scope="col">Creada</th>
               {onEditar && <th scope="col">Acciones</th>}
             </tr>
           </thead>
           <tbody>
-            {ordenes.map((orden) => (
+            {ordenes.map((orden) => {
+              const estadoActual = estadosPorId.get(orden.estadoId)
+              const cerrada = Boolean(estadoActual?.cierre)
+              // Los estados a los que se puede pasar desde el actual (vacío si está cerrada)
+              const siguientes = (estadoActual?.siguientes ?? [])
+                .map((id) => estadosPorId.get(id))
+                .filter(Boolean)
+              const cambiando = orden.id === idCambiandoEstado
+              return (
               <tr key={orden.id} className={orden.id === idEditando ? 'fila-editando' : ''}>
                 <th scope="row">
                   <span className="nombre-lugar">{orden.descripcion}</span>
@@ -53,17 +68,39 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga }) {
                     {etiqueta(PRIORIDADES, orden.prioridad)}
                   </span>
                 </td>
+                <td>
+                  {orden.estadoNombre ? (
+                    // El color viene del backend (configurable); el fondo es el mismo color al 10%
+                    <span className="estado" style={{ color: orden.estadoColor, background: `${orden.estadoColor}1A` }}>
+                      <span className="estado-punto" aria-hidden="true" />
+                      {orden.estadoNombre}
+                    </span>
+                  ) : '—'}
+                </td>
                 <td className="fecha-tabla">{formatearFecha(orden.fechaCreacion)}</td>
                 {onEditar && (
                   <td>
-                    <button type="button" className="boton boton-tabla" onClick={() => onEditar(orden)}
-                      aria-label={`Editar la orden ${orden.id}`}>
-                      <Icono nombre="editar" />Editar
-                    </button>
+                    <div className="acciones acciones-orden">
+                      {!cerrada && (
+                        <button type="button" className="boton boton-tabla" onClick={() => onEditar(orden)}
+                          aria-label={`Editar la orden ${orden.id}`} disabled={cambiando}>
+                          <Icono nombre="editar" />Editar
+                        </button>
+                      )}
+                      {onCambiarEstado && siguientes.map((estado) => (
+                        <button key={estado.id} type="button" className="boton boton-tabla boton-estado"
+                          onClick={() => onCambiarEstado(orden, estado)} disabled={cambiando}
+                          aria-label={`Pasar la orden ${orden.id} a ${estado.nombre}`}>
+                          Pasar a {estado.nombre}
+                        </button>
+                      ))}
+                      {cerrada && <span className="orden-cerrada">Cerrada, sin cambios</span>}
+                    </div>
                   </td>
                 )}
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
