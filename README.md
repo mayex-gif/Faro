@@ -74,6 +74,8 @@ Antes de tu primera tarea, leé [CONTRIBUTING.md](./CONTRIBUTING.md): ahí está
 
 Para desarrollar las siguientes pantallas, consultar la [guia de estilos del frontend](./frontend/GUIA_ESTILOS.md). Define la paleta aprobada, tipografia, espacios, componentes, estados y criterios de accesibilidad de la interfaz del RF01.
 
+El [avance de las pantallas base en Figma](./frontend/diseno/README.md) contiene el archivo editable, las pautas comunes y los pendientes de diseño. La entrega final está en preparación.
+
 ## Tests del backend
 
 Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.
