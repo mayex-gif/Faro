@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * Orden de Trabajo (OT): un trabajo a realizar sobre un lugar del pueblo.
  * Cada OT pertenece a UN Punto de Infraestructura; un punto puede tener MUCHAS OT.
- * Los estados (pendiente, en curso, etc.) se agregan en la tarjeta 3 (motor de flujo).
+ * Cada OT está en un estado (Pendiente, En curso...): ver EstadoOrden y TransicionEstado.
  */
 @Entity
 @Table(name = "ordenes_trabajo")
@@ -37,6 +37,13 @@ public class OrdenTrabajo {
     @JoinColumn(name = "punto_infraestructura_id", nullable = false)
     private PuntoInfraestructura lugar;
 
+    // Estado actual de la OT (Pendiente, En curso...). Muchas OT pueden estar en el mismo estado.
+    // La columna admite vacío SOLO por las OT creadas antes de esta tarjeta:
+    // el InicializadorEstados les pone el estado inicial cuando arranca el backend.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "estado_id")
+    private EstadoOrden estado;
+
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
@@ -64,6 +71,9 @@ public class OrdenTrabajo {
 
     public PuntoInfraestructura getLugar() { return lugar; }
     public void setLugar(PuntoInfraestructura lugar) { this.lugar = lugar; }
+
+    public EstadoOrden getEstado() { return estado; }
+    public void setEstado(EstadoOrden estado) { this.estado = estado; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }

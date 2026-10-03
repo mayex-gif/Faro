@@ -15,5 +15,8 @@ public record OrdenTrabajoDTO(
         PrioridadOrden prioridad,
         Long lugarId,
         String lugarNombre,   // así la pantalla puede mostrar "Plaza San Martín" sin otro pedido
-        LocalDateTime fechaCreacion
+        LocalDateTime fechaCreacion,
+        Long estadoId,
+        String estadoNombre,  // "En curso"
+        String estadoColor    // "#9A4A12", para pintarlo en la pantalla
 ) {}

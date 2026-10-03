@@ -17,3 +17,8 @@ export function crearOrden(orden) {
 export function actualizarOrden(id, orden) {
   return pedir(`${RUTA}/${id}`, { method: 'PUT', body: JSON.stringify(orden) })
 }
+
+// PATCH: pasar una OT a otro estado. El backend responde 409 si ese cambio no está permitido.
+export function cambiarEstadoOrden(id, estadoId) {
+  return pedir(`${RUTA}/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estadoId }) })
+}

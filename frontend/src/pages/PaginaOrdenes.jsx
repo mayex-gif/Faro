@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { listarOrdenes } from '../api/ordenesTrabajo'
+import { cambiarEstadoOrden, listarOrdenes } from '../api/ordenesTrabajo'
 import { listarPuntos } from '../api/infraestructura'
+import { listarEstados } from '../api/estadosOrden'
 import FormularioOrden from '../components/FormularioOrden'
 import TablaOrdenes from '../components/TablaOrdenes'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
@@ -17,6 +18,11 @@ function PaginaOrdenes() {
   // Lugares para el desplegable del formulario
   const [lugares, setLugares] = useState([])
   const [errorLugares, setErrorLugares] = useState(false)
+  // Estados posibles de una OT (Pendiente, En curso...) con los caminos permitidos entre ellos
+  const [estados, setEstados] = useState([])
+  // Id de la OT que está cambiando de estado (para deshabilitar sus botones mientras tanto)
+  const [idCambiandoEstado, setIdCambiandoEstado] = useState(null)
+  const [errorAccion, setErrorAccion] = useState('')
   const [filtros, setFiltros] = useState(FILTROS_ORDENES_VACIOS)
 
   const ordenesFiltradas = filtrarOrdenes(ordenes, filtros)
@@ -49,6 +55,9 @@ function PaginaOrdenes() {
         console.error(e)
         setErrorLugares(true)
       })
+    listarEstados()
+      .then(setEstados)
+      .catch((e) => console.error(e)) // sin estados, la tabla igual muestra el estado de cada OT
   }, [])
 
   // Botón "Editar" de la tabla
@@ -59,6 +68,33 @@ function PaginaOrdenes() {
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start',
     })
+  }
+
+  // Botones "Pasar a ..." de la tabla
+  function cambiarEstado(orden, estadoNuevo) {
+    // Finalizada y Cancelada no tienen vuelta atrás: pedimos confirmación
+    if (estadoNuevo.cierre) {
+      const confirmado = window.confirm(
+        `¿Pasar la OT #${orden.id} a "${estadoNuevo.nombre}"? Después ya no se va a poder modificar.`)
+      if (!confirmado) return
+    }
+    setIdCambiandoEstado(orden.id)
+    setMensaje('')
+    setErrorAccion('')
+    cambiarEstadoOrden(orden.id, estadoNuevo.id)
+      .then((actualizada) => {
+        // reemplazamos solo esa OT en la lista, sin volver a pedir todas
+        setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
+        setMensaje(`La OT #${actualizada.id} pasó a "${actualizada.estadoNombre}".`)
+        // si justo se estaba editando y quedó cerrada, salimos de la edición
+        if (estadoNuevo.cierre && ordenEditando?.id === orden.id) setOrdenEditando(null)
+      })
+      .catch((e) => {
+        console.error(e)
+        // e.message trae el motivo que explica el backend (ej: "No se puede pasar una orden de ...")
+        setErrorAccion(e.message || 'No se pudo cambiar el estado. Intentá nuevamente.')
+      })
+      .finally(() => setIdCambiandoEstado(null))
   }
 
   // Cuando el formulario guardó bien
@@ -73,7 +109,7 @@ function PaginaOrdenes() {
       <div className="encabezado-pagina">
         <p className="sobre-titulo">TRABAJOS DEL CORRALÓN</p>
         <h1>Órdenes de trabajo</h1>
-        <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son y qué tan urgentes.</p>
+        <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son, qué tan urgentes y en qué estado están.</p>
       </div>
 
       {/* La "key" reinicia el formulario cada vez que cambia la OT a editar */}
@@ -88,6 +124,7 @@ function PaginaOrdenes() {
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">
         {mensaje && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensaje}</p>}
+        {errorAccion && <p className="mensaje mensaje-error" role="alert">{errorAccion}</p>}
       </div>
 
       <section className="panel listado" aria-labelledby="titulo-listado-ordenes" aria-busy={cargando}>
@@ -121,10 +158,17 @@ function PaginaOrdenes() {
             <p>Cargando órdenes…</p>
           </div>
         ) : (
-          <TablaOrdenes ordenes={ordenesFiltradas} idEditando={ordenEditando?.id}
-            onEditar={editar} errorCarga={Boolean(error) || !rangoValido}
+          <TablaOrdenes 
+            ordenes={ordenesFiltradas} 
+            idEditando={ordenEditando?.id}
+            onEditar={editar} 
+            errorCarga={Boolean(error) || !rangoValido}
             sinCoincidencias={ordenes.length > 0}
-            onLimpiarFiltros={() => setFiltros(FILTROS_ORDENES_VACIOS)} />
+            onLimpiarFiltros={() => setFiltros(FILTROS_ORDENES_VACIOS)}
+            estados={estados} 
+            onCambiarEstado={cambiarEstado} 
+            idCambiandoEstado={idCambiandoEstado} 
+          />
         )}
       </section>
     </>

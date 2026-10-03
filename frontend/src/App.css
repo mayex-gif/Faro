@@ -109,6 +109,12 @@
 .boton-tabla .icono { width: 16px; height: 16px; }
 .boton-tabla:hover { background: #EAF6F8; }
 .boton-borrar { color: var(--error); }
+/* Órdenes de trabajo: botones de acción que pueden ser varios ("Pasar a ...") */
+.tabla-ordenes tbody th { min-width: 170px; } /* que la descripción no se corte a la mitad de una palabra */
+.acciones-orden { flex-direction: column; align-items: stretch; min-width: 170px; } /* un botón debajo del otro */
+.boton-estado { color: var(--texto); }
+.boton-tabla:disabled { opacity: 0.6; cursor: not-allowed; }
+.orden-cerrada { align-self: center; color: var(--texto-secundario); font-size: 0.75rem; }
 .boton-borrar:hover { background: #FFF0EE; }
 .pie-pagina { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px; padding-top: 16px; color: var(--texto-secundario); font-size: 0.6875rem; }
 
