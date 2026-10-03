@@ -203,3 +203,17 @@
 /* Errores de validación por campo */
 .error-campo { margin-top: 4px; color: var(--error); font-size: 0.8125rem; font-weight: 600; }
 .campo [aria-invalid="true"] { border-color: var(--error); box-shadow: 0 0 0 1px var(--error); }
+
+/* Asignación a cuadrillas */
+.panel-cuadrillas { margin-bottom: 24px; }
+.estado-ocupada { color: #9A4A12; background: #FDF0E7; }
+.lista-tipos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tabla-asignacion { min-width: 900px; }
+.tabla-asignacion th, .tabla-asignacion td { padding-inline: 14px; }
+.tabla-asignacion tbody th { min-width: 190px; }
+.celda-asignar { position: relative; min-width: 240px; }
+.celda-asignar .boton { width: 100%; margin-top: 10px; } /* contiene la etiqueta oculta: sin esto ensancha la página */
+.tabla-asignacion .campo select { min-height: 44px; }
+.tabla-asignacion .ayuda-campo { margin-top: 6px; }
+.tabla-asignacion .fecha-tabla { white-space: normal; min-width: 90px; }
+.tabla-cuadrillas { min-width: 640px; }
