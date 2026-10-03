@@ -1,81 +1,77 @@
-import { useEffect, useState } from 'react'
-import { eliminarPunto, listarPuntos } from './api/infraestructura'
-import FormularioPunto from './components/FormularioPunto'
-import TablaPuntos from './components/TablaPuntos'
+import { useState } from 'react'
+import Icono from './components/Icono'
+import PaginaInfraestructura from './pages/PaginaInfraestructura'
+import PaginaOrdenes from './pages/PaginaOrdenes'
+import PaginaAsignacion from './pages/PaginaAsignacion'
 import './App.css'
 
+// Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
+const PAGINAS = {
+  infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
+  ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
+  asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
+}
+
 function App() {
-  const [puntos, setPuntos] = useState([])
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState(null)
-  // El punto que se está editando, o null si el formulario está en modo "nuevo"
-  const [puntoEditando, setPuntoEditando] = useState(null)
+  // Qué pantalla se está mostrando
+  const [paginaActual, setPaginaActual] = useState('infraestructura')
+  const { titulo, Componente } = PAGINAS[paginaActual]
 
-  // Pide la lista al backend
-  function cargarPuntos() {
-    setCargando(true)
-    listarPuntos()
-      .then((datos) => {
-        setPuntos(datos)
-        setError(null)
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setCargando(false))
-  }
-
-  useEffect(() => {
-    cargarPuntos()
-  }, [])
-
-  // Botón "Editar" de la tabla: pasamos el formulario a modo edición y subimos hasta él
-  function editar(punto) {
-    setPuntoEditando(punto)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // Cuando el formulario guardó bien: salimos del modo edición y recargamos la tabla
-  function alGuardar() {
-    setPuntoEditando(null)
-    cargarPuntos()
-  }
-
-  // Botón "Borrar" de la tabla
-  async function eliminar(punto) {
-    const confirmado = window.confirm(`¿Seguro que querés borrar "${punto.nombre}"? No se puede deshacer.`)
-    if (!confirmado) return
-    try {
-      await eliminarPunto(punto.id)
-      if (puntoEditando?.id === punto.id) setPuntoEditando(null)
-      cargarPuntos()
-    } catch (e) {
-      setError(`No se pudo borrar: ${e.message}`)
-    }
+  function irA(evento, clave) {
+    evento.preventDefault() // evita el salto del enlace: cambiamos de pantalla nosotros
+    setPaginaActual(clave)
+    document.getElementById('contenido')?.focus() // el foco va al contenido nuevo (accesibilidad)
   }
 
   return (
-    <main className="pagina">
-      <h1>Puntos de Infraestructura</h1>
+    <div className="aplicacion">
+      <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
-      {/* La "key" hace que el formulario se reinicie cada vez que cambia el punto a editar */}
-      <FormularioPunto
-        key={puntoEditando?.id ?? 'nuevo'}
-        puntoEditando={puntoEditando}
-        onGuardado={alGuardar}
-        onCancelar={() => setPuntoEditando(null)}
-      />
+      <aside className="barra-lateral" aria-label="Identidad y navegación de FARO">
+        <div className="marca">
+          <img src="/logo-faro.png" alt="" className="marca-logo" width="64" height="64" />
+          <div>
+            <span className="marca-nombre">FARO</span>
+            <span className="marca-descripcion">Mantenimiento municipal</span>
+          </div>
+        </div>
 
-      {error && <p className="error">❌ {error}</p>}
-      {cargando ? (
-        <p>Cargando...</p>
-      ) : (
-        <TablaPuntos
-          puntos={puntos}
-          idEditando={puntoEditando?.id}
-          onEditar={editar}
-          onEliminar={eliminar}
-        />
-      )}
-    </main>
+        <nav aria-label="Navegación principal">
+          <p className="nav-titulo">GESTIÓN DEL ESPACIO PÚBLICO</p>
+          {Object.entries(PAGINAS).map(([clave, pagina]) => (
+            <a key={clave} href="#contenido"
+              className={clave === paginaActual ? 'nav-enlace nav-activo' : 'nav-enlace'}
+              aria-current={clave === paginaActual ? 'page' : undefined}
+              onClick={(evento) => irA(evento, clave)}>
+              <Icono nombre={pagina.icono} />
+              {pagina.titulo}
+            </a>
+          ))}
+        </nav>
+
+        <div className="municipio">
+          <span className="municipio-linea" />
+          <p>Municipalidad de<br /><strong>Estación General Paz</strong></p>
+          <span>Córdoba, Argentina</span>
+        </div>
+      </aside>
+
+      <div className="area-principal">
+        <header className="barra-superior">
+          <p>Gestión municipal <span aria-hidden="true">/</span> <strong>{titulo}</strong></p>
+          <span className="etiqueta-contexto">Corralón municipal</span>
+        </header>
+
+        <main className="pagina" id="contenido" tabIndex={-1}>
+          <Componente />
+
+          <footer className="pie-pagina">
+            <span>FARO · Gestión del mantenimiento municipal</span>
+            <span>Estación General Paz</span>
+          </footer>
+        </main>
+      </div>
+    </div>
   )
 }
 

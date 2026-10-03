@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { actualizarPunto, crearPunto } from '../api/infraestructura'
+import Icono from './Icono'
 
-// Valores con los que arranca el formulario cuando se crea un punto nuevo
+// Valores con los que arranca el formulario cuando se crea un punto nuevo.
 const FORMULARIO_VACIO = {
   nombre: '',
   tipo: 'LUMINARIA',
@@ -11,7 +12,6 @@ const FORMULARIO_VACIO = {
   longitud: '',
 }
 
-// Convierte un punto que viene del backend en los valores del formulario
 function puntoAFormulario(punto) {
   const esPunto = punto.ubicacion?.type === 'Point'
   const [longitud, latitud] = esPunto ? punto.ubicacion.coordinates : ['', ''] // GeoJSON: [longitud, latitud]
@@ -25,30 +25,26 @@ function puntoAFormulario(punto) {
   }
 }
 
-// Props:
-// - puntoEditando: el punto a editar, o null si estamos creando uno nuevo
-// - onGuardado: se llama cuando se guardó bien
-// - onCancelar: se llama al tocar "Cancelar" (solo al editar)
 function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
   const editando = puntoEditando != null
-  // Las líneas y polígonos no se pueden editar con latitud/longitud: se conservan como están
+  // Las líneas y polígonos conservan su geometría original.
   const ubicacionCompleja = editando && puntoEditando.ubicacion?.type !== 'Point'
-
-  // El formulario arranca vacío, o con los datos del punto si estamos editando
   const [datos, setDatos] = useState(() => (editando ? puntoAFormulario(puntoEditando) : FORMULARIO_VACIO))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
 
-  // Una sola función para todos los campos: usa el "name" del campo para saber qué actualizar
+  useEffect(() => {
+    if (editando) document.getElementById('nombre').focus({ preventScroll: true })
+  }, [editando])
+
   function cambiar(evento) {
     const { name, value, type, checked } = evento.target
     setDatos({ ...datos, [name]: type === 'checkbox' ? checked : value })
   }
 
-  // Devuelve un mensaje de error, o null si está todo bien
   function validar() {
     if (datos.nombre.trim() === '') return 'El nombre es obligatorio.'
-    if (ubicacionCompleja) return null // no se tocan latitud/longitud
+    if (ubicacionCompleja) return null
     if (datos.latitud === '' || datos.longitud === '') return 'La latitud y la longitud son obligatorias.'
     const latitud = Number(datos.latitud)
     const longitud = Number(datos.longitud)
@@ -58,8 +54,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
   }
 
   async function enviar(evento) {
-    evento.preventDefault() // evita que el navegador recargue la página
-
+    evento.preventDefault()
     const problema = validar()
     if (problema) {
       setError(problema)
@@ -72,7 +67,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
       datosTecnicos: datos.datosTecnicos.trim(),
       estadoOperativo: datos.estadoOperativo,
       ubicacion: ubicacionCompleja
-        ? puntoEditando.ubicacion // conservamos la línea/polígono original
+        ? puntoEditando.ubicacion
         : { type: 'Point', coordinates: [Number(datos.longitud), Number(datos.latitud)] },
     }
 
@@ -80,80 +75,111 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
     setError(null)
     try {
       if (editando) {
-        await actualizarPunto(puntoEditando.id, punto) // PUT
+        await actualizarPunto(puntoEditando.id, punto)
       } else {
-        await crearPunto(punto) // POST
+        await crearPunto(punto)
         setDatos(FORMULARIO_VACIO)
       }
-      onGuardado()
+      onGuardado(editando ? 'Los cambios se guardaron correctamente.' : 'El lugar se registró correctamente.')
     } catch (e) {
-      setError(`No se pudo guardar: ${e.message}`)
+      console.error(e)
+      setError('No pudimos guardar el lugar. Revisá la conexión e intentá nuevamente. Tus datos siguen en el formulario.')
     } finally {
       setGuardando(false)
     }
   }
 
   return (
-    <form className={editando ? 'formulario formulario-editando' : 'formulario'} onSubmit={enviar}>
-      <h2>{editando ? `Editando: ${puntoEditando.nombre}` : 'Nuevo punto'}</h2>
-
-      <div className="campos">
-        <label>
-          Nombre *
-          <input name="nombre" value={datos.nombre} onChange={cambiar} placeholder="Ej: Plaza San Martín" />
-        </label>
-
-        <label>
-          Tipo *
-          <select name="tipo" value={datos.tipo} onChange={cambiar}>
-            <option value="LUMINARIA">Luminaria</option>
-            <option value="ESPACIO_VERDE">Espacio verde</option>
-            <option value="CALLE">Calle</option>
-          </select>
-        </label>
-
-        <label>
-          Latitud *
-          <input name="latitud" type="number" step="any" value={datos.latitud} onChange={cambiar}
-            placeholder="Ej: -34.6037" disabled={ubicacionCompleja} />
-        </label>
-
-        <label>
-          Longitud *
-          <input name="longitud" type="number" step="any" value={datos.longitud} onChange={cambiar}
-            placeholder="Ej: -58.3816" disabled={ubicacionCompleja} />
-        </label>
-
-        <label className="campo-ancho">
-          Datos técnicos
-          <textarea name="datosTecnicos" value={datos.datosTecnicos} onChange={cambiar} rows={2}
-            placeholder="Ej: LED 100W, poste de 8 m" />
-        </label>
-
-        <label className="campo-check">
-          <input name="estadoOperativo" type="checkbox" checked={datos.estadoOperativo} onChange={cambiar} />
-          Funciona correctamente
-        </label>
+    <form id="formulario-punto" className={editando ? 'panel formulario formulario-editando' : 'panel formulario'}
+      onSubmit={enviar} aria-labelledby="titulo-formulario" aria-busy={guardando}>
+      <div className="panel-encabezado">
+        <div className="titulo-con-icono">
+          <span className="icono-panel"><Icono nombre={editando ? 'editar' : 'agregar'} /></span>
+          <div>
+            <h2 id="titulo-formulario">{editando ? 'Editar lugar' : 'Registrar un lugar'}</h2>
+            <p>{editando ? `Estás modificando: ${puntoEditando.nombre}` : 'Completá los datos para incorporar un punto de infraestructura.'}</p>
+          </div>
+        </div>
+        {editando && <span className="etiqueta-edicion">En edición</span>}
       </div>
 
-      {ubicacionCompleja && (
-        <p className="aviso">
-          ℹ️ La ubicación de este punto es una línea o un polígono: se conserva como está.
-          Se va a poder modificar desde el mapa.
-        </p>
-      )}
+      <fieldset className="formulario-cuerpo" disabled={guardando}>
+        <legend className="solo-lectores">Datos del lugar</legend>
+        <div className="formulario-secciones">
+          <section className="seccion-formulario" aria-labelledby="titulo-identificacion">
+            <h3 id="titulo-identificacion">Información del lugar</h3>
+            <div className="campos">
+              <div className="campo campo-nombre">
+                <label htmlFor="nombre">Nombre <span aria-hidden="true">*</span></label>
+                <input id="nombre" name="nombre" value={datos.nombre} onChange={cambiar}
+                  required aria-describedby="ayuda-nombre" />
+                <p className="ayuda-campo" id="ayuda-nombre">Usá un nombre fácil de reconocer. Ej.: Plaza San Martín.</p>
+              </div>
+              <div className="campo">
+                <label htmlFor="tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
+                <select id="tipo" name="tipo" value={datos.tipo} onChange={cambiar} required>
+                  <option value="LUMINARIA">Luminaria</option>
+                  <option value="ESPACIO_VERDE">Espacio verde</option>
+                  <option value="CALLE">Calle</option>
+                </select>
+              </div>
+              <div className="campo campo-ancho">
+                <label htmlFor="datos-tecnicos">Datos técnicos <span className="opcional">(opcional)</span></label>
+                <textarea id="datos-tecnicos" name="datosTecnicos" value={datos.datosTecnicos}
+                  onChange={cambiar} rows={3} aria-describedby="ayuda-datos" />
+                <p className="ayuda-campo" id="ayuda-datos">Por ejemplo: potencia de la luminaria, altura del poste o características del espacio.</p>
+              </div>
+            </div>
+          </section>
 
-      {error && <p className="error">{error}</p>}
+          <section className="seccion-formulario seccion-ubicacion" aria-labelledby="titulo-ubicacion">
+            <h3 id="titulo-ubicacion"><Icono nombre="lugar" />Ubicación y estado</h3>
+            <p className="ayuda-seccion" id="ayuda-coordenadas">Ingresá las coordenadas en grados decimales, usando un punto como separador.</p>
+            <div className="campos coordenadas">
+              <div className="campo">
+                <label htmlFor="latitud">Latitud <span aria-hidden="true">*</span></label>
+                <input id="latitud" name="latitud" type="number" step="any" min="-90" max="90"
+                  value={datos.latitud} onChange={cambiar} disabled={ubicacionCompleja}
+                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" placeholder="Ej: -31.1448"/>
+              </div>
+              <div className="campo">
+                <label htmlFor="longitud">Longitud <span aria-hidden="true">*</span></label>
+                <input id="longitud" name="longitud" type="number" step="any" min="-180" max="180"
+                  value={datos.longitud} onChange={cambiar} disabled={ubicacionCompleja}
+                  required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" placeholder="Ej: -64.1441"/>
+              </div>
+            </div>
+            <label className="campo-check" htmlFor="estado-operativo">
+              <input id="estado-operativo" name="estadoOperativo" type="checkbox"
+                checked={datos.estadoOperativo} onChange={cambiar} aria-describedby="ayuda-estado" />
+              <span>
+                <strong>Funciona correctamente</strong>
+                <span id="ayuda-estado">Desmarcá esta opción si está fuera de servicio.</span>
+              </span>
+            </label>
+            {ubicacionCompleja && (
+              <p className="mensaje mensaje-informacion">
+                Este lugar tiene una ubicación de línea o polígono. Se conserva sin cambios al guardar.
+              </p>
+            )}
+          </section>
+        </div>
+        {error && <p className="mensaje mensaje-error" role="alert">{error}</p>}
+      </fieldset>
 
-      <div className="botones">
-        <button type="submit" disabled={guardando}>
-          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Guardar'}
-        </button>
-        {editando && (
-          <button type="button" className="boton-secundario" onClick={onCancelar}>
-            Cancelar
+      <div className="formulario-pie">
+        <p className="ayuda-campo"><span aria-hidden="true">*</span> Campos obligatorios</p>
+        <div className="botones">
+          {editando && (
+            <button type="button" className="boton boton-secundario" onClick={onCancelar} disabled={guardando}>
+              Cancelar edición
+            </button>
+          )}
+          <button type="submit" className="boton boton-primario" disabled={guardando}>
+            <Icono nombre="guardar" />
+            {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Registrar lugar'}
           </button>
-        )}
+        </div>
       </div>
     </form>
   )
