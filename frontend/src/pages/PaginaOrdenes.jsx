@@ -3,6 +3,8 @@ import { listarOrdenes } from '../api/ordenesTrabajo'
 import { listarPuntos } from '../api/infraestructura'
 import FormularioOrden from '../components/FormularioOrden'
 import TablaOrdenes from '../components/TablaOrdenes'
+import FiltrosOrdenes from '../components/FiltrosOrdenes'
+import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 
 function PaginaOrdenes() {
@@ -15,6 +17,10 @@ function PaginaOrdenes() {
   // Lugares para el desplegable del formulario
   const [lugares, setLugares] = useState([])
   const [errorLugares, setErrorLugares] = useState(false)
+  const [filtros, setFiltros] = useState(FILTROS_ORDENES_VACIOS)
+
+  const ordenesFiltradas = filtrarOrdenes(ordenes, filtros)
+  const rangoValido = rangoFechasValido(filtros)
 
   function cargarOrdenes() {
     return listarOrdenes()
@@ -91,11 +97,14 @@ function PaginaOrdenes() {
             <p>De la más reciente a la más antigua.</p>
           </div>
           {!cargando && !error && (
-            <span className="contador">
-              {ordenes.length} {ordenes.length === 1 ? 'orden' : 'órdenes'}
+            <span className="contador" role="status" aria-atomic="true">
+              Mostrando {ordenesFiltradas.length} de {ordenes.length} {ordenes.length === 1 ? 'orden' : 'órdenes'}
             </span>
           )}
         </div>
+
+        <FiltrosOrdenes filtros={filtros} lugares={lugares} onCambiar={setFiltros}
+          onLimpiar={() => setFiltros(FILTROS_ORDENES_VACIOS)} />
 
         {error && (
           <div className="mensaje mensaje-error" role="alert">
@@ -112,8 +121,10 @@ function PaginaOrdenes() {
             <p>Cargando órdenes…</p>
           </div>
         ) : (
-          <TablaOrdenes ordenes={ordenes} idEditando={ordenEditando?.id}
-            onEditar={editar} errorCarga={Boolean(error)} />
+          <TablaOrdenes ordenes={ordenesFiltradas} idEditando={ordenEditando?.id}
+            onEditar={editar} errorCarga={Boolean(error) || !rangoValido}
+            sinCoincidencias={ordenes.length > 0}
+            onLimpiarFiltros={() => setFiltros(FILTROS_ORDENES_VACIOS)} />
         )}
       </section>
     </>

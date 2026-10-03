@@ -1,6 +1,6 @@
 # Guía de interfaz de FARO
 
-Esta guía documenta la base visual aplicada al RF01 (Puntos de Infraestructura).
+Esta guía documenta la base visual de Infraestructura y Órdenes de trabajo.
 Sirve para mantener coherencia al desarrollar los siguientes módulos.
 No agrega funcionalidades al alcance aprobado.
 
@@ -14,7 +14,7 @@ dividido en información y ubicación, y un listado con acciones explícitas.
 - RNF03 (compatibilidad): formulario adaptable y tabla desplazable dentro de su panel.
 - RNF08 (mantenibilidad): React y CSS comunes, componentes pequeños y sin nuevas dependencias.
 
-La navegación incluye solamente el módulo implementado. No se muestran accesos
+La navegación incluye solamente los módulos implementados. No se muestran accesos
 a pantallas inexistentes, indicadores inventados ni datos de demostración permanentes.
 
 ## Paleta
@@ -87,6 +87,20 @@ Conservar HTML de tabla, encabezados de columna y nombre del lugar como encabeza
 Los estados muestran “Funciona” o “Fuera de servicio”.
 En pantallas pequeñas la tabla se desplaza horizontalmente dentro del panel y puede
 recibir foco para usar el teclado. El resto de la página no debe desbordarse.
+
+### Filtros de listados
+Reutilizar `.bloque-filtros`, `.filtros-encabezado`, `.filtros` y los controles
+`.campo`. Cada control tiene etiqueta visible e identificador propio con prefijo
+`filtro-`, para diferenciarlo del formulario de alta/edición.
+
+Los cambios filtran al instante la lista descargada, siguiendo la decisión del equipo
+para Infraestructura. Mostrar “Mostrando X de Y”, una acción para limpiar los criterios
+y un mensaje distinto cuando no hay coincidencias. En celular los campos van en una
+columna; la tabla conserva su desplazamiento dentro del panel.
+
+En OT, “Creada desde / hasta” usa la fecha de creación en Argentina, incluye ambos días
+y permite un solo límite. Un rango invertido muestra un error bajo los controles.
+Reutilizar las opciones de `utils/ordenesTrabajo.js` para no duplicar los enums.
 
 ### Estados de interfaz
 - Cargando: texto e indicador visual.
