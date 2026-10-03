@@ -9,7 +9,7 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '
 // - estados: los estados posibles, cada uno con "siguientes" (ids de los estados a los que se puede pasar)
 // - onCambiarEstado: función a llamar al tocar "Pasar a ..." → onCambiarEstado(orden, estadoNuevo)
 // - idCambiandoEstado: id de la OT que está cambiando de estado (sus botones se deshabilitan)
-function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado }) {
+function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado, sinCoincidencias, onLimpiarFiltros }) {
   // "Diccionario" id → estado, para encontrar rápido el estado de cada OT
   const estadosPorId = new Map(estados.map((estado) => [estado.id, estado]))
 
@@ -18,8 +18,15 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
     return (
       <div className="estado-listado estado-vacio">
         <span className="icono-vacio"><Icono nombre="orden" /></span>
-        <h3>Todavía no hay órdenes de trabajo</h3>
-        <p>Cuando registres una orden, vas a poder consultarla y modificarla acá.</p>
+        <h3>{sinCoincidencias ? 'Ninguna orden coincide con los filtros' : 'Todavía no hay órdenes de trabajo'}</h3>
+        <p>{sinCoincidencias
+          ? 'Probá con otros criterios o limpiá los filtros para ver todas las órdenes.'
+          : 'Cuando registres una orden, vas a poder consultarla y modificarla acá.'}</p>
+        {sinCoincidencias && (
+          <button type="button" className="boton boton-secundario" onClick={onLimpiarFiltros}>
+            Ver todas las órdenes
+          </button>
+        )}
       </div>
     )
   }

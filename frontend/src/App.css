@@ -168,37 +168,29 @@
   color: #b91c1c;
   margin-bottom: 16px;
 }
-.filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
+/* Filtros compartidos: reutilizan los controles .campo del formulario. */
+.bloque-filtros { padding: 24px 28px; border-bottom: 1px solid var(--borde); background: #FAFCFC; }
+.filtros-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.filtros-encabezado p { margin-top: 4px; font-size: 0.8125rem; color: var(--texto-secundario); }
+.filtros-encabezado .boton { flex-shrink: 0; }
+.filtros { display: grid; gap: 16px; }
+.filtros-puntos { grid-template-columns: 2fr 1fr 1fr; }
+.filtros-ordenes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.filtros-ordenes .filtro-busqueda { grid-column: span 2; }
+.contador { white-space: normal; }
 
-.filtros input,
-.filtros select {
-  font: inherit;
-  font-size: 0.9375rem; /* Iguala el tamaño de fuente del formulario */
-  min-height: 44px; /* Iguala la altura de los inputs principales */
-  padding: 10px 12px;
-  border: 1px solid var(--borde-campo); /* ¡Acá estaba el error del borde invisible! */
-  border-radius: 7px;
-  background: var(--blanco);
-  color: var(--texto);
+@media (max-width: 1050px) {
+  .filtros-puntos, .filtros-ordenes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filtro-busqueda { grid-column: 1 / -1; }
 }
-
-.filtros input {
-  flex: 1 1 260px;
+@media (max-width: 760px) {
+  .bloque-filtros { padding: 20px; }
+  .filtros-encabezado { flex-wrap: wrap; }
 }
-
-.contador {
-  font-size: 14px;
-  margin-bottom: 8px;
-  outline: 2px solid var(--foco); 
-  outline-offset: 2px; 
-  border-color: var(--foco);
+@media (max-width: 540px) {
+  .filtros-puntos, .filtros-ordenes { grid-template-columns: minmax(0, 1fr); }
+  .filtros-ordenes .filtro-busqueda { grid-column: auto; }
 }
-/* ===== Órdenes de trabajo ===== */
 .nav-enlace + .nav-enlace { margin-top: 4px; }
 .numero-orden { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
 .fecha-tabla { white-space: nowrap; }
