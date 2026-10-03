@@ -2,12 +2,14 @@ import { useState } from 'react'
 import Icono from './components/Icono'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
+import PaginaAsignacion from './pages/PaginaAsignacion'
 import './App.css'
 
 // Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
 const PAGINAS = {
   infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
   ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
+  asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
 }
 
 function App() {
