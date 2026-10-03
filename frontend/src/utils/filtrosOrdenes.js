@@ -1,6 +1,7 @@
 export const FILTROS_ORDENES_VACIOS = {
   texto: '',
   prioridad: '',
+  estadoId: '',
   tipo: '',
   origen: '',
   lugarId: '',
@@ -26,6 +27,7 @@ export function filtrarOrdenes(ordenes, filtros) {
     const texto = `${orden.id} ${orden.descripcion ?? ''} ${orden.lugarNombre ?? ''}`
     if (busqueda && !normalizar(texto).includes(busqueda)) return false
     if (filtros.prioridad && orden.prioridad !== filtros.prioridad) return false
+    if (filtros.estadoId && String(orden.estadoId) !== filtros.estadoId) return false
     if (filtros.tipo && orden.tipo !== filtros.tipo) return false
     if (filtros.origen && orden.origen !== filtros.origen) return false
     if (filtros.lugarId && String(orden.lugarId) !== filtros.lugarId) return false

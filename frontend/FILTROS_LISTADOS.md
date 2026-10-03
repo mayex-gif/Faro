@@ -15,7 +15,8 @@ El módulo de OT corresponde al trabajo de Santino.
 ## Qué agrega el frontend
 
 - OT: búsqueda por descripción, nombre del lugar o número; ignora mayúsculas y tildes.
-- Prioridad, tipo, origen y lugar, combinados entre sí y con la búsqueda.
+- Prioridad, estado, tipo, origen y lugar, combinados entre sí y con la búsqueda.
+- El selector de estado se arma con los estados que informa el backend (`GET /api/estados-orden`), en el orden del flujo. No hay nombres escritos en el código y, si los estados no cargan, el selector no se muestra.
 - Fecha de creación desde/hasta, inclusive, con uno o ambos límites.
 - Aviso claro cuando el rango está invertido.
 - Contador de resultados, limpieza y mensaje de ausencia de coincidencias.
@@ -32,8 +33,9 @@ Los endpoints de búsqueda y paginación del checklist **siguen pendientes del b
 Si aumenta el volumen de registros, el equipo deberá implementar filtrado y paginación
 en el servidor; el contador actual corresponde a la lista completa descargada.
 
-El estado de las OT **depende de la tarjeta 3 (motor de flujo configurable)**.
-El módulo de OT integrado desde el PR #13 aún no tiene ese campo. No inventar estados fijos ni marcar toda la tarjeta 5
+El estado de las OT depende de la tarjeta 3 (motor de flujo configurable), que ya está integrada:
+la lista de Órdenes incluye el filtro por estado, con los estados del backend. No inventar estados fijos.
+Siguen pendientes los endpoints de búsqueda y paginación del servidor, por lo que no se debe marcar toda la tarjeta 5
 como finalizada: presentar al Scrum Master el alcance de frontend disponible.
 
 “Diseño de pantallas base en Figma” es otra actividad pendiente en Trello.

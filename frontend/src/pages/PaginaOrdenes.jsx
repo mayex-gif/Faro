@@ -140,7 +140,7 @@ function PaginaOrdenes() {
           )}
         </div>
 
-        <FiltrosOrdenes filtros={filtros} lugares={lugares} onCambiar={setFiltros}
+        <FiltrosOrdenes filtros={filtros} lugares={lugares} estados={estados} onCambiar={setFiltros}
           onLimpiar={() => setFiltros(FILTROS_ORDENES_VACIOS)} />
 
         {error && (
