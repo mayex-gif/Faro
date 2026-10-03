@@ -101,6 +101,7 @@ columna; la tabla conserva su desplazamiento dentro del panel.
 En OT, “Creada desde / hasta” usa la fecha de creación en Argentina, incluye ambos días
 y permite un solo límite. Un rango invertido muestra un error bajo los controles.
 Reutilizar las opciones de `utils/ordenesTrabajo.js` para no duplicar los enums.
+El filtro “Estado” usa los estados que informa el backend, porque son configurables: no se escriben a mano.
 
 ### Estados de interfaz
 - Cargando: texto e indicador visual.

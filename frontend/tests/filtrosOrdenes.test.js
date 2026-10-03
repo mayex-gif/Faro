@@ -80,3 +80,34 @@ test('sin fecha, solo se excluye cuando hay un límite temporal', () => {
   assert.deepEqual(filtrarOrdenes(sinFecha, { ...FILTROS_ORDENES_VACIOS, desde: '2026-10-01' }), [])
   assert.deepEqual(filtrarOrdenes(sinFecha, { ...FILTROS_ORDENES_VACIOS, texto: 'null' }), [])
 })
+
+// --- Filtro por estado: datos en memoria, con estados como los informa el backend ---
+const conEstado = [
+  { id: 41, descripcion: 'Poda', prioridad: 'ALTA', estadoId: 1, fechaCreacion: '2026-10-02T09:00:00' },
+  { id: 42, descripcion: 'Bacheo', prioridad: 'ALTA', estadoId: 2, fechaCreacion: '2026-10-02T10:00:00' },
+  { id: 43, descripcion: 'Pintura', prioridad: 'BAJA', estadoId: 2, fechaCreacion: '2026-10-01T10:00:00' },
+  { id: 44, descripcion: 'Orden anterior sin estado', prioridad: 'BAJA', estadoId: null, fechaCreacion: '2026-09-30T10:00:00' },
+]
+
+function idsEstado(cambios = {}) {
+  return filtrarOrdenes(conEstado, { ...FILTROS_ORDENES_VACIOS, ...cambios }).map((orden) => orden.id)
+}
+
+test('estado: muestra solo las órdenes en el estado elegido', () => {
+  assert.deepEqual(idsEstado({ estadoId: '2' }), [42, 43])
+  assert.deepEqual(idsEstado({ estadoId: '1' }), [41])
+})
+
+test('estado: se combina con los demás criterios', () => {
+  assert.deepEqual(idsEstado({ estadoId: '2', prioridad: 'ALTA' }), [42])
+  assert.deepEqual(idsEstado({ estadoId: '2', texto: 'pintura' }), [43])
+})
+
+test('estado: sin coincidencias devuelve lista vacía y sin criterio no excluye a nadie', () => {
+  assert.deepEqual(idsEstado({ estadoId: '99' }), [])
+  assert.deepEqual(idsEstado(), [41, 42, 43, 44])
+})
+
+test('estado: una orden sin estado no aparece al filtrar por estado', () => {
+  assert.ok(!idsEstado({ estadoId: '1' }).includes(44))
+})

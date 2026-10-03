@@ -2,7 +2,7 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO } from '../utils/ordenesTrabajo'
 import { rangoFechasValido } from '../utils/filtrosOrdenes'
 
 // Los controles avisan a la página; la lógica está en utils/filtrosOrdenes.js.
-function FiltrosOrdenes({ filtros, lugares, onCambiar, onLimpiar }) {
+function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }) {
   const hayFiltros = Object.values(filtros).some((valor) => valor !== '')
   const rangoValido = rangoFechasValido(filtros)
 
@@ -32,6 +32,17 @@ function FiltrosOrdenes({ filtros, lugares, onCambiar, onLimpiar }) {
             value={filtros.texto} onChange={cambiar}
             placeholder="Descripción, lugar o número de orden" />
         </div>
+        {estados.length > 0 && (
+          <div className="campo">
+            <label htmlFor="filtro-orden-estado">Estado</label>
+            <select id="filtro-orden-estado" name="estadoId" value={filtros.estadoId} onChange={cambiar}>
+              <option value="">Todos los estados</option>
+              {estados.map((estado) => (
+                <option key={estado.id} value={estado.id}>{estado.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="campo">
           <label htmlFor="filtro-orden-prioridad">Prioridad</label>
           <select id="filtro-orden-prioridad" name="prioridad" value={filtros.prioridad} onChange={cambiar}>
@@ -47,15 +58,6 @@ function FiltrosOrdenes({ filtros, lugares, onCambiar, onLimpiar }) {
             <option value="">Todos los tipos</option>
             {TIPOS_TRABAJO.map((opcion) => (
               <option key={opcion.valor} value={opcion.valor}>{opcion.etiqueta}</option>
-            ))}
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="filtro-orden-lugar">Lugar</label>
-          <select id="filtro-orden-lugar" name="lugarId" value={filtros.lugarId} onChange={cambiar}>
-            <option value="">Todos los lugares</option>
-            {lugares.map((lugar) => (
-              <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>
             ))}
           </select>
         </div>
@@ -81,6 +83,15 @@ function FiltrosOrdenes({ filtros, lugares, onCambiar, onLimpiar }) {
             value={filtros.hasta} onChange={cambiar}
             aria-invalid={!rangoValido}
             aria-describedby={rangoValido ? 'ayuda-fechas-ordenes' : 'error-fechas-ordenes'} />
+        </div>
+        <div className="campo">
+          <label htmlFor="filtro-orden-lugar">Lugar</label>
+          <select id="filtro-orden-lugar" name="lugarId" value={filtros.lugarId} onChange={cambiar}>
+            <option value="">Todos los lugares</option>
+            {lugares.map((lugar) => (
+              <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>
+            ))}
+          </select>
         </div>
       </div>
       <p className="ayuda-campo" id="ayuda-fechas-ordenes">
