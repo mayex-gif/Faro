@@ -217,3 +217,32 @@
 .tabla-asignacion .ayuda-campo { margin-top: 6px; }
 .tabla-asignacion .fecha-tabla { white-space: normal; min-width: 90px; }
 .tabla-cuadrillas { min-width: 640px; }
+/* Ficha Histórica del Lugar */
+.tabla-puntos th, .tabla-puntos td { padding-inline: 12px; } /* con el botón Historia hay tres acciones por fila */
+.tabla-puntos tbody th { min-width: 140px; } /* que el nombre del lugar no se corte a la mitad de una palabra */
+.boton-volver { margin-bottom: 20px; }
+.ficha-datos { margin-bottom: 24px; }
+.datos-ficha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 24px; margin: 0; padding: 24px 28px; }
+.datos-ficha dt { color: var(--texto-secundario); font-size: 0.75rem; font-weight: 600; }
+.datos-ficha dd { margin: 6px 0 0; font-size: 0.9375rem; overflow-wrap: anywhere; }
+.resumen-ficha { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 0 28px 24px; list-style: none; }
+.resumen-ficha li { flex: 1 1 160px; padding: 14px 16px; border: 1px solid var(--borde); border-radius: 8px; background: #F8FAFB; color: var(--texto-secundario); font-size: 0.8125rem; }
+.resumen-ficha strong { display: block; color: var(--texto); font-size: 1.5rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.linea-tiempo { padding: 4px 28px 28px; }
+.dia-linea h3 { margin: 20px 0 14px; color: var(--texto-secundario); font-size: 0.8125rem; }
+/* La línea vertical es el borde izquierdo de la lista; cada punto se apoya encima */
+.eventos-linea { margin: 0 0 0 7px; padding: 0; list-style: none; border-left: 2px solid var(--borde); }
+.evento { position: relative; padding: 0 0 20px 26px; }
+.evento:last-child { padding-bottom: 4px; }
+.evento-punto { position: absolute; top: 4px; left: -9px; width: 16px; height: 16px; border: 3px solid var(--blanco); border-radius: 50%; background: var(--color-evento, var(--blanco)); box-shadow: 0 0 0 2px var(--color-evento, var(--marca-cian)); }
+.evento-encabezado { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 0.9375rem; }
+.evento-encabezado time { color: var(--texto-secundario); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.evento-encabezado strong { font-weight: 650; }
+.evento-detalle { margin-top: 3px; font-size: 0.8125rem; }
+.evento-orden { margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; overflow-wrap: anywhere; }
+.marca-cierre { padding: 2px 8px; border: 1px solid var(--borde); border-radius: 5px; background: #F1F4F5; color: var(--texto); font-size: 0.6875rem; font-weight: 650; }
+@media (max-width: 760px) {
+  .datos-ficha { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .resumen-ficha { padding: 0 20px 20px; }
+  .linea-tiempo { padding: 4px 20px 20px; }
+}

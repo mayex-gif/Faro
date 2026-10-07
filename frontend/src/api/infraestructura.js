@@ -22,3 +22,9 @@ export function actualizarPunto(id, punto) {
 export function eliminarPunto(id) {
   return pedir(`${RUTA}/${id}`, { method: 'DELETE' })
 }
+
+// GET: la Ficha Histórica de un lugar (sus datos, el resumen de sus OT y la línea de tiempo).
+// Responde 404 si el lugar no existe.
+export function obtenerHistoria(id) {
+  return pedir(`${RUTA}/${id}/historia`)
+}
