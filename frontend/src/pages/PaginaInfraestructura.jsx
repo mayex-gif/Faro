@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { eliminarPunto, listarPuntos } from '../api/infraestructura'
+import FichaLugar from '../components/FichaLugar'
 import FiltrosPuntos from '../components/FiltrosPuntos'
 import FormularioPunto from '../components/FormularioPunto'
 import TablaPuntos from '../components/TablaPuntos'
@@ -14,6 +15,8 @@ function PaginaInfraestructura() {
   // El punto que se está editando, o null si el formulario está en modo "nuevo".
   const [puntoEditando, setPuntoEditando] = useState(null)
   const [filtros, setFiltros] = useState(FILTROS_VACIOS)
+  // El lugar del que se está viendo la Ficha Histórica, o null si se muestra el listado.
+  const [lugarHistoria, setLugarHistoria] = useState(null)
 
   // No es un estado: se calcula de nuevo cada vez que cambian los puntos o los filtros
   const puntosFiltrados = filtrarPuntos(puntos, filtros)
@@ -56,6 +59,18 @@ function PaginaInfraestructura() {
     recargarPuntos()
   }
 
+  function verHistoria(punto) {
+    setMensaje('')
+    setLugarHistoria(punto)
+  }
+
+  // Al volver, el foco regresa al botón "Historia" de ese lugar, para seguir desde donde estaba
+  function volverAlListado() {
+    const id = lugarHistoria.id
+    setLugarHistoria(null)
+    requestAnimationFrame(() => document.getElementById(`historia-${id}`)?.focus())
+  }
+
   async function eliminar(punto) {
     const confirmado = window.confirm(`¿Seguro que querés borrar "${punto.nombre}"? No se puede deshacer.`)
     if (!confirmado) return
@@ -70,6 +85,12 @@ function PaginaInfraestructura() {
       // 409 = el backend explicó por qué no se puede (ej: el lugar tiene órdenes de trabajo)
       setError(e.estado === 409 ? e.message : 'No pudimos eliminar el lugar. Intentá nuevamente.')
     }
+  }
+
+  // Si se eligió un lugar, la pantalla muestra su ficha en lugar del listado.
+  // El listado y los filtros quedan guardados: al volver, siguen como estaban.
+  if (lugarHistoria) {
+    return <FichaLugar key={lugarHistoria.id} lugar={lugarHistoria} onVolver={volverAlListado} />
   }
 
   return (
@@ -124,7 +145,7 @@ function PaginaInfraestructura() {
           </div>
         ) : (
           <TablaPuntos puntos={puntosFiltrados} idEditando={puntoEditando?.id}
-            onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)}
+            onEditar={editar} onVerHistoria={verHistoria} onEliminar={eliminar} errorCarga={Boolean(error)}
             mensajeVacio={puntos.length === 0 ? 'Todavía no hay puntos cargados.' : 'Ningún punto coincide con los filtros.'}
           />
         )}
