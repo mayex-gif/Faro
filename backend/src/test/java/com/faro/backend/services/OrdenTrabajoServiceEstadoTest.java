@@ -6,6 +6,7 @@ import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.*;
+import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
@@ -40,6 +41,9 @@ class OrdenTrabajoServiceEstadoTest {
 
     @Mock
     private TransicionEstadoRepository transicionRepository;
+
+    @Mock
+    private CuadrillaRepository cuadrillaRepository;
 
     @InjectMocks
     private OrdenTrabajoService service;

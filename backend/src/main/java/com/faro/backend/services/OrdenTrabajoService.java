@@ -5,9 +5,12 @@ import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
+import com.faro.backend.models.TransicionEstado;
+import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
@@ -17,8 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
-/** Lógica de negocio de las Órdenes de Trabajo: crear, modificar y consultar. */
+/** Lógica de negocio de las Órdenes de Trabajo: crear, modificar, consultar y asignar. */
 @Service
 public class OrdenTrabajoService {
 
@@ -26,15 +30,18 @@ public class OrdenTrabajoService {
     private final PuntoInfraestructuraRepository lugarRepository;
     private final EstadoOrdenRepository estadoRepository;
     private final TransicionEstadoRepository transicionRepository;
+    private final CuadrillaRepository cuadrillaRepository;
 
     public OrdenTrabajoService(OrdenTrabajoRepository ordenRepository,
                                PuntoInfraestructuraRepository lugarRepository,
                                EstadoOrdenRepository estadoRepository,
-                               TransicionEstadoRepository transicionRepository) {
+                               TransicionEstadoRepository transicionRepository,
+                               CuadrillaRepository cuadrillaRepository) {
         this.ordenRepository = ordenRepository;
         this.lugarRepository = lugarRepository;
         this.estadoRepository = estadoRepository;
         this.transicionRepository = transicionRepository;
+        this.cuadrillaRepository = cuadrillaRepository;
     }
 
     // ===================== CONSULTAS =====================
@@ -107,6 +114,64 @@ public class OrdenTrabajoService {
         return convertirADto(ordenRepository.save(orden));
     }
 
+    // ===================== ASIGNACIÓN A CUADRILLAS =====================
+
+    /**
+     * Asigna una OT a una cuadrilla.
+     * 1. Verifica que la orden esté pendiente (en estado inicial).
+     * 2. Verifica que la cuadrilla exista y esté disponible (en servicio).
+     * 3. Verifica que la cuadrilla cubra el tipo de trabajo de la OT.
+     * 4. Pasa la orden al estado siguiente del flujo (ej: "En curso").
+     */
+    @Transactional
+    public OrdenTrabajoDTO asignarCuadrilla(Long id, Long cuadrillaId) {
+        OrdenTrabajo orden = buscarOrden(id);
+
+        if (orden.getEstado() == null || !orden.getEstado().isInicial()) {
+            throw new OperacionNoPermitidaException("La orden de trabajo ya no está pendiente");
+        }
+
+        Cuadrilla cuadrilla = cuadrillaRepository.findById(cuadrillaId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuadrilla no encontrada"));
+
+        if (!cuadrilla.isDisponible()) {
+            throw new OperacionNoPermitidaException(
+                    "La cuadrilla " + cuadrilla.getNombre() + " no se encuentra disponible");
+        }
+
+        if (!cuadrilla.getTiposTrabajo().contains(orden.getTipo())) {
+            throw new OperacionNoPermitidaException(
+                    "La cuadrilla " + cuadrilla.getNombre() + " no realiza trabajos de tipo " + orden.getTipo());
+        }
+
+        EstadoOrden estadoDestino = buscarEstadoDestinoAsignacion(orden.getEstado());
+
+        orden.setCuadrilla(cuadrilla);
+        orden.setEstado(estadoDestino);
+
+        return convertirADto(ordenRepository.save(orden));
+    }
+
+    private EstadoOrden buscarEstadoDestinoAsignacion(EstadoOrden estadoActual) {
+        List<TransicionEstado> transiciones = transicionRepository.findByOrigenId(estadoActual.getId());
+
+        Optional<EstadoOrden> enCurso = transiciones.stream()
+                .map(TransicionEstado::getDestino)
+                .filter(destino -> "En curso".equalsIgnoreCase(destino.getNombre()))
+                .findFirst();
+
+        if (enCurso.isPresent()) {
+            return enCurso.get();
+        }
+
+        return transiciones.stream()
+                .map(TransicionEstado::getDestino)
+                .filter(destino -> !destino.isCierre())
+                .findFirst()
+                .orElseThrow(() -> new OperacionNoPermitidaException(
+                        "No hay un camino permitido para avanzar la orden desde su estado actual"));
+    }
+
     // ===================== AYUDANTES =====================
 
     private OrdenTrabajo buscarOrden(Long id) {
@@ -133,6 +198,7 @@ public class OrdenTrabajoService {
 
     private OrdenTrabajoDTO convertirADto(OrdenTrabajo orden) {
         EstadoOrden estado = orden.getEstado(); // puede ser null solo en OT viejas, antes del inicializador
+        Cuadrilla cuadrilla = orden.getCuadrilla();
         return new OrdenTrabajoDTO(
                 orden.getId(),
                 orden.getDescripcion(),
@@ -144,7 +210,9 @@ public class OrdenTrabajoService {
                 orden.getFechaCreacion(),
                 estado != null ? estado.getId() : null,
                 estado != null ? estado.getNombre() : null,
-                estado != null ? estado.getColor() : null
+                estado != null ? estado.getColor() : null,
+                cuadrilla != null ? cuadrilla.getId() : null,
+                cuadrilla != null ? cuadrilla.getNombre() : null
         );
     }
 }

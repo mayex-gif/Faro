@@ -18,5 +18,16 @@ public record OrdenTrabajoDTO(
         LocalDateTime fechaCreacion,
         Long estadoId,
         String estadoNombre,  // "En curso"
-        String estadoColor    // "#9A4A12", para pintarlo en la pantalla
-) {}
+        String estadoColor,   // "#9A4A12", para pintarlo en la pantalla
+        Long cuadrillaId,     // null mientras no tenga cuadrilla asignada
+        String cuadrillaNombre // null mientras no tenga cuadrilla asignada
+) {
+    /** Constructor de conveniencia para casos donde no hay cuadrilla asignada */
+    public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                           PrioridadOrden prioridad, Long lugarId, String lugarNombre,
+                           LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
+                           String estadoColor) {
+        this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
+                estadoId, estadoNombre, estadoColor, null, null);
+    }
+}

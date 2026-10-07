@@ -9,9 +9,11 @@ import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
 import com.faro.backend.models.PuntoInfraestructura;
 import com.faro.backend.models.TipoTrabajo;
+import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
+import com.faro.backend.repositories.TransicionEstadoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,7 +45,13 @@ class OrdenTrabajoServiceTest {
     @Mock
     private EstadoOrdenRepository estadoRepository;
 
-    @InjectMocks // el Service de verdad, con los TRES repositories falsos
+    @Mock
+    private TransicionEstadoRepository transicionRepository;
+
+    @Mock
+    private CuadrillaRepository cuadrillaRepository;
+
+    @InjectMocks
     private OrdenTrabajoService service;
 
     // ===================== Ayudantes =====================

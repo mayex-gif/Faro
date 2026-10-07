@@ -1,5 +1,6 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.dto.AsignarCuadrillaRequestDTO;
 import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
@@ -54,5 +55,12 @@ public class OrdenTrabajoController {
             description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409).")
     public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request) {
         return service.cambiarEstado(id, request);
+    }
+
+    @PatchMapping("/{id}/cuadrilla")
+    @Operation(summary = "Asignar cuadrilla a una orden de trabajo",
+            description = "Asigna la OT a una cuadrilla disponible y la avanza al estado En curso.")
+    public OrdenTrabajoDTO asignarCuadrilla(@PathVariable Long id, @Valid @RequestBody AsignarCuadrillaRequestDTO request) {
+        return service.asignarCuadrilla(id, request.cuadrillaId());
     }
 }

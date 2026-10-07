@@ -44,6 +44,11 @@ public class OrdenTrabajo {
     @JoinColumn(name = "estado_id")
     private EstadoOrden estado;
 
+    // Cuadrilla asignada a la OT (opcional, null mientras no esté asignada)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cuadrilla_id")
+    private Cuadrilla cuadrilla;
+
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
@@ -74,6 +79,9 @@ public class OrdenTrabajo {
 
     public EstadoOrden getEstado() { return estado; }
     public void setEstado(EstadoOrden estado) { this.estado = estado; }
+
+    public Cuadrilla getCuadrilla() { return cuadrilla; }
+    public void setCuadrilla(Cuadrilla cuadrilla) { this.cuadrilla = cuadrilla; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
