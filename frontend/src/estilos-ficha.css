@@ -1,0 +1,37 @@
+/* Ficha histórica del lugar. Reutiliza las variables de index.css y las clases de App.css.
+   Incluye .selector-cuadrilla y .opciones-radio, que también usan las pantallas de Mapa y Mis tareas. */
+
+/* Elegir un valor de una lista, con un botón al costado si hace falta */
+.selector-cuadrilla { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 16px; padding: 24px 28px; }
+.selector-cuadrilla .campo { flex: 1 1 260px; max-width: 460px; }
+
+/* Grupo de botones de opción (radio) en una línea, con área táctil de 44 px */
+.opciones-radio { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.opciones-radio legend { float: left; margin-right: 12px; padding: 0; font-size: 0.8125rem; font-weight: 600; }
+.opciones-radio label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 0.8125rem; cursor: pointer; }
+.opciones-radio input { width: 18px; height: 18px; margin: 0; accent-color: var(--enlace); }
+.panel-encabezado .opciones-radio { flex-shrink: 0; }
+
+/* Datos del lugar */
+.ficha-datos { margin-bottom: 24px; }
+.ficha-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px 24px; margin: 0; padding: 24px 28px; }
+.ficha-lista dt { margin-bottom: 6px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 600; }
+.ficha-lista dd { margin: 0; font-size: 0.875rem; overflow-wrap: anywhere; }
+
+/* Línea de tiempo: el color del punto es el del estado de la orden (lo informa el backend) */
+.linea-tiempo { margin: 0; padding: 28px 28px 8px 36px; list-style: none; }
+.hito { position: relative; margin-left: 8px; padding: 0 0 28px 28px; border-left: 2px solid var(--borde); }
+.hito:last-child { border-left-color: transparent; }
+.hito::before { content: ''; position: absolute; top: 2px; left: -9px; width: 16px; height: 16px; border: 3px solid var(--blanco); border-radius: 50%; background: var(--punto, var(--marca-cian)); box-shadow: 0 0 0 1px var(--borde-campo); }
+.hito-cabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
+.hito-cabecera time { color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 600; }
+.hito-titulo { font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.hito-detalle { margin-top: 4px; color: var(--texto-secundario); font-size: 0.8125rem; }
+.hito-eventos { display: flex; flex-wrap: wrap; gap: 2px 20px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--texto-secundario); font-size: 0.75rem; }
+
+@media (max-width: 760px) {
+  .selector-cuadrilla { padding: 20px; }
+  .selector-cuadrilla .boton { width: 100%; }
+  .ficha-lista { padding: 20px; }
+  .linea-tiempo { padding: 24px 20px 4px 28px; }
+}

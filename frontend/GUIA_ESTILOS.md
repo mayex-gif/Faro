@@ -111,6 +111,15 @@ El filtro “Estado” usa los estados que informa el backend, porque son config
 - Foco: contorno visible para navegar por teclado.
 - Movimiento reducido: respetar la preferencia del dispositivo.
 
+### Línea de tiempo (Ficha histórica)
+Lista ordenada (`ol.linea-tiempo`) de lo más reciente a lo más antiguo. Cada hito muestra la fecha,
+el estado con su color y su texto, la descripción y los datos de la orden. El punto de la línea
+repite el color del estado, pero el estado siempre está escrito.
+Las fechas de inicio y de fin se muestran solo si el backend las informa.
+
+Para elegir entre pocas vistas (Todos / Abiertos / Cerrados) se usa `.opciones-radio`: botones de opción
+con etiqueta visible y área táctil de 44 px, dentro de un `fieldset` con `legend`.
+
 ## Referencias
 
 Se adaptaron criterios, sin copiar la estética ni incorporar paquetes de estos sistemas:
