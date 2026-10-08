@@ -3,6 +3,7 @@ import Icono from './components/Icono'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
+import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import './App.css'
 
 // Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
@@ -10,6 +11,7 @@ const PAGINAS = {
   infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
   ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
   asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
+  ficha: { titulo: 'Ficha histórica', icono: 'historial', Componente: PaginaFichaLugar },
 }
 
 function App() {
