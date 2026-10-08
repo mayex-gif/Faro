@@ -3,6 +3,8 @@ import Icono from './components/Icono'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
+import PaginaMapa from './pages/PaginaMapa'
+import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import './App.css'
 
 // Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
@@ -10,17 +12,26 @@ const PAGINAS = {
   infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
   ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
   asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
+  mapa: { titulo: 'Mapa', icono: 'mapa', Componente: PaginaMapa },
+  ficha: { titulo: 'Ficha histórica', icono: 'historial', Componente: PaginaFichaLugar },
 }
 
 function App() {
-  // Qué pantalla se está mostrando
-  const [paginaActual, setPaginaActual] = useState('infraestructura')
+  // Qué pantalla se está mostrando y con qué datos (params: ej. { lugarId: 3 } para abrir la ficha de un lugar)
+  const [vista, setVista] = useState({ clave: 'infraestructura', params: {} })
+  const paginaActual = vista.clave
   const { titulo, Componente } = PAGINAS[paginaActual]
+
+  // Las pantallas reciben "onNavegar" para llevar al usuario a otra pantalla: onNavegar('ficha', { lugarId: 3 })
+  function navegar(clave, params = {}) {
+    setVista({ clave, params })
+    document.getElementById('contenido')?.focus() // el foco va al contenido nuevo (accesibilidad)
+    window.scrollTo(0, 0) // la pantalla nueva empieza desde arriba
+  }
 
   function irA(evento, clave) {
     evento.preventDefault() // evita el salto del enlace: cambiamos de pantalla nosotros
-    setPaginaActual(clave)
-    document.getElementById('contenido')?.focus() // el foco va al contenido nuevo (accesibilidad)
+    navegar(clave)
   }
 
   return (
@@ -63,7 +74,7 @@ function App() {
         </header>
 
         <main className="pagina" id="contenido" tabIndex={-1}>
-          <Componente />
+          <Componente key={paginaActual} params={vista.params} onNavegar={navegar} />
 
           <footer className="pie-pagina">
             <span>FARO · Gestión del mantenimiento municipal</span>

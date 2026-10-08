@@ -8,6 +8,8 @@ const trazos = {
   borrar: 'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
   cuadrilla: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
     orden: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 11h6 M9 15h6 M9 19h3',
+  mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
+  historial: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
 }
 
 function Icono({ nombre, className = '' }) {
