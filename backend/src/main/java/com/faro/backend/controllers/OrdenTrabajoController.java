@@ -63,4 +63,12 @@ public class OrdenTrabajoController {
     public OrdenTrabajoDTO asignarCuadrilla(@PathVariable Long id, @Valid @RequestBody AsignarCuadrillaRequestDTO request) {
         return service.asignarCuadrilla(id, request.cuadrillaId());
     }
+
+    @PatchMapping("/{id}/reasignacion")
+    @Operation(summary = "Reasignar una orden de trabajo a otra cuadrilla",
+            description = "Pasa una OT que ya tiene cuadrilla (y no está cerrada) a otra cuadrilla disponible "
+                    + "que realice ese tipo de trabajo. El estado de la OT no cambia.")
+    public OrdenTrabajoDTO reasignarCuadrilla(@PathVariable Long id, @Valid @RequestBody AsignarCuadrillaRequestDTO request) {
+        return service.reasignarCuadrilla(id, request.cuadrillaId());
+    }
 }
