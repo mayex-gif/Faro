@@ -105,3 +105,7 @@ Ver [alcance, dependencia del módulo de OT y pasos de prueba](frontend/FILTROS_
 
 Pruebas de filtros (datos en memoria, sin base de datos): desde `frontend`, ejecutar `npm test`.
 Con el entorno Docker encendido: `docker compose exec -T frontend npm test`.
+
+## Despliegue
+
+El backend está desplegado en Render y la base de datos en Neon. Ver [DESPLIEGUE.md](./DESPLIEGUE.md): variables de entorno, cómo redesplegar y advertencias del plan gratis.
