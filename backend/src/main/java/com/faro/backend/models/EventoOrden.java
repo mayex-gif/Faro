@@ -37,10 +37,15 @@ public class EventoOrden {
     @JoinColumn(name = "estado_nuevo_id", updatable = false)
     private EstadoOrden estadoNuevo;
 
-    // Solo en los eventos CUADRILLA_ASIGNADA: qué cuadrilla se asignó (en los demás queda vacío)
+    // En CUADRILLA_ASIGNADA y CUADRILLA_REASIGNADA: qué cuadrilla quedó a cargo (en los demás queda vacío)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cuadrilla_id", updatable = false)
     private Cuadrilla cuadrilla;
+
+    // Solo en CUADRILLA_REASIGNADA: qué cuadrilla la tenía antes (en los demás queda vacío)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cuadrilla_anterior_id", updatable = false)
+    private Cuadrilla cuadrillaAnterior;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime fecha;
@@ -55,26 +60,36 @@ public class EventoOrden {
     protected EventoOrden() {
     }
 
-    private EventoOrden(OrdenTrabajo orden, TipoEventoOrden tipo,
-                        EstadoOrden estadoAnterior, EstadoOrden estadoNuevo, Cuadrilla cuadrilla) {
+    private EventoOrden(OrdenTrabajo orden, TipoEventoOrden tipo, EstadoOrden estadoAnterior,
+                        EstadoOrden estadoNuevo, Cuadrilla cuadrilla, Cuadrilla cuadrillaAnterior) {
         this.orden = orden;
         this.tipo = tipo;
         this.estadoAnterior = estadoAnterior;
         this.estadoNuevo = estadoNuevo;
         this.cuadrilla = cuadrilla;
+        this.cuadrillaAnterior = cuadrillaAnterior;
     }
 
     // ============ "Fábricas": la forma de crear cada tipo de evento ============
 
     /** La OT pasó de un estado a otro. Ej: cambioDeEstado(ot, pendiente, planificada) */
     public static EventoOrden cambioDeEstado(OrdenTrabajo orden, EstadoOrden anterior, EstadoOrden nuevo) {
-        return new EventoOrden(orden, TipoEventoOrden.CAMBIO_ESTADO, anterior, nuevo, null);
+        return new EventoOrden(orden, TipoEventoOrden.CAMBIO_ESTADO, anterior, nuevo, null, null);
     }
 
     /** A la OT se le asignó una cuadrilla, y con eso pasó de un estado a otro. */
     public static EventoOrden asignacionDeCuadrilla(OrdenTrabajo orden, Cuadrilla cuadrilla,
                                                     EstadoOrden anterior, EstadoOrden nuevo) {
-        return new EventoOrden(orden, TipoEventoOrden.CUADRILLA_ASIGNADA, anterior, nuevo, cuadrilla);
+        return new EventoOrden(orden, TipoEventoOrden.CUADRILLA_ASIGNADA, anterior, nuevo, cuadrilla, null);
+    }
+
+    /**
+     * La OT pasó de una cuadrilla a otra. Su estado NO cambia: se anota el estado que tenía
+     * como anterior y como nuevo (ej: En curso → En curso), así la línea de tiempo sabe de qué color pintarlo.
+     */
+    public static EventoOrden reasignacionDeCuadrilla(OrdenTrabajo orden, Cuadrilla anterior, Cuadrilla nueva) {
+        EstadoOrden estado = orden.getEstado();
+        return new EventoOrden(orden, TipoEventoOrden.CUADRILLA_REASIGNADA, estado, estado, nueva, anterior);
     }
 
     // Getters (sin setters: un renglón de la bitácora no se cambia)
@@ -84,6 +99,7 @@ public class EventoOrden {
     public EstadoOrden getEstadoAnterior() { return estadoAnterior; }
     public EstadoOrden getEstadoNuevo() { return estadoNuevo; }
     public Cuadrilla getCuadrilla() { return cuadrilla; }
+    public Cuadrilla getCuadrillaAnterior() { return cuadrillaAnterior; }
     public LocalDateTime getFecha() { return fecha; }
 
     // Solo para los tests: en la aplicación la fecha la pone alRegistrar() y el id la base
