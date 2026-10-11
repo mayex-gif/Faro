@@ -22,6 +22,7 @@ class EventoOrdenTest {
         assertSame(pendiente, evento.getEstadoAnterior());
         assertSame(enCurso, evento.getEstadoNuevo());
         assertNull(evento.getCuadrilla());
+        assertNull(evento.getCuadrillaAnterior());
     }
 
     @Test
@@ -34,6 +35,26 @@ class EventoOrdenTest {
         assertEquals(TipoEventoOrden.CUADRILLA_ASIGNADA, evento.getTipo());
         assertSame(verde, evento.getCuadrilla());
         assertSame(pendiente, evento.getEstadoAnterior());
+        assertSame(enCurso, evento.getEstadoNuevo());
+        assertNull(evento.getCuadrillaAnterior());
+    }
+
+    @Test
+    void reasignacionDeCuadrillaGuardaLasDosCuadrillasYElMismoEstado() {
+        Cuadrilla verde = new Cuadrilla();
+        verde.setNombre("Cuadrilla Verde");
+        Cuadrilla servicios = new Cuadrilla();
+        servicios.setNombre("Cuadrilla Servicios Generales");
+        orden.setEstado(enCurso); // la OT ya estaba en curso con la Cuadrilla Verde
+
+        EventoOrden evento = EventoOrden.reasignacionDeCuadrilla(orden, verde, servicios);
+
+        assertSame(orden, evento.getOrden());
+        assertEquals(TipoEventoOrden.CUADRILLA_REASIGNADA, evento.getTipo());
+        assertSame(verde, evento.getCuadrillaAnterior());
+        assertSame(servicios, evento.getCuadrilla());
+        // El estado no cambia: el anterior y el nuevo son el mismo
+        assertSame(enCurso, evento.getEstadoAnterior());
         assertSame(enCurso, evento.getEstadoNuevo());
     }
 

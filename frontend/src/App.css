@@ -246,3 +246,7 @@
   .resumen-ficha { padding: 0 20px 20px; }
   .linea-tiempo { padding: 4px 20px 20px; }
 }
+/* Reasignación de cuadrillas */
+.panel-reasignacion { margin-top: 24px; }
+.panel-reasignacion .notificaciones .mensaje { margin: 20px; } /* el mismo margen que los demás avisos dentro de un panel */
+.tabla-reasignacion { min-width: 1000px; } /* 7 columnas: entra sin deslizar desde 1280 px de ancho */

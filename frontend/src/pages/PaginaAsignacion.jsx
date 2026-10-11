@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarPuntos } from '../api/infraestructura'
-import { asignarCuadrilla, listarCuadrillas } from '../api/cuadrillas'
+import { asignarCuadrilla, listarCuadrillas, reasignarCuadrilla } from '../api/cuadrillas'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import TablaAsignacion from '../components/TablaAsignacion'
 import TablaCuadrillas from '../components/TablaCuadrillas'
+import TablaReasignacion from '../components/TablaReasignacion'
 import Icono from '../components/Icono'
-import { ordenesPendientes } from '../utils/asignacion'
+import { ordenesAsignadas, ordenesPendientes } from '../utils/asignacion'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 
 function PaginaAsignacion() {
@@ -24,10 +25,16 @@ function PaginaAsignacion() {
   const [idAsignando, setIdAsignando] = useState(null)
   const [mensaje, setMensaje] = useState('')
   const [errorAccion, setErrorAccion] = useState('')
+  // Reasignación: su propio "en proceso" y sus propios mensajes, que se muestran en su sección
+  // (si se mostraran arriba de todo, quien reasigna al final de la página no los vería)
+  const [idReasignando, setIdReasignando] = useState(null)
+  const [mensajeReasignacion, setMensajeReasignacion] = useState('')
+  const [errorReasignacion, setErrorReasignacion] = useState('')
 
   const pendientes = ordenesPendientes(ordenes, estados)
   const pendientesFiltradas = filtrarOrdenes(pendientes, filtros)
   const rangoValido = rangoFechasValido(filtros)
+  const asignadas = ordenesAsignadas(ordenes, estados)
 
   function cargarOrdenes() {
     // Sin los estados no se sabe cuáles son las pendientes: si falla uno de los dos pedidos, es un error de carga.
@@ -97,6 +104,27 @@ function PaginaAsignacion() {
       })
   }
 
+  function reasignar(orden, cuadrilla) {
+    setIdReasignando(orden.id)
+    setMensajeReasignacion('')
+    setErrorReasignacion('')
+    reasignarCuadrilla(orden.id, cuadrilla.id)
+      .then((actualizada) => {
+        // Cambió la cuadrilla (el estado no): reemplazamos solo esa OT
+        setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
+        setMensajeReasignacion(`La OT #${actualizada.id} pasó de ${orden.cuadrillaNombre} a ${actualizada.cuadrillaNombre}.`)
+      })
+      .catch((e) => {
+        console.error(e)
+        // e.message trae el motivo que explica el backend (ej: la cuadrilla no realiza ese tipo de trabajo)
+        setErrorReasignacion(e.message || 'No se pudo reasignar la orden. Intentá nuevamente.')
+      })
+      .finally(() => {
+        setIdReasignando(null)
+        cargarCuadrillas() // la disponibilidad pudo cambiar, haya salido bien o no
+      })
+  }
+
   const limpiarFiltros = () => setFiltros(FILTROS_ORDENES_VACIOS)
 
   return (
@@ -104,7 +132,7 @@ function PaginaAsignacion() {
       <div className="encabezado-pagina">
         <p className="sobre-titulo">TRABAJOS DEL CORRALÓN</p>
         <h1>Asignación a cuadrillas</h1>
-        <p>Elegí qué cuadrilla se encarga de cada trabajo pendiente. Solo se ofrecen las cuadrillas que realizan ese tipo de tarea y no están ocupadas. Al asignar, la orden cambia de estado.</p>
+        <p>Elegí qué cuadrilla se encarga de cada trabajo pendiente. Solo se ofrecen las cuadrillas que realizan ese tipo de tarea y no están ocupadas. Al asignar, la orden cambia de estado. Si un trabajo ya asignado tiene que pasar a otra cuadrilla, reasignalo desde la última sección.</p>
       </div>
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">
@@ -178,6 +206,50 @@ function PaginaAsignacion() {
             idAsignando={idAsignando}
             sinCoincidencias={pendientes.length > 0}
             onLimpiarFiltros={limpiarFiltros}
+          />
+        )}
+      </section>
+
+      <section className="panel listado panel-reasignacion" aria-labelledby="titulo-asignadas" aria-busy={cargando}>
+        <div className="panel-encabezado">
+          <div>
+            <h2 id="titulo-asignadas">Órdenes asignadas</h2>
+            <p>Si una cuadrilla no puede seguir con un trabajo, pasáselo a otra que realice esa tarea. La orden mantiene su estado.</p>
+          </div>
+          {!cargando && !error && (
+            <span className="contador" role="status" aria-atomic="true">
+              {asignadas.length} {asignadas.length === 1 ? 'orden asignada' : 'órdenes asignadas'}
+            </span>
+          )}
+        </div>
+
+        <div className="notificaciones" aria-live="polite" aria-atomic="true">
+          {mensajeReasignacion && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensajeReasignacion}</p>}
+          {errorReasignacion && <p className="mensaje mensaje-error" role="alert">{errorReasignacion}</p>}
+        </div>
+
+        {error && (
+          <div className="mensaje mensaje-error" role="alert">
+            <div><strong>No se pudo completar la operación</strong><p>{error}</p></div>
+            <button type="button" className="boton boton-secundario" onClick={recargarOrdenes}>
+              Volver a cargar
+            </button>
+          </div>
+        )}
+
+        {cargando ? (
+          <div className="estado-listado" role="status">
+            <span className="indicador-carga" aria-hidden="true" />
+            <p>Cargando órdenes…</p>
+          </div>
+        ) : !error && (
+          <TablaReasignacion
+            ordenes={asignadas}
+            cuadrillas={cuadrillas}
+            errorCuadrillas={Boolean(errorCuadrillas)}
+            cargandoCuadrillas={cargandoCuadrillas && cuadrillas.length === 0}
+            onReasignar={reasignar}
+            idReasignando={idReasignando}
           />
         )}
       </section>

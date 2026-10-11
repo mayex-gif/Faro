@@ -1,6 +1,6 @@
 # Contrato de integración: cuadrillas y asignación de OT
 
-Tarea: **4. Asignación de OT a cuadrillas** (Sprint 1, RF04).  
+Tareas: **4. Asignación de OT a cuadrillas** (Sprint 1, RF04) y **18. Reasignación de OT a cuadrillas** (Sprint 2).  
 **Estado:** Implementado en el backend y verificado con el frontend.
 
 Este documento define el contrato de datos y comportamiento entre el backend y el frontend para la gestión de cuadrillas municipales y la asignación de Órdenes de Trabajo (OT).
@@ -50,11 +50,11 @@ Devuelve la lista completa de cuadrillas registradas, ordenadas por su identific
 Asigna una Orden de Trabajo a una cuadrilla.
 
 * **Cuerpo de la petición:**
-  ```json
+```json
   {
     "cuadrillaId": 1
   }
-  ```
+```
 
 * **Comportamiento en el backend:**
   1. Verifica que la OT exista y esté en estado inicial (`inicial: true`, es decir, "Pendiente").
@@ -78,6 +78,38 @@ Asigna una Orden de Trabajo a una cuadrilla.
   | `409` | La cuadrilla no está disponible (fuera de servicio) | `"La cuadrilla <Nombre> no se encuentra disponible"` |
   | `409` | La cuadrilla no realiza ese tipo de trabajo | `"La cuadrilla <Nombre> no realiza trabajos de tipo <TIPO>"` |
 
+### 3. `PATCH /api/ordenes-trabajo/{id}/reasignacion`
+Pasa una Orden de Trabajo que **ya tiene cuadrilla** a **otra** cuadrilla (tarea 18). Ej: la cuadrilla se quedó sin vehículo y otra tiene que seguir el trabajo.
+
+* **Cuerpo de la petición** (el mismo que para asignar):
+```json
+  {
+    "cuadrillaId": 4
+  }
+```
+  El `{id}` de la dirección es el número de la **OT**; `cuadrillaId` es el número de la cuadrilla **nueva**.
+
+* **Comportamiento en el backend** (se corta en la primera regla que no se cumple, sin guardar nada):
+  1. Verifica que la OT exista y **no esté cerrada** (`cierre: false`; no se reasigna una OT Finalizada o Cancelada).
+  2. Verifica que la OT **ya tenga una cuadrilla**. Si no tiene, lo que corresponde es asignarla con el endpoint 2.
+  3. Verifica que la cuadrilla nueva exista y sea **distinta** de la actual.
+  4. Verifica que la cuadrilla nueva esté disponible y realice el tipo de trabajo de la OT (las mismas reglas que al asignar).
+  5. Cambia la cuadrilla **sin cambiar el estado** de la OT (si estaba "En curso", sigue "En curso").
+  6. Anota en la bitácora de la OT un evento `CUADRILLA_REASIGNADA` con la cuadrilla anterior y la nueva. La Ficha Histórica del Lugar lo muestra como *"Se reasignó a Cuadrilla Servicios Generales — Antes la tenía Cuadrilla Verde"*.
+
+* **Respuesta exitosa (200 OK):** el `OrdenTrabajoDTO` actualizado, con la cuadrilla nueva en `cuadrillaId` y `cuadrillaNombre` y el mismo estado.
+
+* **Errores (formato `{ estado, mensaje, errores }`):**
+  | Código | Cuándo | Mensaje devuelto |
+  |---|---|---|
+  | `400` | No se envió `cuadrillaId` en el cuerpo | `"Hay datos inválidos en el pedido"` |
+  | `404` | La OT o la cuadrilla no existen | `"Orden de trabajo no encontrada"` / `"Cuadrilla no encontrada"` |
+  | `409` | La OT está cerrada | `"No se puede reasignar una orden en estado <Estado>"` |
+  | `409` | La OT no tiene cuadrilla | `"La orden de trabajo no tiene una cuadrilla asignada"` |
+  | `409` | Es la misma cuadrilla que ya tiene | `"La orden de trabajo ya está asignada a <Nombre>"` |
+  | `409` | La cuadrilla nueva no está disponible | `"La cuadrilla <Nombre> no se encuentra disponible"` |
+  | `409` | La cuadrilla nueva no realiza ese tipo de trabajo | `"La cuadrilla <Nombre> no realiza trabajos de tipo <TIPO>"` |
+
 ---
 
 ## Decisiones tomadas y arquitectura del backend
@@ -90,14 +122,17 @@ Asigna una Orden de Trabajo a una cuadrilla.
    * Se admiten múltiples órdenes activas por cuadrilla en simultáneo.
 3. **Paso de estado automático:**
    * La asignación mueve la orden directamente a estado **"En curso"**, por lo que automáticamente sale de la lista de órdenes pendientes.
-4. **Carga inicial de datos:**
+4. **Reasignación en un endpoint separado:**
+   * Asignar (`/cuadrilla`) y reasignar (`/reasignacion`) son dos endpoints distintos, aunque reciban el mismo cuerpo. Así el pedido dice claramente qué se quiere hacer: si dos personas tienen la pantalla abierta y las dos intentan asignar la misma OT pendiente, la segunda recibe `409 "La orden de trabajo ya no está pendiente"` en lugar de quitarle la orden en silencio a la cuadrilla que la acababa de recibir.
+   * La reasignación no cambia el estado de la OT: el trabajo sigue en el mismo punto, solo cambia quién lo hace.
+5. **Carga inicial de datos:**
    * El backend cuenta con un inicializador (`InicializadorCuadrillas`) que precarga 4 cuadrillas típicas al iniciar si la tabla está vacía (*Cuadrilla Verde*, *Cuadrilla Alumbrado*, *Cuadrilla Vial*, *Cuadrilla Servicios Generales*).
 
 ---
 
 ## Adaptaciones recomendadas para el Frontend
 
-La pantalla de asignación (`PaginaAsignacion.jsx`) ya funciona correctamente con el backend. A futuro o en las siguientes tareas del tablero, se pueden aplicar las siguientes mejoras:
+La pantalla de asignación (`PaginaAsignacion.jsx`) ya funciona correctamente con el backend. Desde la tarea 18 tiene además la sección **"Órdenes asignadas"** (`TablaReasignacion.jsx`): lista las OT con cuadrilla y no cerradas, y en cada una ofrece las otras cuadrillas que realizan ese tipo de trabajo (`ordenesAsignadas` y `cuadrillasParaReasignar` en `utils/asignacion.js`; pedido `reasignarCuadrilla` en `api/cuadrillas.js`). A futuro o en las siguientes tareas del tablero, se pueden aplicar las siguientes mejoras:
 
 1. **Claridad del término "Disponibilidad" en la UI:**
    * En `TablaCuadrillas.jsx` y `TablaAsignacion.jsx`, el texto actual muestra "Disponible" u "Ocupada".
