@@ -3,6 +3,7 @@ import Icono from './components/Icono'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
+import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import './App.css'
 
@@ -11,6 +12,7 @@ const PAGINAS = {
   infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
   ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
   asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
+  mapa: { titulo: 'Mapa', icono: 'mapa', Componente: PaginaMapa },
   ficha: { titulo: 'Ficha histórica', icono: 'historial', Componente: PaginaFichaLugar },
 }
 

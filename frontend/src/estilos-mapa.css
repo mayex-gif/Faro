@@ -1,0 +1,54 @@
+/* Mapa de lugares y trabajos abiertos. Reutiliza las variables de index.css y las clases de App.css.
+   Los grupos de opciones (.opciones-radio) y .selector-cuadrilla están en estilos-ficha.css. */
+
+/* Filtros: plegados por defecto para que el mapa no quede lejos en el celular */
+.filtros-plegables > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 48px; padding: 8px 28px; border-bottom: 1px solid var(--borde); background: #FAFCFC; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
+.filtros-plegables[open] > summary { border-bottom-color: transparent; }
+.filtros-activos { padding: 3px 10px; border-radius: 6px; background: #EAF6F8; font-size: 0.75rem; }
+
+.mapa-contenido { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); }
+.mapa-columna { min-width: 0; border-right: 1px solid var(--borde); }
+.mapa-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 14px 24px; border-bottom: 1px solid var(--borde); background: #FAFCFC; }
+.opcion-simple { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 0.8125rem; cursor: pointer; }
+.opcion-simple input { width: 18px; height: 18px; margin: 0; accent-color: var(--enlace); }
+
+/* "isolation" encierra los niveles internos de Leaflet: así no tapan el enlace "Saltar al contenido". */
+.mapa { height: 560px; isolation: isolate; background: #E8EEF0; }
+.mapa:focus-visible { outline-offset: -3px; }
+.popup-lugar { display: grid; gap: 6px; min-width: 190px; font-family: var(--fuente); font-size: 0.8125rem; line-height: 1.4; color: var(--texto); }
+.popup-lugar strong { font-size: 0.9375rem; }
+.popup-lugar .popup-tipo { color: var(--texto-secundario); font-size: 0.75rem; }
+.popup-lugar p, .popup-lugar ul { margin: 0; }
+.popup-lugar ul { padding-left: 18px; }
+.popup-lugar .boton { justify-self: start; }
+
+.leyenda { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 14px 24px; list-style: none; font-size: 0.8125rem; border-top: 1px solid var(--borde); }
+.leyenda li { display: inline-flex; align-items: center; gap: 8px; }
+.leyenda-color, .lugar-color { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--blanco); border-radius: 50%; box-shadow: 0 0 0 1px var(--texto-secundario); }
+.ayuda-mapa { display: block; padding: 0 24px 14px; }
+
+.mapa-lista { min-width: 0; }
+.mapa-lista-encabezado { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--borde); background: #FAFCFC; }
+.mapa-lista-encabezado p { color: var(--texto-secundario); font-size: 0.8125rem; }
+.lista-lugares { max-height: 560px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.lugar-item { display: grid; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--borde); font-size: 0.8125rem; }
+.lugar-item-activo { background: #EDF8FA; box-shadow: inset 4px 0 0 var(--marca-cian); }
+.lugar-item-cabecera { display: flex; align-items: flex-start; gap: 12px; }
+.lugar-item-cabecera .lugar-color { margin-top: 3px; }
+.lugar-ordenes { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lugar-orden-texto { display: block; overflow-wrap: anywhere; }
+.lugar-orden-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.numero-orden-inline { color: var(--texto-secundario); font-size: 0.75rem; }
+.mapa-lista .estado-listado { min-height: 220px; }
+
+@media (max-width: 1050px) {
+  .mapa-contenido { grid-template-columns: minmax(0, 1fr); }
+  .mapa-columna { border-right: 0; border-bottom: 1px solid var(--borde); }
+  .lista-lugares { max-height: none; }
+}
+@media (max-width: 760px) {
+  .filtros-plegables > summary { padding-inline: 20px; }
+  .mapa { height: 60vh; min-height: 320px; }
+  .mapa-controles { padding: 12px 20px; }
+  .leyenda, .ayuda-mapa { padding-inline: 20px; }
+}
