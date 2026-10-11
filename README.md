@@ -108,4 +108,4 @@ Con el entorno Docker encendido: `docker compose exec -T frontend npm test`.
 
 ## Despliegue
 
-El backend está desplegado en Render y la base de datos en Neon. Ver [DESPLIEGUE.md](./DESPLIEGUE.md): variables de entorno, cómo redesplegar y advertencias del plan gratis.
+El frontend y el backend están desplegados en Render y la base de datos en Neon. Ver [DESPLIEGUE.md](./DESPLIEGUE.md): direcciones, variables de entorno, cómo redesplegar y advertencias del plan gratis.

@@ -2,8 +2,14 @@
 // Si el backend responde con error, lee su respuesta ({ estado, mensaje, errores })
 // para que la pantalla pueda mostrarle al usuario el motivo real.
 
-// Usa el proxy /api de Vite, tanto en Docker como en desarrollo local.
-export const API_BASE = '/api'
+// Dirección base de la API:
+// - En la compu y en Docker no se define nada: queda '/api' y el proxy de Vite lo reenvía al backend.
+// - En la nube (Render) se compila con la variable VITE_API_URL,
+//   ej.: VITE_API_URL=https://faro-backend-6cq7.onrender.com/api
+// Vite reemplaza VITE_API_URL al compilar (si se cambia, hay que volver a compilar).
+// El "?." es porque fuera de Vite (por ejemplo, en los tests con node) import.meta.env no existe.
+// Si la dirección termina con "/", se la sacamos para no pedir "/api//cuadrillas".
+export const API_BASE = (import.meta.env?.VITE_API_URL || '/api').replace(/\/+$/, '')
 
 // Error con más información que un Error común: el código HTTP y los errores por campo
 export class ErrorApi extends Error {
