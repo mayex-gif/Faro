@@ -54,6 +54,23 @@ export function detalleEvento(evento) {
   return ''
 }
 
+// Las opciones para filtrar la línea de tiempo por el estado de las órdenes
+export const VISTAS_HISTORIA = [
+  { valor: 'todas', etiqueta: 'Todos' },
+  { valor: 'abiertas', etiqueta: 'Abiertos' },
+  { valor: 'cerradas', etiqueta: 'Cerrados' },
+]
+
+// Deja solo los eventos de las órdenes abiertas o de las cerradas ("todas" no filtra).
+// Una orden está cerrada si alguno de sus eventos la pasó a un estado de cierre (Finalizada, Cancelada):
+// desde un estado de cierre no se puede salir, así que no hace falta mirar el orden de los eventos.
+// (Una orden cerrada antes de que existiera la bitácora no tiene ese evento: se muestra como abierta.)
+export function filtrarPorVista(eventos, vista) {
+  if (vista === 'todas') return eventos
+  const cerradas = new Set(eventos.filter((evento) => evento.cierre).map((evento) => evento.ordenId))
+  return eventos.filter((evento) => (vista === 'cerradas') === cerradas.has(evento.ordenId))
+}
+
 // A qué orden le pasó: "OT #12 · Podar el fresno"
 export function ordenDelEvento(evento) {
   return `OT #${evento.ordenId} · ${evento.ordenDescripcion}`

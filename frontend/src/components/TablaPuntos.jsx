@@ -25,7 +25,7 @@ function describirUbicacion(ubicacion) {
 }
 
 // 1. Agregamos mensajeVacio a las props recibidas
-function TablaPuntos({ puntos, idEditando, onEditar, onVerHistoria, onEliminar, errorCarga, mensajeVacio }) {
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, onVerFicha, errorCarga, mensajeVacio }) {
   
   // 2. Control de seguridad: verificamos que puntos exista antes de leer .length
   if (!puntos || puntos.length === 0) {
@@ -86,13 +86,15 @@ function TablaPuntos({ puntos, idEditando, onEditar, onVerHistoria, onEliminar, 
                 <td className="ubicacion-tabla">{describirUbicacion(punto.ubicacion)}</td>
                 <td>
                   <div className="acciones">
+                    {onVerFicha && (
+                      <button type="button" className="boton boton-tabla" onClick={() => onVerFicha(punto)}
+                        aria-label={`Ver la ficha histórica de ${punto.nombre}`}>
+                        <Icono nombre="historial" />Ficha
+                      </button>
+                    )}
                     <button type="button" className="boton boton-tabla" onClick={() => onEditar(punto)}
                       aria-label={`Editar ${punto.nombre}`}>
                       <Icono nombre="editar" />Editar
-                    </button>
-                    <button type="button" id={`historia-${punto.id}`} className="boton boton-tabla"
-                      onClick={() => onVerHistoria(punto)} aria-label={`Ver la historia de ${punto.nombre}`}>
-                      <Icono nombre="historia" />Historia
                     </button>
                     <button type="button" className="boton boton-tabla boton-borrar" onClick={() => onEliminar(punto)}
                       aria-label={`Borrar ${punto.nombre}`}>

@@ -111,6 +111,40 @@ El filtro “Estado” usa los estados que informa el backend, porque son config
 - Foco: contorno visible para navegar por teclado.
 - Movimiento reducido: respetar la preferencia del dispositivo.
 
+### Línea de tiempo (Ficha histórica)
+Lista ordenada (`ol.linea-tiempo`) de lo más reciente a lo más antiguo. Cada hito muestra la fecha,
+el estado con su color y su texto, la descripción y los datos de la orden. El punto de la línea
+repite el color del estado, pero el estado siempre está escrito.
+Las fechas de inicio y de fin se muestran solo si el backend las informa.
+
+Para elegir entre pocas vistas (Todos / Abiertos / Cerrados) se usa `.opciones-radio`: botones de opción
+con etiqueta visible y área táctil de 44 px, dentro de un `fieldset` con `legend`.
+
+### Mapa
+El mapa usa Leaflet con mosaicos de OpenStreetMap (RNF10): es la única dependencia nueva del Sprint 2.
+Cada lugar se pinta según su orden abierta más urgente (RNF11). Son tonos propios del mapa, elegidos para
+distinguirse entre sí; las etiquetas de texto de las tablas conservan sus colores.
+
+| Prioridad | Color | Tamaño de la marca |
+| --- | --- | --- |
+| Baja | `#1B9FB5` (cian de marca) | chico |
+| Media | `#E5B200` | |
+| Alta | `#EA6A25` (naranja de marca) | |
+| Urgente | `#C0262D` | grande |
+| Sin trabajos abiertos | `#9AA9B0` | el más chico |
+
+También se puede colorear por estado, con los colores que informa el backend. La leyenda explica los colores.
+Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos
+escritos, con los botones "Ver en el mapa" y "Ficha histórica". Los filtros están plegados para que, en el celular,
+el mapa no quede lejos del principio de la pantalla.
+
+### Tarjeta de tarea (celular)
+Cada tarea del capataz es una tarjeta (`li.tarjeta-tarea`) con un único botón principal de ancho completo y
+56 px de alto: la acción que sigue ("Iniciar tarea" o "Finalizar tarea"). Las demás opciones quedan en
+"Otras opciones". El borde izquierdo repite la prioridad con los colores del mapa; la prioridad siempre está
+escrita. Cerrar una tarea pide confirmación, igual que en Órdenes de trabajo. Los textos de los botones salen
+del flujo de estados que informa el backend, no de nombres escritos en el código.
+
 ## Referencias
 
 Se adaptaron criterios, sin copiar la estética ni incorporar paquetes de estos sistemas:
