@@ -22,7 +22,7 @@ import java.util.List;
  * El "historiador" de la Ficha Histórica del Lugar.
  * Junta dos fuentes y arma un solo relato ordenado por fecha:
  *  1. las OT del lugar  → cuándo se registró cada una (ORDEN_CREADA)
- *  2. la bitácora       → qué les pasó después (CAMBIO_ESTADO, CUADRILLA_ASIGNADA)
+ *  2. la bitácora       → qué les pasó después (CAMBIO_ESTADO, CUADRILLA_ASIGNADA, CUADRILLA_REASIGNADA)
  */
 @Service
 public class HistoriaLugarService {
@@ -90,7 +90,7 @@ public class HistoriaLugarService {
                 orden.getTipo(),
                 orden.getOrigen(),
                 orden.getPrioridad(),
-                null, null, null, false, null
+                null, null, null, false, null, null
         );
     }
 
@@ -100,9 +100,10 @@ public class HistoriaLugarService {
         EstadoOrden anterior = anotacion.getEstadoAnterior();
         EstadoOrden nuevo = anotacion.getEstadoNuevo();
         Cuadrilla cuadrilla = anotacion.getCuadrilla();
+        Cuadrilla cuadrillaAnterior = anotacion.getCuadrillaAnterior();
         return new EventoHistoriaDTO(
                 anotacion.getFecha(),
-                anotacion.getTipo().name(), // "CAMBIO_ESTADO" o "CUADRILLA_ASIGNADA"
+                anotacion.getTipo().name(), // "CAMBIO_ESTADO", "CUADRILLA_ASIGNADA" o "CUADRILLA_REASIGNADA"
                 orden.getId(),
                 orden.getDescripcion(),
                 orden.getTipo(),
@@ -111,7 +112,8 @@ public class HistoriaLugarService {
                 nuevo != null ? nuevo.getNombre() : null,
                 nuevo != null ? nuevo.getColor() : null,
                 nuevo != null && nuevo.isCierre(),
-                cuadrilla != null ? cuadrilla.getNombre() : null
+                cuadrilla != null ? cuadrilla.getNombre() : null,
+                cuadrillaAnterior != null ? cuadrillaAnterior.getNombre() : null
         );
     }
 

@@ -25,6 +25,8 @@ export function tituloEvento(evento) {
       return 'Se registró la orden'
     case 'CUADRILLA_ASIGNADA':
       return `Se asignó a ${evento.cuadrilla}`
+    case 'CUADRILLA_REASIGNADA':
+      return `Se reasignó a ${evento.cuadrilla}`
     case 'CAMBIO_ESTADO':
       return `Pasó a ${evento.estadoNuevo}`
     default:
@@ -32,7 +34,8 @@ export function tituloEvento(evento) {
   }
 }
 
-// Detalle de cada evento: qué datos tenía la orden al crearse, o de qué estado a qué estado pasó
+// Detalle de cada evento: qué datos tenía la orden al crearse, qué cuadrilla la tenía antes
+// (en una reasignación), o de qué estado a qué estado pasó
 export function detalleEvento(evento) {
   if (evento.tipo === 'ORDEN_CREADA') {
     return [
@@ -40,6 +43,10 @@ export function detalleEvento(evento) {
       etiqueta(ORIGENES, evento.origen),
       `Prioridad ${etiqueta(PRIORIDADES, evento.prioridad).toLowerCase()}`,
     ].join(' · ')
+  }
+  // En una reasignación el estado no cambia (sería "De En curso a En curso"): lo que importa es quién la tenía
+  if (evento.tipo === 'CUADRILLA_REASIGNADA') {
+    return evento.cuadrillaAnterior ? `Antes la tenía ${evento.cuadrillaAnterior}` : ''
   }
   if (evento.estadoAnterior && evento.estadoNuevo) {
     return `De ${evento.estadoAnterior} a ${evento.estadoNuevo}`
