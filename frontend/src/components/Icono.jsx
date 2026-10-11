@@ -10,6 +10,8 @@ const trazos = {
   orden: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 11h6 M9 15h6 M9 19h3',
   historia: 'M3 12a9 9 0 1 0 2.64-6.36L3 8 M3 3v5h5 M12 7v5l3 2',
   volver: 'M19 12H5 M11 18l-6-6 6-6',
+  tareas: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 14l2 2 4-4',
+  iniciar: 'M8 5v14l11-7Z',
   mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
   historial: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
 }

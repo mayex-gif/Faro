@@ -138,6 +138,13 @@ Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña
 escritos, con los botones "Ver en el mapa" y "Ficha histórica". Los filtros están plegados para que, en el celular,
 el mapa no quede lejos del principio de la pantalla.
 
+### Tarjeta de tarea (celular)
+Cada tarea del capataz es una tarjeta (`li.tarjeta-tarea`) con un único botón principal de ancho completo y
+56 px de alto: la acción que sigue ("Iniciar tarea" o "Finalizar tarea"). Las demás opciones quedan en
+"Otras opciones". El borde izquierdo repite la prioridad con los colores del mapa; la prioridad siempre está
+escrita. Cerrar una tarea pide confirmación, igual que en Órdenes de trabajo. Los textos de los botones salen
+del flujo de estados que informa el backend, no de nombres escritos en el código.
+
 ## Referencias
 
 Se adaptaron criterios, sin copiar la estética ni incorporar paquetes de estos sistemas:

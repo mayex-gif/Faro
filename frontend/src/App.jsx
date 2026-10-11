@@ -5,6 +5,7 @@ import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
+import PaginaMisTareas from './pages/PaginaMisTareas'
 import './App.css'
 
 // Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
@@ -14,6 +15,7 @@ const PAGINAS = {
   asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
   mapa: { titulo: 'Mapa', icono: 'mapa', Componente: PaginaMapa },
   ficha: { titulo: 'Ficha histórica', icono: 'historial', Componente: PaginaFichaLugar },
+  tareas: { titulo: 'Mis tareas', icono: 'tareas', Componente: PaginaMisTareas },
 }
 
 function App() {
