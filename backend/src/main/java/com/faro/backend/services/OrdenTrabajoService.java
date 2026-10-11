@@ -7,11 +7,13 @@ import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
+import com.faro.backend.models.EventoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
 import com.faro.backend.models.TransicionEstado;
 import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
+import com.faro.backend.repositories.EventoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
 import com.faro.backend.repositories.TransicionEstadoRepository;
@@ -22,7 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/** Lógica de negocio de las Órdenes de Trabajo: crear, modificar, consultar y asignar. */
+/**
+ * Lógica de negocio de las Órdenes de Trabajo: crear, modificar, consultar y asignar.
+ * Cada cambio de estado y cada asignación de cuadrilla se anota en la bitácora (EventoOrden),
+ * que es la base de la Ficha Histórica del Lugar.
+ */
 @Service
 public class OrdenTrabajoService {
 
@@ -31,17 +37,20 @@ public class OrdenTrabajoService {
     private final EstadoOrdenRepository estadoRepository;
     private final TransicionEstadoRepository transicionRepository;
     private final CuadrillaRepository cuadrillaRepository;
+    private final EventoOrdenRepository eventoRepository;
 
     public OrdenTrabajoService(OrdenTrabajoRepository ordenRepository,
                                PuntoInfraestructuraRepository lugarRepository,
                                EstadoOrdenRepository estadoRepository,
                                TransicionEstadoRepository transicionRepository,
-                               CuadrillaRepository cuadrillaRepository) {
+                               CuadrillaRepository cuadrillaRepository,
+                               EventoOrdenRepository eventoRepository) {
         this.ordenRepository = ordenRepository;
         this.lugarRepository = lugarRepository;
         this.estadoRepository = estadoRepository;
         this.transicionRepository = transicionRepository;
         this.cuadrillaRepository = cuadrillaRepository;
+        this.eventoRepository = eventoRepository;
     }
 
     // ===================== CONSULTAS =====================
@@ -111,7 +120,10 @@ public class OrdenTrabajoService {
         }
 
         orden.setEstado(nuevo);
-        return convertirADto(ordenRepository.save(orden));
+        OrdenTrabajo guardada = ordenRepository.save(orden);
+        // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
+        eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
+        return convertirADto(guardada);
     }
 
     // ===================== ASIGNACIÓN A CUADRILLAS =====================
@@ -144,12 +156,16 @@ public class OrdenTrabajoService {
                     "La cuadrilla " + cuadrilla.getNombre() + " no realiza trabajos de tipo " + orden.getTipo());
         }
 
-        EstadoOrden estadoDestino = buscarEstadoDestinoAsignacion(orden.getEstado());
+        EstadoOrden estadoAnterior = orden.getEstado();
+        EstadoOrden estadoDestino = buscarEstadoDestinoAsignacion(estadoAnterior);
 
         orden.setCuadrilla(cuadrilla);
         orden.setEstado(estadoDestino);
 
-        return convertirADto(ordenRepository.save(orden));
+        OrdenTrabajo guardada = ordenRepository.save(orden);
+        // Anotamos en la bitácora: qué cuadrilla se asignó y cómo cambió el estado
+        eventoRepository.save(EventoOrden.asignacionDeCuadrilla(orden, cuadrilla, estadoAnterior, estadoDestino));
+        return convertirADto(guardada);
     }
 
     private EstadoOrden buscarEstadoDestinoAsignacion(EstadoOrden estadoActual) {
