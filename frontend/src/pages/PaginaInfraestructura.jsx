@@ -6,7 +6,7 @@ import TablaPuntos from '../components/TablaPuntos'
 import Icono from '../components/Icono'
 import { FILTROS_VACIOS, filtrarPuntos } from '../utils/filtros'
 
-function PaginaInfraestructura() {
+function PaginaInfraestructura({ onNavegar }) {
   const [puntos, setPuntos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -125,6 +125,7 @@ function PaginaInfraestructura() {
         ) : (
           <TablaPuntos puntos={puntosFiltrados} idEditando={puntoEditando?.id}
             onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)}
+            onVerFicha={(punto) => onNavegar('ficha', { lugarId: punto.id })}
             mensajeVacio={puntos.length === 0 ? 'Todavía no hay puntos cargados.' : 'Ningún punto coincide con los filtros.'}
           />
         )}

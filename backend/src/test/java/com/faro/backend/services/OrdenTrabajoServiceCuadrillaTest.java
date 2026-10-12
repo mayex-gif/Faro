@@ -6,6 +6,7 @@ import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.*;
 import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
+import com.faro.backend.repositories.EventoOrdenRepository;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
 import com.faro.backend.repositories.PuntoInfraestructuraRepository;
 import com.faro.backend.repositories.TransicionEstadoRepository;
@@ -41,6 +42,9 @@ class OrdenTrabajoServiceCuadrillaTest {
 
     @Mock
     private CuadrillaRepository cuadrillaRepository;
+
+    @Mock
+    private EventoOrdenRepository eventoRepository; // la bitácora (tarjeta 9): sin esto, el service recibiría null
 
     @InjectMocks
     private OrdenTrabajoService service;

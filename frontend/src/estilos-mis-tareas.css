@@ -1,0 +1,18 @@
+/* Mis tareas (el capataz, desde el celular). Reutiliza las variables de index.css y las clases de App.css.
+   .selector-cuadrilla está en estilos-ficha.css. */
+
+.lista-tareas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; margin: 0; padding: 24px 28px; list-style: none; }
+.tarjeta-tarea { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 18px; border: 1px solid var(--borde); border-left: 8px solid var(--borde-campo); border-radius: var(--radio); background: var(--blanco); }
+.tarea-titulo { font-size: 1.0625rem; line-height: 1.35; overflow-wrap: anywhere; }
+.tarea-lugar { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--texto-secundario); font-size: 0.875rem; }
+.tarea-lugar .icono { width: 16px; height: 16px; }
+.tarea-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.boton-tarea { width: 100%; min-height: 56px; font-size: 1rem; }
+.boton-tarea-secundario { width: 100%; }
+.tarea-otras summary { display: flex; align-items: center; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
+.tarea-otras-botones { display: grid; gap: 8px; padding-top: 4px; }
+.listado > .mensaje-informacion { margin: 20px; }
+
+@media (max-width: 760px) {
+  .lista-tareas { padding: 16px; }
+}
