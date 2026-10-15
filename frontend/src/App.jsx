@@ -1,28 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Icono from './components/Icono'
+import MenuDesplegable from './components/MenuDesplegable'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
+import { INICIO, MAS, NUEVO, SECCIONES, estaEnMas, tituloDe } from './utils/navegacion'
 import './App.css'
+import './estilos-navegacion.css'
 
-// Las pantallas de la aplicación. Para agregar una nueva, se suma acá.
+// Qué pantalla se dibuja para cada clave. El orden del menú y los nombres están en utils/navegacion.js.
+// Para agregar una pantalla nueva: sumarla acá y en utils/navegacion.js.
 const PAGINAS = {
-  infraestructura: { titulo: 'Infraestructura', icono: 'infraestructura', Componente: PaginaInfraestructura },
-  ordenes: { titulo: 'Órdenes de trabajo', icono: 'orden', Componente: PaginaOrdenes },
-  asignacion: { titulo: 'Asignación a cuadrillas', icono: 'cuadrilla', Componente: PaginaAsignacion },
-  mapa: { titulo: 'Mapa', icono: 'mapa', Componente: PaginaMapa },
-  ficha: { titulo: 'Ficha histórica', icono: 'historial', Componente: PaginaFichaLugar },
-  tareas: { titulo: 'Mis tareas', icono: 'tareas', Componente: PaginaMisTareas },
+  infraestructura: PaginaInfraestructura,
+  ordenes: PaginaOrdenes,
+  asignacion: PaginaAsignacion,
+  mapa: PaginaMapa,
+  ficha: PaginaFichaLugar,
+  tareas: PaginaMisTareas,
 }
 
 function App() {
   // Qué pantalla se está mostrando y con qué datos (params: ej. { lugarId: 3 } para abrir la ficha de un lugar)
-  const [vista, setVista] = useState({ clave: 'infraestructura', params: {} })
+  const [vista, setVista] = useState({ clave: INICIO, params: {} })
   const paginaActual = vista.clave
-  const { titulo, Componente } = PAGINAS[paginaActual]
+  const Componente = PAGINAS[paginaActual]
+
+  // El nombre de la pestaña del navegador acompaña a la pantalla: "Trabajos | FARO"
+  useEffect(() => {
+    document.title = `${tituloDe(paginaActual)} | FARO`
+  }, [paginaActual])
 
   // Las pantallas reciben "onNavegar" para llevar al usuario a otra pantalla: onNavegar('ficha', { lugarId: 3 })
   function navegar(clave, params = {}) {
@@ -40,50 +49,43 @@ function App() {
     <div className="aplicacion">
       <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
-      <aside className="barra-lateral" aria-label="Identidad y navegación de FARO">
+      <header className="barra-superior">
         <div className="marca">
-          <img src="/logo-faro.png" alt="" className="marca-logo" width="64" height="64" />
+          <img src="/logo-faro.png" alt="" className="marca-logo" width="40" height="40" />
           <div>
             <span className="marca-nombre">FARO</span>
-            <span className="marca-descripcion">Mantenimiento municipal</span>
+            <span className="marca-lugar">Estación General Paz</span>
           </div>
         </div>
 
-        <nav aria-label="Navegación principal">
-          <p className="nav-titulo">GESTIÓN DEL ESPACIO PÚBLICO</p>
-          {Object.entries(PAGINAS).map(([clave, pagina]) => (
-            <a key={clave} href="#contenido"
-              className={clave === paginaActual ? 'nav-enlace nav-activo' : 'nav-enlace'}
-              aria-current={clave === paginaActual ? 'page' : undefined}
-              onClick={(evento) => irA(evento, clave)}>
-              <Icono nombre={pagina.icono} />
-              {pagina.titulo}
+        <nav className="nav-secciones" aria-label="Secciones">
+          {SECCIONES.map((seccion) => (
+            <a key={seccion.clave} href="#contenido"
+              className={seccion.clave === paginaActual ? 'nav-enlace nav-enlace-activo' : 'nav-enlace'}
+              aria-current={seccion.clave === paginaActual ? 'page' : undefined}
+              onClick={(evento) => irA(evento, seccion.clave)}>
+              {seccion.titulo}
             </a>
           ))}
+          <MenuDesplegable opciones={MAS} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
+            claseBoton={estaEnMas(paginaActual) ? 'nav-enlace nav-enlace-activo' : 'nav-enlace'}
+            contenidoBoton={<>Más<Icono nombre="abajo" /></>} />
         </nav>
 
-        <div className="municipio">
-          <span className="municipio-linea" />
-          <p>Municipalidad de<br /><strong>Estación General Paz</strong></p>
-          <span>Córdoba, Argentina</span>
-        </div>
-      </aside>
+        {/* Siempre en el mismo lugar: crear algo nuevo no depende de en qué pantalla estés */}
+        <MenuDesplegable opciones={NUEVO} onElegir={(clave) => navegar(clave)}
+          claseBoton="boton boton-primario boton-nuevo"
+          contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />
+      </header>
 
-      <div className="area-principal">
-        <header className="barra-superior">
-          <p>Gestión municipal <span aria-hidden="true">/</span> <strong>{titulo}</strong></p>
-          <span className="etiqueta-contexto">Corralón municipal</span>
-        </header>
+      <main className="pagina" id="contenido" tabIndex={-1}>
+        <Componente key={paginaActual} params={vista.params} onNavegar={navegar} />
 
-        <main className="pagina" id="contenido" tabIndex={-1}>
-          <Componente key={paginaActual} params={vista.params} onNavegar={navegar} />
-
-          <footer className="pie-pagina">
-            <span>FARO · Gestión del mantenimiento municipal</span>
-            <span>Estación General Paz</span>
-          </footer>
-        </main>
-      </div>
+        <footer className="pie-pagina">
+          <span>FARO · Gestión del mantenimiento municipal</span>
+          <span>Municipalidad de Estación General Paz · Córdoba, Argentina</span>
+        </footer>
+      </main>
     </div>
   )
 }

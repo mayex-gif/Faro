@@ -14,6 +14,8 @@ const trazos = {
   iniciar: 'M8 5v14l11-7Z',
   mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
   historial: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  abajo: 'm6 9 6 6 6-6',
+  mas: 'M4 7h16 M4 12h16 M4 17h16',
 }
 
 function Icono({ nombre, className = '' }) {
