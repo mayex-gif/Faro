@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { INICIO, MAS, NUEVO, SECCIONES, estaEnMas, tituloDe } from '../src/utils/navegacion.js'
+import { INICIO, MAS, NUEVO, SECCIONES, esPantallaCompleta, estaEnMas, tituloDe } from '../src/utils/navegacion.js'
 
 const todas = [...SECCIONES, ...MAS]
 
@@ -36,4 +36,9 @@ test('tituloDe usa el nombre de la barra y, si no conoce la clave, "FARO"', () =
   assert.equal(tituloDe('ordenes'), 'Trabajos')
   assert.equal(tituloDe('ficha'), 'Ficha histórica')
   assert.equal(tituloDe('no-existe'), 'FARO')
+})
+
+test('solo el mapa ocupa la pantalla completa', () => {
+  assert.equal(esPantallaCompleta('mapa'), true)
+  assert.equal(esPantallaCompleta('ordenes'), false)
 })

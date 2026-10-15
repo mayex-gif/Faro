@@ -35,3 +35,10 @@ export function estaEnMas(clave) {
 export function tituloDe(clave) {
   return [...SECCIONES, ...MAS].find((seccion) => seccion.clave === clave)?.titulo ?? 'FARO'
 }
+
+// Pantallas que ocupan todo el lugar debajo de la barra (sin márgenes ni pie de página): el mapa.
+const PANTALLA_COMPLETA = ['mapa']
+
+export function esPantallaCompleta(clave) {
+  return PANTALLA_COMPLETA.includes(clave)
+}
