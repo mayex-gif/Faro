@@ -1,0 +1,37 @@
+// Cómo se ordena la navegación de FARO (propuesta A "El mapa primero", aprobada por el equipo el 14/10/2026).
+// Solo datos y funciones puras, así se pueden probar con "npm test".
+// Qué componente se dibuja para cada clave lo decide App.jsx (PAGINAS).
+
+// La pantalla con la que arranca FARO: todo gira alrededor de los lugares.
+export const INICIO = 'mapa'
+
+// Las tres secciones que siempre están a la vista: arriba en la compu, abajo en el celular.
+export const SECCIONES = [
+  { clave: 'mapa', titulo: 'Mapa', icono: 'mapa' },
+  { clave: 'ordenes', titulo: 'Trabajos', icono: 'orden' },
+  { clave: 'asignacion', titulo: 'Cuadrillas', icono: 'cuadrilla' },
+]
+
+// Lo que queda en el menú "Más". Ficha histórica sale de acá cuando la ficha se abra en el panel del mapa;
+// Mis tareas, cuando haya login y roles (cada capataz va a entrar directo a sus tareas).
+export const MAS = [
+  { clave: 'infraestructura', titulo: 'Infraestructura', icono: 'infraestructura' },
+  { clave: 'ficha', titulo: 'Ficha histórica', icono: 'historial' },
+  { clave: 'tareas', titulo: 'Mis tareas', icono: 'tareas' },
+]
+
+// El botón "+ Nuevo": cada opción lleva a la pantalla que tiene ese formulario.
+export const NUEVO = [
+  { clave: 'ordenes', titulo: 'Nueva orden de trabajo', icono: 'orden' },
+  { clave: 'infraestructura', titulo: 'Nuevo lugar', icono: 'lugar' },
+]
+
+// ¿La pantalla está dentro de "Más"? (para marcar "Más" como la sección actual)
+export function estaEnMas(clave) {
+  return MAS.some((seccion) => seccion.clave === clave)
+}
+
+// Nombre de la pantalla para la pestaña del navegador: "Trabajos | FARO"
+export function tituloDe(clave) {
+  return [...SECCIONES, ...MAS].find((seccion) => seccion.clave === clave)?.titulo ?? 'FARO'
+}

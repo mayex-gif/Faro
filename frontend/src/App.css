@@ -1,37 +1,5 @@
-/* Estructura del módulo. Botones, colores y mensajes comunes están en index.css. */
-.aplicacion { display: flex; min-height: 100vh; }
-.barra-lateral {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 52px;
-  width: 248px;
-  height: 100vh;
-  flex-shrink: 0;
-  padding: 32px 20px 24px;
-  background: var(--lateral);
-  color: #D3E8ED;
-}
-.marca { display: flex; align-items: center; gap: 12px; }
-.marca-logo { display: block; width: 64px; height: 64px; border-radius: 50%; background: white; }
-.marca-nombre { display: block; color: var(--marca-naranja); font-size: 1.875rem; font-weight: 750; letter-spacing: 2px; line-height: 1.15; }
-.marca-descripcion { display: block; margin-top: 5px; max-width: 100px; font-size: 0.75rem; line-height: 1.4; color: #D3E8ED; }
-.nav-titulo { margin: 0 10px 14px; font-size: 0.625rem; font-weight: 650; letter-spacing: 1px; }
-.nav-enlace { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 16px; border-radius: 8px; color: white; font-size: 0.9375rem; font-weight: 600; text-decoration: none; }
-.nav-activo { background: #235360; border-left: 3px solid var(--marca-celeste); }
-.nav-enlace .icono { color: var(--marca-celeste); }
-.nav-enlace:focus-visible { outline-color: var(--marca-celeste); }
-.municipio { margin-top: auto; padding: 0 10px; font-size: 0.8125rem; line-height: 1.65; }
-.municipio-linea { display: block; width: 32px; height: 3px; margin-bottom: 16px; border-radius: 2px; background: var(--marca-naranja); }
-.municipio strong { color: white; font-weight: 600; }
-.municipio > span:last-child { display: block; margin-top: 6px; font-size: 0.75rem; color: #BDD3DA; }
-.area-principal { flex: 1; min-width: 0; }
-.barra-superior { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 76px; padding: 20px 40px; background: var(--blanco); border-bottom: 1px solid var(--borde); font-size: 0.8125rem; }
-.barra-superior p { color: var(--texto-secundario); }
-.barra-superior p > span { margin: 0 12px; color: #81949D; }
-.barra-superior strong { color: var(--texto); font-weight: 600; }
-.etiqueta-contexto { padding: 5px 12px; border: 1px solid var(--borde); border-radius: 6px; font-size: 0.75rem; color: var(--texto-secundario); white-space: nowrap; }
+/* Estructura de las pantallas. Botones, colores y mensajes comunes están en index.css;
+   la barra superior y la de abajo (celular) están en estilos-navegacion.css. */
 .pagina { width: 100%; max-width: 1440px; margin: 0 auto; padding: 36px 40px 20px; }
 .pagina:focus { outline: none; }
 .encabezado-pagina { margin-bottom: 28px; }
@@ -120,11 +88,7 @@
 
 /* La tabla mantiene sus columnas y se desplaza dentro de su panel, nunca toda la página. */
 @media (max-width: 1280px) {
-  .barra-lateral { width: 216px; padding-inline: 16px; }
-  .marca-logo { width: 52px; height: 52px; }
-  .marca-nombre { font-size: 1.625rem; }
   .pagina { padding-inline: 28px; }
-  .barra-superior { padding-inline: 28px; }
   .formulario-secciones { gap: 24px; }
   .seccion-ubicacion { padding-left: 24px; }
 
@@ -137,15 +101,6 @@
   .seccion-ubicacion { padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--borde); }
 }
 @media (max-width: 760px) {
-  .aplicacion { display: block; }
-  .barra-lateral { position: static; width: 100%; height: auto; padding: 18px 20px 12px; gap: 18px; }
-  .marca-logo { width: 44px; height: 44px; }
-  .marca-nombre { font-size: 1.5rem; }
-  .marca-descripcion { max-width: none; margin-top: 2px; }
-  .nav-titulo, .municipio { display: none; }
-  .nav-enlace { display: inline-flex; min-height: 44px; padding: 8px 14px; }
-  .barra-superior { min-height: 54px; padding: 14px 20px; font-size: 0.75rem; }
-  .etiqueta-contexto { display: none; }
   .pagina { padding: 26px 20px 20px; }
   .encabezado-pagina { margin-bottom: 22px; }
   .encabezado-pagina > p:last-child { font-size: 0.875rem; }
@@ -191,7 +146,6 @@
   .filtros-puntos, .filtros-ordenes { grid-template-columns: minmax(0, 1fr); }
   .filtros-ordenes .filtro-busqueda { grid-column: auto; }
 }
-.nav-enlace + .nav-enlace { margin-top: 4px; }
 .numero-orden { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
 .fecha-tabla { white-space: nowrap; }
 
