@@ -1,0 +1,94 @@
+import { useEffect } from 'react'
+import Icono from './Icono'
+import { FILTROS_TIPO, alternarTipo, subtituloLugar } from '../utils/listaLugares'
+import { PRIORIDADES, etiqueta } from '../utils/ordenesTrabajo'
+
+// El icono de cada tipo de lugar (el color de fondo está en estilos-mapa-primero.css)
+const ICONO_TIPO = { LUMINARIA: 'luminaria', ESPACIO_VERDE: 'espacioVerde', CALLE: 'calle' }
+
+// Columna izquierda de la pantalla Mapa: título, botoncitos para filtrar y la lista de lugares.
+// Cada fila es un botón: al tocarlo se elige el lugar (el mapa va hacia él y se abre su ficha a la derecha).
+// Props:
+// - resumenes: los lugares que pasan los filtros, ya ordenados (ver utils/mapa.js y utils/listaLugares.js)
+// - total: cuántos lugares hay en total (para "3 de 12")
+// - filtros / onCambiarFiltros: el estado de los botoncitos ({ conTrabajos, tipos })
+// - lugarActivoId / onElegir(lugarId): el lugar elegido
+// - mensajeVacio: { titulo, texto, accion?: { texto, alHacer } } cuando la lista queda vacía
+// - children: lo que va debajo de los botoncitos (los filtros avanzados, plegados)
+function ListaLugares({ resumenes, total, filtros, onCambiarFiltros, lugarActivoId, onElegir, mensajeVacio, children }) {
+  // Si el lugar se eligió desde el mapa, la fila se trae a la vista para que se vea cuál es.
+  useEffect(() => {
+    if (lugarActivoId == null) return
+    document.getElementById(`fila-lugar-${lugarActivoId}`)?.scrollIntoView({ block: 'nearest' })
+  }, [lugarActivoId])
+
+  return (
+    <section className="columna-lugares" aria-labelledby="titulo-lugares">
+      <div className="lugares-encabezado">
+        <div className="lugares-titulo">
+          <h1 id="titulo-lugares">Lugares</h1>
+          <span role="status" aria-atomic="true">{resumenes.length} de {total}</span>
+        </div>
+
+        {/* aria-pressed: el lector de pantalla anuncia si cada botoncito está prendido o apagado */}
+        <div className="botoncitos" role="group" aria-label="Filtrar lugares">
+          <button type="button" className="botoncito" aria-pressed={filtros.conTrabajos}
+            onClick={() => onCambiarFiltros({ ...filtros, conTrabajos: !filtros.conTrabajos })}>
+            Con trabajos abiertos
+          </button>
+          {FILTROS_TIPO.map((filtro) => (
+            <button key={filtro.valor} type="button" className="botoncito" aria-pressed={filtros.tipos.includes(filtro.valor)}
+              onClick={() => onCambiarFiltros(alternarTipo(filtros, filtro.valor))}>
+              {filtro.etiqueta}
+            </button>
+          ))}
+        </div>
+
+        {children}
+      </div>
+
+      {resumenes.length === 0 ? (
+        <div className="estado-listado estado-vacio">
+          <span className="icono-vacio"><Icono nombre="mapa" /></span>
+          <h2>{mensajeVacio.titulo}</h2>
+          <p>{mensajeVacio.texto}</p>
+          {mensajeVacio.accion && (
+            <button type="button" className="boton boton-secundario" onClick={mensajeVacio.accion.alHacer}>
+              {mensajeVacio.accion.texto}
+            </button>
+          )}
+        </div>
+      ) : (
+        <ul className="filas-lugares" aria-labelledby="titulo-lugares">
+          {resumenes.map((resumen) => {
+            const { lugar, principal } = resumen
+            const activo = lugar.id === lugarActivoId
+            return (
+              <li key={lugar.id}>
+                <button type="button" id={`fila-lugar-${lugar.id}`} aria-pressed={activo}
+                  className={activo ? 'fila-lugar fila-lugar-activa' : 'fila-lugar'}
+                  onClick={() => onElegir(lugar.id)}>
+                  <span className={`icono-tipo icono-tipo-${lugar.tipo.toLowerCase()}`}>
+                    <Icono nombre={ICONO_TIPO[lugar.tipo] ?? 'lugar'} />
+                  </span>
+                  <span className="fila-lugar-texto">
+                    <strong>{lugar.nombre}</strong>
+                    <span>{subtituloLugar(resumen)}</span>
+                  </span>
+                  {/* La prioridad más alta del lugar: color y palabra (nunca solo color) */}
+                  {principal && (
+                    <span className={`estado prioridad-${principal.prioridad.toLowerCase()}`}>
+                      {etiqueta(PRIORIDADES, principal.prioridad)}
+                    </span>
+                  )}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+export default ListaLugares
