@@ -16,7 +16,10 @@ const ICONO_TIPO = { LUMINARIA: 'luminaria', ESPACIO_VERDE: 'espacioVerde', CALL
 // - lugarActivoId / onElegir(lugarId): el lugar elegido
 // - mensajeVacio: { titulo, texto, accion?: { texto, alHacer } } cuando la lista queda vacía
 // - children: lo que va debajo de los botoncitos (los filtros avanzados, plegados)
-function ListaLugares({ resumenes, total, filtros, onCambiarFiltros, lugarActivoId, onElegir, mensajeVacio, children }) {
+// - fueraDeZona / onRevisarFuera(): lugares que no se pueden mostrar en el mapa (sin ubicación o fuera del pueblo)
+function ListaLugares({
+  resumenes, total, filtros, onCambiarFiltros, lugarActivoId, onElegir, mensajeVacio, children, fueraDeZona = [], onRevisarFuera,
+}) {
   // Si el lugar se eligió desde el mapa, la fila se trae a la vista para que se vea cuál es.
   useEffect(() => {
     if (lugarActivoId == null) return
@@ -35,6 +38,19 @@ function ListaLugares({ resumenes, total, filtros, onCambiarFiltros, lugarActivo
 
         {children}
       </div>
+
+      {/* Lugares mal ubicados: no se dibujan, pero se avisa para que alguien corrija sus coordenadas */}
+      {fueraDeZona.length > 0 && (
+        <div className="mensaje mensaje-informacion aviso-fuera-de-zona">
+          <p>
+            <strong>
+              {fueraDeZona.length === 1 ? '1 lugar tiene' : `${fueraDeZona.length} lugares tienen`} la ubicación fuera del pueblo
+            </strong>{' '}
+            y no {fueraDeZona.length === 1 ? 'se muestra' : 'se muestran'} en el mapa: {fueraDeZona.map((lugar) => lugar.nombre).join(', ')}.
+          </p>
+          <button type="button" className="boton boton-secundario" onClick={onRevisarFuera}>Revisar en Infraestructura</button>
+        </div>
+      )}
 
       {resumenes.length === 0 ? (
         <div className="estado-listado estado-vacio">
