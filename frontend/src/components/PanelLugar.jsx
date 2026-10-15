@@ -7,13 +7,13 @@ import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 
 // Ficha del lugar elegido, en el panel derecho de la pantalla Mapa (no en otra página).
 // Muestra los datos del lugar, sus trabajos abiertos y las últimas novedades de su historia.
-// Los botones "+ Nueva OT acá", "Cómo llegar" y "Asignar cuadrilla" llegan en el PR siguiente.
 // Props:
 // - resumen: { lugar, ordenes } del lugar (ver agruparPorLugar en utils/mapa.js); ordenes = las abiertas
 // - onCerrar(): cerrar el panel
 // - onVerHistoria(lugarId): abrir la Ficha histórica completa
+// - onNuevaOrden(lugarId): "+ Nueva OT acá" (abre el formulario de OT con este lugar ya elegido)
 // La página lo dibuja con key={lugar.id}: al cambiar de lugar, el panel arranca de cero.
-function PanelLugar({ resumen, onCerrar, onVerHistoria }) {
+function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden }) {
   const { lugar, ordenes } = resumen
   const [historia, setHistoria] = useState(null)
   const [error, setError] = useState(null)
@@ -57,6 +57,9 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria }) {
         </div>
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
+        </button>
+        <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
+          <Icono nombre="agregar" />Nueva OT acá
         </button>
       </div>
 

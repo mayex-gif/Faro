@@ -39,6 +39,9 @@
 .panel-lugar-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
 .boton-cerrar { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--borde); border-radius: 8px; background: var(--blanco); color: var(--texto); }
 .boton-cerrar:hover { background: #F0F5F6; }
+/* "+ Nueva OT acá": la acción principal de la ficha, a lo ancho debajo del nombre */
+.panel-lugar-cabecera { flex-wrap: wrap; }
+.boton-nueva-ot { flex: 1 1 100%; font-size: 0.9375rem; font-weight: 700; }
 .panel-lugar-seccion { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
 .panel-lugar-seccion + .panel-lugar-seccion { padding-top: 4px; }
 .panel-lugar-seccion h3 { font-size: 1rem; }

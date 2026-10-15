@@ -21,7 +21,8 @@ const PRIORIDADES_DE_MAYOR_A_MENOR = [...PRIORIDADES].reverse()
 // Pantalla principal de FARO (propuesta A "El mapa primero"), en tres columnas:
 // a la izquierda la lista de lugares con sus filtros, en el centro el mapa y, a la derecha,
 // la ficha del lugar elegido. La lista y el mapa muestran los mismos lugares.
-function PaginaMapa({ onNavegar }) {
+// params.lugarId: el lugar con el que arranca abierta la ficha (por ejemplo, al volver de "+ Nueva OT acá").
+function PaginaMapa({ params, onNavegar }) {
   const [lugares, setLugares] = useState([])
   const [ordenes, setOrdenes] = useState([])
   const [estados, setEstados] = useState([])
@@ -32,7 +33,7 @@ function PaginaMapa({ onNavegar }) {
   const [modoColor, setModoColor] = useState('prioridad') // 'prioridad' o 'estado' (RNF11)
   const [soloVisibles, setSoloVisibles] = useState(false)
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
-  const [lugarActivoId, setLugarActivoId] = useState(null) // el lugar elegido: su ficha se ve a la derecha
+  const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
   const [seleccion, setSeleccion] = useState(null) // pedido de "ir a este lugar" para el mapa
 
   function cargarDatos() {
@@ -92,6 +93,7 @@ function PaginaMapa({ onNavegar }) {
   }
 
   const verHistoria = (lugarId) => onNavegar('ficha', { lugarId })
+  const nuevaOrden = (lugarId) => onNavegar('ordenes', { lugarId, desde: 'mapa' })
 
   function verTodos() {
     setFiltrosLugares(FILTROS_LUGARES_VACIOS)
@@ -205,7 +207,7 @@ function PaginaMapa({ onNavegar }) {
       {/* key: al elegir otro lugar, el panel arranca de cero (se vuelve a pedir su historia) */}
       {resumenActivo && (
         <PanelLugar key={resumenActivo.lugar.id} resumen={resumenActivo}
-          onCerrar={() => setLugarActivoId(null)} onVerHistoria={verHistoria} />
+          onCerrar={() => setLugarActivoId(null)} onVerHistoria={verHistoria} onNuevaOrden={nuevaOrden} />
       )}
     </div>
   )
