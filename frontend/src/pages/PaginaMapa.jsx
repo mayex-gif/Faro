@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarPuntos } from '../api/infraestructura'
@@ -43,6 +43,7 @@ function PaginaMapa({ params, onNavegar }) {
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
   const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
   const [seleccion, setSeleccion] = useState(null) // pedido de "ir a este lugar" para el mapa
+  const lugarInicial = useRef(params?.lugarId ?? null) // el lugar con el que se llegó (no cambia mientras se usa la pantalla)
   // Cuadrillas, para "Asignar cuadrilla" en la ficha. Si fallan, el mapa funciona igual.
   const [cuadrillas, setCuadrillas] = useState([])
   const [cargandoCuadrillas, setCargandoCuadrillas] = useState(true)
@@ -60,6 +61,8 @@ function PaginaMapa({ params, onNavegar }) {
         setOrdenes(datosOrdenes)
         setEstados(datosEstados)
         setError(null)
+        // Si se llegó con un lugar elegido (buscador, "Volver al mapa"), el mapa va hacia él cuando ya están los datos
+        if (lugarInicial.current != null) setSeleccion({ lugarId: lugarInicial.current, vez: 1 })
       })
       .catch((e) => {
         console.error(e)
