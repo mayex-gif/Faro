@@ -8,7 +8,10 @@ import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 
-function PaginaOrdenes() {
+// params.lugarId llega con "+ Nueva OT acá" (ficha del lugar en el mapa): el formulario arranca con ese lugar.
+// params.desde === 'mapa': se muestra "Volver al mapa" para seguir donde estaba.
+function PaginaOrdenes({ params, onNavegar }) {
+  const lugarInicial = params?.lugarId
   const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -112,6 +115,18 @@ function PaginaOrdenes() {
         <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son, qué tan urgentes y en qué estado están.</p>
       </div>
 
+      {params?.desde === 'mapa' && (
+        <div className="mensaje mensaje-informacion aviso-desde-mapa">
+          <p>
+            Nueva orden para <strong>{lugares.find((lugar) => lugar.id === lugarInicial)?.nombre ?? 'el lugar elegido'}</strong>.
+            Cuando la registres, podés volver al mapa.
+          </p>
+          <button type="button" className="boton boton-secundario" onClick={() => onNavegar('mapa', { lugarId: lugarInicial })}>
+            <Icono nombre="volver" />Volver al mapa
+          </button>
+        </div>
+      )}
+
       {/* La "key" reinicia el formulario cada vez que cambia la OT a editar */}
       <FormularioOrden
         key={ordenEditando?.id ?? 'nueva'}
@@ -120,6 +135,7 @@ function PaginaOrdenes() {
         ordenEditando={ordenEditando}
         onGuardado={alGuardar}
         onCancelar={() => setOrdenEditando(null)}
+        lugarInicial={lugarInicial}
       />
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">

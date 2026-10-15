@@ -1,0 +1,139 @@
+/* Pantalla Mapa de la propuesta A "El mapa primero": lista de lugares, mapa y ficha del lugar.
+   Reutiliza las variables de index.css y las clases de App.css (.estado, .prioridad-*, .boton, .estado-listado). */
+
+/* ---- Columna de lugares ---- */
+.columna-lugares { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow-y: auto; background: var(--blanco); }
+.lugares-encabezado { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 12px; border-bottom: 1px solid var(--borde); }
+.lugares-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lugares-titulo h1 { font-size: 1.375rem; letter-spacing: -0.3px; }
+.lugares-titulo span { color: var(--texto-secundario); font-size: 0.875rem; white-space: nowrap; }
+
+/* Botoncitos para filtrar: prendido = fondo oscuro y tilde (no depende solo del color) */
+.botoncitos { display: flex; flex-wrap: wrap; gap: 8px; }
+.botoncito { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 18px; background: var(--blanco); color: var(--texto); font-size: 0.8125rem; }
+.botoncito:hover { background: #F0F5F6; }
+.botoncito[aria-pressed="true"] { border-color: var(--lateral); background: var(--lateral); color: var(--blanco); }
+.botoncito[aria-pressed="true"]::before { content: "✓"; font-weight: 700; }
+
+/* Filas: cada una es un botón con icono del tipo, nombre, detalle y prioridad */
+/* Toda la columna se desplaza (también "Más filtros" cuando está abierto) */
+.filas-lugares { margin: 0; padding: 8px 10px 12px; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.fila-lugar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 2px solid transparent; border-radius: 10px; background: var(--blanco); color: var(--texto); text-align: left; }
+.fila-lugar:hover { background: #F4F8F9; }
+.fila-lugar-activa, .fila-lugar-activa:hover { border-color: var(--marca-cian); background: #EAF6F9; }
+.fila-lugar-texto { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.fila-lugar-texto strong { font-size: 0.9375rem; font-weight: 650; overflow-wrap: anywhere; }
+.fila-lugar-texto span { color: var(--texto-secundario); font-size: 0.8125rem; }
+.icono-tipo { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: #E3E8EA; color: var(--texto); }
+.icono-tipo-espacio_verde { background: var(--exito); color: var(--blanco); }
+.icono-tipo-luminaria { background: #F6E7C8; color: #7A5200; }
+.columna-lugares .estado-listado { flex: 1; min-height: 220px; }
+.columna-lugares .estado-vacio h2 { font-size: 1rem; }
+
+/* ---- Ficha del lugar (panel derecho) ---- */
+.panel-lugar { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow-y: auto; background: var(--blanco); }
+.panel-lugar-cabecera { display: flex; align-items: flex-start; gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid var(--borde); }
+.panel-lugar-datos { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.panel-lugar-tipo { color: var(--enlace); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; }
+.panel-lugar-datos h2 { font-size: 1.5rem; line-height: 1.25; overflow-wrap: anywhere; }
+.panel-lugar-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
+.boton-cerrar { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--borde); border-radius: 8px; background: var(--blanco); color: var(--texto); }
+.boton-cerrar:hover { background: #F0F5F6; }
+/* "+ Nueva OT acá": la acción principal de la ficha, a lo ancho debajo del nombre */
+.panel-lugar-cabecera { flex-wrap: wrap; }
+.boton-nueva-ot { flex: 1 1 100%; font-size: 0.9375rem; font-weight: 700; }
+.panel-lugar-seccion { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
+.panel-lugar-seccion + .panel-lugar-seccion { padding-top: 4px; }
+.panel-lugar-seccion h3 { font-size: 1rem; }
+.panel-lugar-vacio { color: var(--texto-secundario); font-size: 0.875rem; }
+.panel-lugar-seccion .mensaje { flex-wrap: wrap; justify-content: space-between; }
+
+.tarjetas-trabajo { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.tarjeta-trabajo { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--borde); border-radius: 10px; }
+.tarjeta-trabajo-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+.tarjeta-trabajo strong { font-size: 0.9375rem; font-weight: 650; overflow-wrap: anywhere; }
+.tarjeta-trabajo-detalle { color: var(--texto-secundario); font-size: 0.8125rem; overflow-wrap: anywhere; }
+/* "Asignar cuadrilla" dentro de la tarjeta: primero un botón con borde punteado, después el desplegable */
+.boton-asignar { align-self: flex-start; min-height: 44px; padding: 0 14px; border: 1px dashed var(--enlace); border-radius: 8px; background: var(--blanco); color: var(--enlace); font-size: 0.875rem; font-weight: 650; }
+.boton-asignar:hover { background: #EAF6F8; }
+.asignar-en-tarjeta { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--borde); }
+.asignar-en-tarjeta .botones { justify-content: flex-end; }
+.panel-lugar-seccion .mensaje-exito { margin: 0; }
+
+.novedades { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.novedades li { display: flex; gap: 12px; }
+.novedad-punto { width: 12px; height: 12px; margin-top: 5px; flex-shrink: 0; border-radius: 50%; background: var(--color-evento, var(--marca-cian)); }
+.novedad-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.875rem; }
+.novedad-texto strong { font-weight: 650; }
+.novedad-texto span { color: var(--texto-secundario); overflow-wrap: anywhere; }
+.boton-enlace { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: var(--enlace); text-decoration: underline; }
+
+/* ---- Las tres columnas ---- */
+/* App.jsx pone "aplicacion-completa": la barra arriba y la pantalla Mapa ocupa todo el resto, sin pie de página */
+.aplicacion-completa { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.pagina-completa { flex: 1; min-height: 0; }
+.pagina-completa:focus { outline: none; }
+.pantalla-mapa { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); height: 100%; }
+.pantalla-mapa-con-ficha { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(300px, 380px); }
+.pantalla-mapa .columna-lugares { border-right: 1px solid var(--borde); }
+.pantalla-mapa .panel-lugar { border-left: 1px solid var(--borde); }
+.columna-mapa { position: relative; min-width: 0; min-height: 0; }
+.columna-mapa .mapa { height: 100%; }
+.columna-lugares > .mensaje { margin: 16px; flex-wrap: wrap; justify-content: space-between; }
+
+/* "Más filtros": los filtros de órdenes de siempre, en una sola columna */
+.mas-filtros > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
+.mas-filtros .bloque-filtros { padding: 8px 0 12px; border: 0; background: none; }
+.mas-filtros .filtros-encabezado { flex-wrap: wrap; margin-bottom: 12px; }
+.mas-filtros .filtros-ordenes { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.mas-filtros .filtros-ordenes .filtro-busqueda { grid-column: auto; }
+
+/* Leyenda sobre el mapa, abajo a la izquierda */
+.leyenda-flotante { position: absolute; left: 16px; bottom: 24px; z-index: 1; display: flex; flex-direction: column; gap: 2px; max-width: calc(100% - 32px); padding: 6px 14px 10px; border-radius: 10px; background: var(--blanco); box-shadow: 0 1px 4px rgb(20 61 72 / 20%); }
+.leyenda-flotante .leyenda { padding: 0; border: 0; gap: 4px 14px; }
+.leyenda-ayuda { color: var(--texto-secundario); font-size: 0.75rem; }
+
+/* Etiqueta con el nombre arriba de cada lugar (al pasar el mouse o al elegirlo en la lista) */
+.leaflet-tooltip.etiqueta-lugar { padding: 6px 10px; border: 0; border-radius: 8px; background: var(--lateral); color: var(--blanco); font-family: var(--fuente); font-size: 0.8125rem; font-weight: 600; box-shadow: 0 2px 6px rgb(20 61 72 / 30%); }
+.leaflet-tooltip-top.etiqueta-lugar::before { border-top-color: var(--lateral); }
+
+/* ---- Tarjeta desde abajo (celular): resumen del lugar elegido ---- */
+.tarjeta-lugar { position: absolute; right: 0; bottom: 0; left: 0; z-index: 3; display: flex; flex-direction: column; gap: 12px; padding: 10px 18px 18px; border-radius: 20px 20px 0 0; background: var(--blanco); box-shadow: 0 -4px 16px rgb(20 61 72 / 18%); }
+.tarjeta-lugar-agarre { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--borde); }
+.tarjeta-lugar-cabecera { display: flex; align-items: flex-start; gap: 12px; }
+.tarjeta-lugar h2 { font-size: 1.375rem; line-height: 1.25; overflow-wrap: anywhere; }
+.tarjeta-lugar-trabajos { color: var(--texto-secundario); font-size: 0.875rem; }
+.tarjeta-lugar-botones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tarjeta-lugar-botones .boton { min-height: 48px; font-size: 0.9375rem; }
+
+/* ---- Celular y tablet (hasta 1050 px; usePantallaAngosta usa el mismo ancho) ----
+   El mapa ocupa todo. Encima: los botoncitos arriba, "Ver como lista", la leyenda chica, la tarjeta desde abajo
+   y, si se abre, la ficha completa o la lista a pantalla completa. */
+.botoncitos-sobre-mapa, .boton-flotante { display: none; }
+@media (max-width: 1050px) {
+  .pantalla-mapa-angosta { position: relative; display: block; height: 100%; overflow: hidden; }
+  .pantalla-mapa-angosta .columna-mapa { position: absolute; inset: 0; }
+  .pantalla-mapa-angosta .columna-lugares { position: absolute; inset: 0; z-index: 4; padding-bottom: 80px; border: 0; }
+  .pantalla-mapa-angosta.vista-mapa .columna-lugares { display: none; }
+  .pantalla-mapa-angosta .panel-lugar { position: absolute; inset: 0; z-index: 5; border: 0; }
+  .panel-lugar-datos h2:focus { outline: none; }
+
+  /* Botoncitos arriba del mapa: una sola fila que se desliza de costado */
+  .botoncitos-sobre-mapa { position: absolute; top: 12px; right: 0; left: 0; z-index: 2; display: flex; flex-wrap: nowrap; padding: 2px 12px 6px; overflow-x: auto; scrollbar-width: none; }
+  .botoncitos-sobre-mapa::-webkit-scrollbar { display: none; }
+  .botoncitos-sobre-mapa .botoncito { flex: none; min-height: 40px; border-color: transparent; box-shadow: 0 1px 4px rgb(20 61 72 / 25%); }
+  /* Los +/− del mapa bajan para no quedar debajo de los botoncitos */
+  .pantalla-mapa-angosta .leaflet-top { top: 112px; }
+
+  .boton-flotante { position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; background: var(--blanco); color: var(--texto); font-size: 0.875rem; font-weight: 650; box-shadow: 0 2px 8px rgb(20 61 72 / 25%); }
+  .boton-flotante .icono { width: 18px; height: 18px; color: var(--enlace); }
+  .boton-ver-lista { top: 66px; right: 12px; }
+  .boton-ver-mapa { bottom: 16px; left: 50%; z-index: 6; transform: translateX(-50%); background: var(--lateral); color: var(--blanco); }
+  .boton-ver-mapa .icono { color: var(--marca-celeste); }
+
+  /* Leyenda chica abajo a la izquierda; con la tarjeta abierta se esconde */
+  .pantalla-mapa-angosta .leyenda-flotante { left: 12px; bottom: 12px; max-width: calc(100% - 24px); padding: 6px 10px; }
+  .pantalla-mapa-angosta .leyenda-flotante .opciones-radio, .pantalla-mapa-angosta .leyenda-ayuda { display: none; }
+  .pantalla-mapa-angosta .leyenda-flotante .leyenda { gap: 2px 10px; font-size: 0.75rem; }
+  .pantalla-mapa-angosta.con-tarjeta .leyenda-flotante { display: none; }
+}

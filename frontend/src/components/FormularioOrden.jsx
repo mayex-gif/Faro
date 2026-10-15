@@ -30,18 +30,23 @@ function ordenAFormulario(orden) {
 // - ordenEditando: la OT a editar, o null si se está creando una nueva
 // - onGuardado(texto): se llama cuando se guardó bien
 // - onCancelar: se llama al cancelar la edición
-function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar }) {
+// - lugarInicial: id del lugar con el que arranca una OT nueva ("+ Nueva OT acá" en la ficha del mapa); puede faltar
+function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial }) {
   const editando = ordenEditando != null
-  const [datos, setDatos] = useState(() => (editando ? ordenAFormulario(ordenEditando) : FORMULARIO_VACIO))
+  const [datos, setDatos] = useState(() => {
+    if (editando) return ordenAFormulario(ordenEditando)
+    return lugarInicial != null ? { ...FORMULARIO_VACIO, lugarId: String(lugarInicial) } : FORMULARIO_VACIO
+  })
   const [errores, setErrores] = useState({}) // errores por campo: { descripcion: '...', tipo: '...' }
   const [error, setError] = useState(null)   // mensaje general, abajo del formulario
   const [guardando, setGuardando] = useState(false)
 
   const sinLugares = !errorLugares && lugares.length === 0
 
+  // Al editar, o si ya viene el lugar elegido, el cursor arranca en la descripción
   useEffect(() => {
-    if (editando) document.getElementById('descripcion').focus({ preventScroll: true })
-  }, [editando])
+    if (editando || lugarInicial != null) document.getElementById('descripcion').focus({ preventScroll: true })
+  }, [editando, lugarInicial])
 
   function cambiar(evento) {
     const { name, value } = evento.target
