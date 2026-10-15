@@ -204,3 +204,5 @@
 .panel-reasignacion { margin-top: 24px; }
 .panel-reasignacion .notificaciones .mensaje { margin: 20px; } /* el mismo margen que los demás avisos dentro de un panel */
 .tabla-reasignacion { min-width: 1000px; } /* 7 columnas: entra sin deslizar desde 1280 px de ancho */
+/* Aviso arriba del formulario de OT cuando se llega con "+ Nueva OT acá" desde el mapa */
+.aviso-desde-mapa { flex-wrap: wrap; justify-content: space-between; margin-bottom: 24px; }
