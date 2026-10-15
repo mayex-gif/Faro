@@ -12,12 +12,18 @@ export const SECCIONES = [
   { clave: 'asignacion', titulo: 'Cuadrillas', icono: 'cuadrilla' },
 ]
 
-// Lo que queda en el menú "Más". Ficha histórica sale de acá cuando la ficha se abra en el panel del mapa;
-// Mis tareas, cuando haya login y roles (cada capataz va a entrar directo a sus tareas).
+// Lo que queda en el menú "Más". Mis tareas sale de acá cuando haya login y roles
+// (cada capataz va a entrar directo a sus tareas).
 export const MAS = [
   { clave: 'infraestructura', titulo: 'Infraestructura', icono: 'infraestructura' },
-  { clave: 'ficha', titulo: 'Ficha histórica', icono: 'historial' },
   { clave: 'tareas', titulo: 'Mis tareas', icono: 'tareas' },
+]
+
+// Pantallas que existen pero no están en el menú: se llega desde otra pantalla.
+// La Ficha histórica completa se abre con "Ver toda la historia" (ficha del mapa), "Ficha" (Infraestructura)
+// o desde Mis tareas, siempre con el lugar ya elegido.
+export const FUERA_DEL_MENU = [
+  { clave: 'ficha', titulo: 'Ficha histórica', icono: 'historial' },
 ]
 
 // El botón "+ Nuevo": cada opción lleva a la pantalla que tiene ese formulario.
@@ -33,7 +39,7 @@ export function estaEnMas(clave) {
 
 // Nombre de la pantalla para la pestaña del navegador: "Trabajos | FARO"
 export function tituloDe(clave) {
-  return [...SECCIONES, ...MAS].find((seccion) => seccion.clave === clave)?.titulo ?? 'FARO'
+  return [...SECCIONES, ...MAS, ...FUERA_DEL_MENU].find((seccion) => seccion.clave === clave)?.titulo ?? 'FARO'
 }
 
 // Pantallas que ocupan todo el lugar debajo de la barra (sin márgenes ni pie de página): el mapa.
