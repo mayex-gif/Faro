@@ -144,7 +144,12 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
   **"+ Nuevo"** (naranja, siempre en el mismo lugar). La sección actual tiene fondo más claro, letra más gruesa
   y una raya celeste abajo. "Más" y "+ Nuevo" son listas desplegables (`MenuDesplegable`): se cierran al elegir,
   con Escape, al tocar afuera o al salir con Tab. El orden de la navegación está en `utils/navegacion.js`.
-- **Celular (≤ 760 px):** las secciones bajan a una barra fija abajo; arriba quedan la marca y "+ Nuevo".
+- **Buscador** en la barra ("Buscar un lugar, una calle o un trabajo…"): sin importar tildes ni mayúsculas; los
+  resultados se agrupan en Lugares y Trabajos (hasta 5 de cada uno); "#12" busca la OT 12. Elegir cualquiera lleva
+  al mapa con ese lugar elegido. Es un combobox accesible: flechas para recorrer, Enter para elegir, Escape para cerrar.
+  La lógica está en `utils/buscador.js`.
+- **Celular (≤ 760 px):** las secciones bajan a una barra fija abajo; arriba quedan la marca y "+ Nuevo", y el
+  buscador en su propio renglón.
 - **Pantalla Mapa** (inicio de FARO), sin márgenes ni pie de página, en tres columnas:
   1. **Lugares:** botoncitos para filtrar ("Con trabajos abiertos", Luminarias, Espacios verdes, Calles;
      prendido = fondo oscuro y tilde ✓, con `aria-pressed`), "Más filtros" plegado (los filtros de órdenes) y una
