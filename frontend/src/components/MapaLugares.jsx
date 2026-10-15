@@ -2,67 +2,37 @@ import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { colorDelResumen, radioDelResumen } from '../utils/mapa'
-import { PRIORIDADES, etiqueta } from '../utils/ordenesTrabajo'
-import { etiquetaTipoLugar } from '../utils/lugares'
+import { contarTrabajos } from '../utils/listaLugares'
+import { CENTRO_PUEBLO, ZONA_PUEBLO } from '../utils/zona'
 
 // RNF10: el mapa lo da un servicio externo. Se usa OpenStreetMap con Leaflet: es gratuito y no pide clave.
 // Los mosaicos públicos de OSM son para un uso moderado: si el uso crece, hay que pasar a un proveedor propio.
 const URL_MOSAICOS = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const ATRIBUCION = '&copy; Colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-// Solo se usa si todavía no hay lugares para encuadrar. Es el centro de Córdoba capital: ajustarlo a la zona del municipio.
-const CENTRO_POR_DEFECTO = [-31.4201, -64.1888]
-const MAXIMO_EN_POPUP = 5
+// Solo se usa si todavía no hay lugares para encuadrar: la plaza principal de Estación General Paz.
+// Leaflet pide [latitud, longitud] (al revés que GeoJSON, que guarda [longitud, latitud]).
+const CENTRO_POR_DEFECTO = [CENTRO_PUEBLO.latitud, CENTRO_PUEBLO.longitud]
+// La zona del pueblo (utils/zona.js): el mapa no deja moverse fuera de ella.
+const LIMITES_PUEBLO = [[ZONA_PUEBLO.sur, ZONA_PUEBLO.oeste], [ZONA_PUEBLO.norte, ZONA_PUEBLO.este]]
 
-// El contenido del popup se arma con textContent (nunca con HTML): los nombres y descripciones los escriben usuarios.
-function crearPopup(resumen, alVerFicha) {
-  const caja = document.createElement('div')
-  caja.className = 'popup-lugar'
-
-  const titulo = document.createElement('strong')
-  titulo.textContent = resumen.lugar.nombre
-  const tipo = document.createElement('span')
-  tipo.className = 'popup-tipo'
-  tipo.textContent = etiquetaTipoLugar(resumen.lugar.tipo)
-  caja.append(titulo, tipo)
-
-  if (resumen.ordenes.length === 0) {
-    const vacio = document.createElement('p')
-    vacio.textContent = 'Sin trabajos abiertos.'
-    caja.append(vacio)
-  } else {
-    const lista = document.createElement('ul')
-    for (const orden of resumen.ordenes.slice(0, MAXIMO_EN_POPUP)) {
-      const item = document.createElement('li')
-      item.textContent = `OT #${orden.id} · ${orden.descripcion} · ${etiqueta(PRIORIDADES, orden.prioridad)} · ${orden.estadoNombre ?? 'sin estado'}`
-      lista.append(item)
-    }
-    caja.append(lista)
-    if (resumen.ordenes.length > MAXIMO_EN_POPUP) {
-      const resto = document.createElement('p')
-      resto.textContent = `y ${resumen.ordenes.length - MAXIMO_EN_POPUP} más`
-      caja.append(resto)
-    }
-  }
-
-  const boton = document.createElement('button')
-  boton.type = 'button'
-  boton.className = 'boton boton-tabla'
-  boton.textContent = 'Ver ficha histórica'
-  boton.addEventListener('click', () => alVerFicha(resumen.lugar.id))
-  caja.append(boton)
-  return caja
+// La etiqueta que aparece arriba de cada lugar ("Plaza principal · 2 trabajos abiertos").
+// Se arma con textContent (nunca con HTML): los nombres los escriben usuarios.
+// Los detalles del lugar no van en un globo sobre el mapa: se ven en la ficha, al costado.
+function crearEtiqueta(resumen) {
+  const texto = document.createElement('span')
+  texto.textContent = `${resumen.lugar.nombre} · ${contarTrabajos(resumen.ordenes.length)}`
+  return texto
 }
 
 // Props:
 // - resumenes: lo que se dibuja, un elemento por lugar (ver agruparPorLugar en utils/mapa.js)
 // - modoColor: 'prioridad' o 'estado'
 // - limites: { sur, oeste, norte, este } para encuadrar el mapa cuando cambian (o null)
-// - seleccion: { lugarId, vez } → centra el mapa en ese lugar y abre su popup (vez cambia aunque se repita el lugar)
+// - seleccion: { lugarId, vez } → centra el mapa en ese lugar y muestra su etiqueta (vez cambia aunque se repita el lugar)
 // - onSeleccionar(lugarId): se tocó un lugar en el mapa
 // - onLimites(zona): el mapa se movió; zona = { sur, oeste, norte, este } de lo que se ve
-// - onVerFicha(lugarId): botón del popup
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
-function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, onVerFicha }) {
+function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const grupo = useRef(null)
@@ -71,13 +41,20 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
 
   // Los avisos siempre apuntan a las funciones más nuevas de la página.
   useEffect(() => {
-    avisos.current = { onSeleccionar, onLimites, onVerFicha }
+    avisos.current = { onSeleccionar, onLimites }
   })
 
   // Crear el mapa una sola vez.
   useEffect(() => {
     const capas = capasPorLugar.current
-    const instancia = L.map(contenedor.current, { center: CENTRO_POR_DEFECTO, zoom: 14 })
+    // maxBounds + maxBoundsViscosity 1: si se arrastra el mapa fuera del pueblo, vuelve ("rebota").
+    const instancia = L.map(contenedor.current, {
+      center: CENTRO_POR_DEFECTO, zoom: 14, maxBounds: LIMITES_PUEBLO, maxBoundsViscosity: 1,
+    })
+    // Zoom mínimo: el que muestra la zona entera en el tamaño actual del mapa (no deja alejarse más).
+    // Se recalcula cuando cambia el tamaño (celular, compu, ficha abierta o cerrada).
+    const ajustarZoomMinimo = () => instancia.setMinZoom(instancia.getBoundsZoom(LIMITES_PUEBLO, true))
+    ajustarZoomMinimo()
     L.tileLayer(URL_MOSAICOS, { maxZoom: 19, attribution: ATRIBUCION }).addTo(instancia)
     grupo.current = L.layerGroup().addTo(instancia)
     mapa.current = instancia
@@ -89,7 +66,16 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     instancia.on('moveend', avisarZona)
     avisarZona()
 
+    // Si la caja del mapa cambia de tamaño (por ejemplo, se abre o se cierra la ficha del lugar al costado),
+    // Leaflet tiene que volver a medirla; si no, quedan franjas grises sin mosaicos.
+    const observador = new ResizeObserver(() => {
+      instancia.invalidateSize()
+      ajustarZoomMinimo()
+    })
+    observador.observe(contenedor.current)
+
     return () => {
+      observador.disconnect()
       instancia.remove()
       mapa.current = null
       grupo.current = null
@@ -114,7 +100,7 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
         // Líneas (calles) y polígonos (espacios verdes)
         style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
       })
-      capa.bindPopup(() => crearPopup(resumen, (id) => avisos.current.onVerFicha?.(id)))
+      capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
       capa.on('click', () => avisos.current.onSeleccionar?.(resumen.lugar.id))
       capa.addTo(grupo.current)
       capasPorLugar.current.set(resumen.lugar.id, capa)
@@ -133,6 +119,9 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     if (!seleccion || !mapa.current) return
     const capa = capasPorLugar.current.get(seleccion.lugarId)
     if (!capa) return
+    // Al elegir un lugar puede abrirse la ficha al costado y el mapa queda más angosto:
+    // se mide antes de centrar, así el lugar queda en el medio de lo que se ve.
+    mapa.current.invalidateSize({ pan: false })
     const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const zona = capa.getBounds()
     if (zona.getSouthWest().equals(zona.getNorthEast())) {
@@ -140,7 +129,7 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     } else {
       mapa.current.fitBounds(zona, { maxZoom: 18, padding: [40, 40], animate: animar })
     }
-    capa.openPopup()
+    capa.openTooltip()
   }, [seleccion])
 
   return (
