@@ -1,0 +1,30 @@
+/* Pantalla Mapa de la propuesta A "El mapa primero": lista de lugares, mapa y ficha del lugar.
+   Reutiliza las variables de index.css y las clases de App.css (.estado, .prioridad-*, .boton, .estado-listado). */
+
+/* ---- Columna de lugares ---- */
+.columna-lugares { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--blanco); }
+.lugares-encabezado { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 12px; border-bottom: 1px solid var(--borde); }
+.lugares-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lugares-titulo h1 { font-size: 1.375rem; letter-spacing: -0.3px; }
+.lugares-titulo span { color: var(--texto-secundario); font-size: 0.875rem; white-space: nowrap; }
+
+/* Botoncitos para filtrar: prendido = fondo oscuro y tilde (no depende solo del color) */
+.botoncitos { display: flex; flex-wrap: wrap; gap: 8px; }
+.botoncito { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 18px; background: var(--blanco); color: var(--texto); font-size: 0.8125rem; }
+.botoncito:hover { background: #F0F5F6; }
+.botoncito[aria-pressed="true"] { border-color: var(--lateral); background: var(--lateral); color: var(--blanco); }
+.botoncito[aria-pressed="true"]::before { content: "✓"; font-weight: 700; }
+
+/* Filas: cada una es un botón con icono del tipo, nombre, detalle y prioridad */
+.filas-lugares { flex: 1; min-height: 0; margin: 0; padding: 8px 10px 12px; overflow-y: auto; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.fila-lugar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 2px solid transparent; border-radius: 10px; background: var(--blanco); color: var(--texto); text-align: left; }
+.fila-lugar:hover { background: #F4F8F9; }
+.fila-lugar-activa, .fila-lugar-activa:hover { border-color: var(--marca-cian); background: #EAF6F9; }
+.fila-lugar-texto { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.fila-lugar-texto strong { font-size: 0.9375rem; font-weight: 650; overflow-wrap: anywhere; }
+.fila-lugar-texto span { color: var(--texto-secundario); font-size: 0.8125rem; }
+.icono-tipo { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: #E3E8EA; color: var(--texto); }
+.icono-tipo-espacio_verde { background: var(--exito); color: var(--blanco); }
+.icono-tipo-luminaria { background: #F6E7C8; color: #7A5200; }
+.columna-lugares .estado-listado { flex: 1; min-height: 220px; }
+.columna-lugares .estado-vacio h2 { font-size: 1rem; }
