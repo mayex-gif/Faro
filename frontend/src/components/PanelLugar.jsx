@@ -60,7 +60,7 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
       <div className="panel-lugar-cabecera">
         <div className="panel-lugar-datos">
           <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)}</p>
-          <h2 id="titulo-panel-lugar">{lugar.nombre}</h2>
+          <h2 id="titulo-panel-lugar" tabIndex={-1}>{lugar.nombre}</h2>
           <p className="panel-lugar-estado">
             <span className={lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
               <span className="estado-punto" aria-hidden="true" />
