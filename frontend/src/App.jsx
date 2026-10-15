@@ -86,6 +86,22 @@ function App() {
           <span>Municipalidad de Estación General Paz · Córdoba, Argentina</span>
         </footer>
       </main>
+
+      {/* En el celular las secciones bajan, al alcance del pulgar (en la compu esta barra no se muestra) */}
+      <nav className="barra-inferior" aria-label="Secciones">
+        {SECCIONES.map((seccion) => (
+          <a key={seccion.clave} href="#contenido"
+            className={seccion.clave === paginaActual ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
+            aria-current={seccion.clave === paginaActual ? 'page' : undefined}
+            onClick={(evento) => irA(evento, seccion.clave)}>
+            <span className="nav-abajo-icono"><Icono nombre={seccion.icono} /></span>
+            {seccion.titulo}
+          </a>
+        ))}
+        <MenuDesplegable haciaArriba opciones={MAS} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
+          claseBoton={estaEnMas(paginaActual) ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
+          contenidoBoton={<><span className="nav-abajo-icono"><Icono nombre="mas" /></span>Más</>} />
+      </nav>
     </div>
   )
 }

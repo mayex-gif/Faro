@@ -31,3 +31,23 @@
 .menu-opcion .icono { color: var(--enlace); }
 .menu-opcion:hover { background: #EEF2F3; }
 .menu-opcion[aria-current="page"] { background: #EAF6F9; font-weight: 650; box-shadow: inset 3px 0 0 var(--marca-cian); }
+
+
+/* Barra de abajo: solo en el celular (Mapa · Trabajos · Cuadrillas · Más). Arriba quedan la marca y "+ Nuevo". */
+.barra-inferior { display: none; }
+@media (max-width: 760px) {
+  .barra-superior { flex-wrap: nowrap; min-height: 56px; padding: 8px 16px; }
+  .barra-superior .nav-secciones { display: none; }
+  .barra-superior > .menu-desplegable { margin-left: auto; }
+  /* Lugar para que la barra fija no tape el final de la pantalla */
+  .aplicacion { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .barra-inferior { position: fixed; right: 0; bottom: 0; left: 0; z-index: 20; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); height: calc(72px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--blanco); border-top: 1px solid var(--borde); box-shadow: 0 -2px 8px rgb(20 61 72 / 8%); }
+  .barra-inferior .menu-desplegable { display: flex; }
+  .barra-inferior .menu-opciones { right: 8px; }
+  .nav-abajo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--texto-secundario); font-size: 0.75rem; text-decoration: none; }
+  .nav-abajo-icono { display: flex; padding: 4px 18px; border-radius: 14px; }
+  /* La sección actual: texto más oscuro y grueso, y el icono con fondo (no depende solo del color) */
+  .nav-abajo-activo { color: var(--lateral); font-weight: 700; }
+  .nav-abajo-activo .nav-abajo-icono { background: #D6EEF3; }
+  .nav-abajo:focus-visible { outline-offset: -4px; }
+}
