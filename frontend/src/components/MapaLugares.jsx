@@ -90,7 +90,13 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     instancia.on('moveend', avisarZona)
     avisarZona()
 
+    // Si la caja del mapa cambia de tamaño (por ejemplo, se abre o se cierra la ficha del lugar al costado),
+    // Leaflet tiene que volver a medirla; si no, quedan franjas grises sin mosaicos.
+    const observador = new ResizeObserver(() => instancia.invalidateSize())
+    observador.observe(contenedor.current)
+
     return () => {
+      observador.disconnect()
       instancia.remove()
       mapa.current = null
       grupo.current = null
@@ -134,6 +140,9 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     if (!seleccion || !mapa.current) return
     const capa = capasPorLugar.current.get(seleccion.lugarId)
     if (!capa) return
+    // Al elegir un lugar puede abrirse la ficha al costado y el mapa queda más angosto:
+    // se mide antes de centrar, así el lugar queda en el medio de lo que se ve.
+    mapa.current.invalidateSize({ pan: false })
     const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const zona = capa.getBounds()
     if (zona.getSouthWest().equals(zona.getNorthEast())) {
