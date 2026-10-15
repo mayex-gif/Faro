@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarPuntos } from '../api/infraestructura'
+import { listarCuadrillas } from '../api/cuadrillas'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import ListaLugares from '../components/ListaLugares'
 import MapaLugares from '../components/MapaLugares'
@@ -35,6 +36,10 @@ function PaginaMapa({ params, onNavegar }) {
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
   const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
   const [seleccion, setSeleccion] = useState(null) // pedido de "ir a este lugar" para el mapa
+  // Cuadrillas, para "Asignar cuadrilla" en la ficha. Si fallan, el mapa funciona igual.
+  const [cuadrillas, setCuadrillas] = useState([])
+  const [cargandoCuadrillas, setCargandoCuadrillas] = useState(true)
+  const [errorCuadrillas, setErrorCuadrillas] = useState(null)
 
   function cargarDatos() {
     // Sin los tres no se puede armar el mapa: si falla uno, es un error de carga.
@@ -57,9 +62,30 @@ function PaginaMapa({ params, onNavegar }) {
     cargarDatos()
   }
 
+  function cargarCuadrillas() {
+    return listarCuadrillas()
+      .then((datos) => {
+        setCuadrillas(datos)
+        setErrorCuadrillas(null)
+      })
+      .catch((e) => {
+        console.error(e)
+        setErrorCuadrillas('No se pudieron cargar las cuadrillas.')
+      })
+      .finally(() => setCargandoCuadrillas(false))
+  }
+
   useEffect(() => {
     cargarDatos()
+    cargarCuadrillas()
   }, [])
+
+  // Se asignó una cuadrilla desde la ficha: reemplazamos esa OT (cambió de estado y de cuadrilla)
+  // y volvemos a pedir las cuadrillas, porque su disponibilidad pudo cambiar.
+  function alAsignar(actualizada) {
+    setOrdenes((anteriores) => anteriores.map((orden) => (orden.id === actualizada.id ? actualizada : orden)))
+    cargarCuadrillas()
+  }
 
   // Se recalcula solo cuando cambian los datos o los filtros: el mapa redibuja solo si cambian estas listas.
   const abiertas = useMemo(() => ordenesAbiertas(ordenes, estados), [ordenes, estados])
@@ -207,7 +233,8 @@ function PaginaMapa({ params, onNavegar }) {
       {/* key: al elegir otro lugar, el panel arranca de cero (se vuelve a pedir su historia) */}
       {resumenActivo && (
         <PanelLugar key={resumenActivo.lugar.id} resumen={resumenActivo}
-          onCerrar={() => setLugarActivoId(null)} onVerHistoria={verHistoria} onNuevaOrden={nuevaOrden} />
+          onCerrar={() => setLugarActivoId(null)} onVerHistoria={verHistoria} onNuevaOrden={nuevaOrden}
+          asignacion={{ estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada: alAsignar }} />
       )}
     </div>
   )
