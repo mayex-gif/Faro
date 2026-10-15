@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
+import BotoncitosLugares from './BotoncitosLugares'
 import Icono from './Icono'
-import { FILTROS_TIPO, alternarTipo, subtituloLugar } from '../utils/listaLugares'
+import { subtituloLugar } from '../utils/listaLugares'
 import { PRIORIDADES, etiqueta } from '../utils/ordenesTrabajo'
 
 // El icono de cada tipo de lugar (el color de fondo está en estilos-mapa-primero.css)
@@ -30,19 +31,7 @@ function ListaLugares({ resumenes, total, filtros, onCambiarFiltros, lugarActivo
           <span role="status" aria-atomic="true">{resumenes.length} de {total}</span>
         </div>
 
-        {/* aria-pressed: el lector de pantalla anuncia si cada botoncito está prendido o apagado */}
-        <div className="botoncitos" role="group" aria-label="Filtrar lugares">
-          <button type="button" className="botoncito" aria-pressed={filtros.conTrabajos}
-            onClick={() => onCambiarFiltros({ ...filtros, conTrabajos: !filtros.conTrabajos })}>
-            Con trabajos abiertos
-          </button>
-          {FILTROS_TIPO.map((filtro) => (
-            <button key={filtro.valor} type="button" className="botoncito" aria-pressed={filtros.tipos.includes(filtro.valor)}
-              onClick={() => onCambiarFiltros(alternarTipo(filtros, filtro.valor))}>
-              {filtro.etiqueta}
-            </button>
-          ))}
-        </div>
+        <BotoncitosLugares filtros={filtros} onCambiar={onCambiarFiltros} />
 
         {children}
       </div>
