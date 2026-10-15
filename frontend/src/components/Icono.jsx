@@ -14,6 +14,14 @@ const trazos = {
   iniciar: 'M8 5v14l11-7Z',
   mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
   historial: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  abajo: 'm6 9 6 6 6-6',
+  mas: 'M4 7h16 M4 12h16 M4 17h16',
+  cerrar: 'M18 6 6 18 M6 6l12 12',
+  lista: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
+  // Tipos de lugar (lista del mapa)
+  luminaria: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3Z',
+  espacioVerde: 'M12 22V12 M12 12c-4 0-6-3-6-6 3 0 6 2 6 6Z M12 12c4 0 6-3 6-6-3 0-6 2-6 6Z',
+  calle: 'M4 21 9 3 M20 21 15 3 M12 5v2 M12 11v2 M12 17v2',
 }
 
 function Icono({ nombre, className = '' }) {

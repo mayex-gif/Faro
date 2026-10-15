@@ -104,3 +104,25 @@ export function agruparPorDia(eventos) {
   }
   return grupos
 }
+
+// ---- Resumen de la historia en el panel del mapa (las últimas novedades del lugar) ----
+
+// "2026-10-07T19:04:12" → "7/10"
+export function fechaCorta(fechaIso) {
+  const [, mes, dia] = (fechaIso ?? '').slice(0, 10).split('-').map(Number)
+  return dia && mes ? `${dia}/${mes}` : ''
+}
+
+// Las últimas novedades del lugar (el backend ya manda los eventos del más nuevo al más viejo)
+export function ultimasNovedades(eventos, cantidad = 3) {
+  return eventos.slice(0, cantidad)
+}
+
+// Segunda línea de cada novedad: qué trabajo fue (o quién la tenía antes, en una reasignación) y cuándo.
+// "Limpieza general de la plaza · 11/10", "Antes la tenía Cuadrilla Verde · 12/10"
+export function lineaNovedad(evento) {
+  const queFue = evento.tipo === 'CUADRILLA_REASIGNADA' && evento.cuadrillaAnterior
+    ? `Antes la tenía ${evento.cuadrillaAnterior}`
+    : evento.ordenDescripcion
+  return [queFue, fechaCorta(evento.fecha)].filter(Boolean).join(' · ')
+}

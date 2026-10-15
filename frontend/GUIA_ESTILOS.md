@@ -133,10 +133,35 @@ distinguirse entre sí; las etiquetas de texto de las tablas conservan sus color
 | Urgente | `#C0262D` | grande |
 | Sin trabajos abiertos | `#9AA9B0` | el más chico |
 
-También se puede colorear por estado, con los colores que informa el backend. La leyenda explica los colores.
-Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos
-escritos, con los botones "Ver en el mapa" y "Ficha histórica". Los filtros están plegados para que, en el celular,
-el mapa no quede lejos del principio de la pantalla.
+También se puede colorear por estado, con los colores que informa el backend ("Colorear por", en la leyenda).
+La leyenda está sobre el mapa, abajo a la izquierda, y explica los colores.
+Las marcas del mapa no se pueden recorrer con el teclado: la lista de lugares que acompaña al mapa tiene los
+mismos datos escritos. Al pasar el mouse por un lugar (o al elegirlo en la lista) aparece una etiqueta oscura
+con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la ficha del lugar, no en un globo.
+
+### Navegación y pantalla Mapa (propuesta A "El mapa primero", 14/10/2026)
+- **Barra superior** azul (`--lateral`): marca, secciones **Mapa · Trabajos · Cuadrillas · Más** y el botón
+  **"+ Nuevo"** (naranja, siempre en el mismo lugar). La sección actual tiene fondo más claro, letra más gruesa
+  y una raya celeste abajo. "Más" y "+ Nuevo" son listas desplegables (`MenuDesplegable`): se cierran al elegir,
+  con Escape, al tocar afuera o al salir con Tab. El orden de la navegación está en `utils/navegacion.js`.
+- **Celular (≤ 760 px):** las secciones bajan a una barra fija abajo; arriba quedan la marca y "+ Nuevo".
+- **Pantalla Mapa** (inicio de FARO), sin márgenes ni pie de página, en tres columnas:
+  1. **Lugares:** botoncitos para filtrar ("Con trabajos abiertos", Luminarias, Espacios verdes, Calles;
+     prendido = fondo oscuro y tilde ✓, con `aria-pressed`), "Más filtros" plegado (los filtros de órdenes) y una
+     fila por lugar: icono del tipo, nombre, "tipo · N trabajos abiertos" y la prioridad más alta (color y palabra).
+     La lista y el mapa muestran los mismos lugares.
+  2. **Mapa** con la leyenda.
+  3. **Ficha del lugar** (al elegir uno): tipo, nombre, estado y coordenadas; **"+ Nueva OT acá"** (naranja, a lo
+     ancho: abre Trabajos con el lugar ya elegido y un aviso con "Volver al mapa"); trabajos abiertos en tarjetas;
+     las últimas 3 novedades de su historia y "Ver toda la historia" (abre la Ficha histórica completa).
+     Los trabajos pendientes sin cuadrilla muestran **"Asignar cuadrilla"** (borde punteado): al tocarlo aparece el
+     desplegable con las cuadrillas que hacen ese trabajo, con las mismas reglas que la pantalla Cuadrillas.
+- **Celular y tablet (hasta 1050 px)**, como en el lienzo: el mapa ocupa toda la pantalla; arriba, los botoncitos
+  en una fila que se desliza de costado y "Ver como lista" (la lista con "Más filtros" a pantalla completa, con
+  "Ver mapa" para volver); abajo a la izquierda, la leyenda chica (sin "Colorear por"). Al tocar un lugar sube una
+  **tarjeta desde abajo** (tipo y estado, nombre, "2 trabajos abiertos · 1 urgente", "+ Nueva OT acá" y
+  "Ver ficha e historia"), que abre la ficha completa encima del mapa; su "X" vuelve a la tarjeta.
+  El ancho está en `hooks/usePantallaAngosta.js` y en el `@media` de `estilos-mapa-primero.css`: deben coincidir.
 
 ### Tarjeta de tarea (celular)
 Cada tarea del capataz es una tarjeta (`li.tarjeta-tarea`) con un único botón principal de ancho completo y
