@@ -80,6 +80,14 @@ class AutenticacionServiceTest {
     }
 
     @Test
+    void autenticarConEmailNullLanzaRecursoNoEncontradoException() {
+        LoginRequestDTO request = new LoginRequestDTO(null, "pass");
+        when(usuarioRepository.findByEmailIgnoreCase("")).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> autenticacionService.autenticar(request));
+    }
+
+    @Test
     void autenticarConCredencialesIncorrectasLanzaBadCredentialsException() {
         LoginRequestDTO request = new LoginRequestDTO("encargado@generalpaz.gob.ar", "claveErronea");
 
@@ -137,6 +145,25 @@ class AutenticacionServiceTest {
         assertEquals("Martín", perfil.nombre());
         assertEquals("encargado@generalpaz.gob.ar", perfil.email());
         assertEquals(RolUsuario.ENCARGADO_CORRALON, perfil.rol());
+    }
+
+    @Test
+    void obtenerPerfilActualConPrincipalComoNombreDevuelveUsuarioDTO() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.isAuthenticated()).thenReturn(true);
+        when(auth.getPrincipal()).thenReturn(new Object());
+        when(auth.getName()).thenReturn("encargado@generalpaz.gob.ar");
+
+        SecurityContext context = mock(SecurityContext.class);
+        when(context.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(context);
+
+        when(usuarioRepository.findByEmailIgnoreCase("encargado@generalpaz.gob.ar")).thenReturn(Optional.of(usuarioActivo));
+
+        UsuarioDTO perfil = autenticacionService.obtenerPerfilActual();
+
+        assertNotNull(perfil);
+        assertEquals("encargado@generalpaz.gob.ar", perfil.email());
     }
 
     @Test

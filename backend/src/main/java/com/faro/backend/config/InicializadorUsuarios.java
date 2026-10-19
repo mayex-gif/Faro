@@ -3,6 +3,7 @@ package com.faro.backend.config;
 import com.faro.backend.models.RolUsuario;
 import com.faro.backend.models.Usuario;
 import com.faro.backend.repositories.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,10 +20,16 @@ public class InicializadorUsuarios implements CommandLineRunner {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String claveInicial;
 
-    public InicializadorUsuarios(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    @SuppressWarnings("java:S6437") // La clave se inyecta desde variable de entorno o property externa
+    public InicializadorUsuarios(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            @Value("${faro.usuarios.clave-inicial}") String claveInicial) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.claveInicial = claveInicial;
     }
 
     @Override
@@ -34,7 +41,7 @@ public class InicializadorUsuarios implements CommandLineRunner {
     }
 
     private void cargarUsuariosPorDefecto() {
-        String claveComun = passwordEncoder.encode("Faro2026!");
+        String claveComun = passwordEncoder.encode(claveInicial);
 
         usuarioRepository.saveAll(List.of(
                 // 1. Encargado del Corralón (Administrador)

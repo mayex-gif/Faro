@@ -166,4 +166,15 @@ class AutenticacionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("encargado@generalpaz.gob.ar"));
     }
+
+    @Test
+    void perfilConAccesoDenegadoDevuelve403Forbidden() throws Exception {
+        when(autenticacionService.obtenerPerfilActual())
+                .thenThrow(new org.springframework.security.access.AccessDeniedException("Acceso denegado"));
+
+        mockMvc.perform(get("/api/auth/perfil"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.estado").value(403))
+                .andExpect(jsonPath("$.mensaje").value("No tiene permisos para realizar esta acción"));
+    }
 }

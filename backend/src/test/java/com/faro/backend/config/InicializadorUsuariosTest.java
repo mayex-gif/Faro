@@ -3,10 +3,10 @@ package com.faro.backend.config;
 import com.faro.backend.models.RolUsuario;
 import com.faro.backend.models.Usuario;
 import com.faro.backend.repositories.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,20 +20,26 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class InicializadorUsuariosTest {
 
+    private static final String CLAVE_TEST = "testClaveSegura123!";
+
     @Mock
     private UsuarioRepository usuarioRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @InjectMocks
     private InicializadorUsuarios inicializador;
+
+    @BeforeEach
+    void setUp() {
+        inicializador = new InicializadorUsuarios(usuarioRepository, passwordEncoder, CLAVE_TEST);
+    }
 
     @Test
     @SuppressWarnings("unchecked")
     void conTablaVacia_cargaLosCuatroUsuariosPorDefecto() {
         when(usuarioRepository.count()).thenReturn(0L);
-        when(passwordEncoder.encode("Faro2026!")).thenReturn("$2a$10$encodedHashEjemplo");
+        when(passwordEncoder.encode(CLAVE_TEST)).thenReturn("$2a$10$encodedHashEjemplo");
 
         inicializador.run();
 

@@ -56,6 +56,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("java:S4502") // API REST stateless basada en tokens JWT Bearer sin cookies de sesion: CSRF no aplica
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             @Autowired(required = false) JwtAuthenticationFilter jwtAuthFilter,
@@ -72,20 +73,8 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("""
-                                {"estado":401,"mensaje":"Acceso no autorizado. Debe iniciar sesión con credenciales válidas.","errores":{}}
-                                """);
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.getWriter().write("""
-                                {"estado":403,"mensaje":"No tiene permisos para realizar esta acción.","errores":{}}
-                                """);
-                        })
+                        .authenticationEntryPoint((request, response, authException) -> escribirRespuestaNoAutorizada(response))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> escribirRespuestaAccesoDenegado(response))
                 );
 
         if (authenticationProvider != null) {
@@ -96,5 +85,21 @@ public class SecurityConfig {
         }
 
         return http.build();
+    }
+
+    static void escribirRespuestaNoAutorizada(HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write("""
+            {"estado":401,"mensaje":"Acceso no autorizado. Debe iniciar sesión con credenciales válidas.","errores":{}}
+            """);
+    }
+
+    static void escribirRespuestaAccesoDenegado(HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.getWriter().write("""
+            {"estado":403,"mensaje":"No tiene permisos para realizar esta acción.","errores":{}}
+            """);
     }
 }
