@@ -155,7 +155,9 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
      prendido = fondo oscuro y tilde ✓, con `aria-pressed`), "Más filtros" plegado (los filtros de órdenes) y una
      fila por lugar: icono del tipo, nombre, "tipo · N trabajos abiertos" y la prioridad más alta (color y palabra).
      La lista y el mapa muestran los mismos lugares.
-  2. **Mapa** con la leyenda.
+  2. **Mapa** con la leyenda. Solo muestra **Estación General Paz y alrededores** (unos 6 x 6 km alrededor de la plaza,
+     `ZONA_PUEBLO` en `utils/zona.js`): no deja arrastrarlo ni alejarlo fuera de esa zona. Los lugares sin ubicación
+     o con coordenadas fuera del pueblo no se dibujan: la lista los nombra en un aviso con "Revisar en Infraestructura".
   3. **Ficha del lugar** (al elegir uno): tipo, nombre, estado y coordenadas; **"+ Nueva OT acá"** (naranja, a lo
      ancho: abre Trabajos con el lugar ya elegido y un aviso con "Volver al mapa"); trabajos abiertos en tarjetas;
      las últimas 3 novedades de su historia y "Ver toda la historia" (abre la Ficha histórica completa).

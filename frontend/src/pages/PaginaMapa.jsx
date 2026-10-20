@@ -15,9 +15,10 @@ import { FILTROS_ORDENES_VACIOS, filtrarOrdenes } from '../utils/filtrosOrdenes'
 import { FILTROS_LUGARES_VACIOS, filtrarLugares } from '../utils/listaLugares'
 import {
   COLORES_PRIORIDAD, COLOR_SIN_TRABAJOS, agruparPorLugar, geometriaEnLimites,
-  geometriaValida, limitesDe, ordenarResumenes, ordenesAbiertas,
+  limitesDe, ordenarResumenes, ordenesAbiertas,
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
+import { separarPorZona } from '../utils/zona'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
 
@@ -104,7 +105,8 @@ function PaginaMapa({ params, onNavegar }) {
   // Se recalcula solo cuando cambian los datos o los filtros: el mapa redibuja solo si cambian estas listas.
   const abiertas = useMemo(() => ordenesAbiertas(ordenes, estados), [ordenes, estados])
   const abiertasFiltradas = useMemo(() => filtrarOrdenes(abiertas, filtros), [abiertas, filtros])
-  const lugaresConUbicacion = useMemo(() => lugares.filter((lugar) => geometriaValida(lugar.ubicacion)), [lugares])
+  // Solo se dibujan los lugares que están en el pueblo; los mal ubicados se avisan en la lista.
+  const { dentro: lugaresConUbicacion, fuera: fueraDeZona } = useMemo(() => separarPorZona(lugares), [lugares])
   const limites = useMemo(() => limitesDe(lugaresConUbicacion), [lugaresConUbicacion])
   const resumenes = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), [lugaresConUbicacion, abiertasFiltradas])
   const enMapa = useMemo(() => filtrarLugares(resumenes, filtrosLugares), [resumenes, filtrosLugares])
@@ -163,7 +165,7 @@ function PaginaMapa({ params, onNavegar }) {
       accion: { texto: 'Ir a Infraestructura', alHacer: () => onNavegar('infraestructura') },
     }
   } else if (resumenes.length === 0) {
-    mensajeVacio = { titulo: 'Ningún lugar tiene una ubicación válida', texto: 'Revisá las coordenadas en Infraestructura.' }
+    mensajeVacio = { titulo: 'Ningún lugar tiene la ubicación dentro del pueblo', texto: 'Revisá las coordenadas en Infraestructura.' }
   } else if (enMapa.length === 0) {
     mensajeVacio = {
       titulo: 'Ningún lugar coincide con los filtros',
@@ -205,7 +207,8 @@ function PaginaMapa({ params, onNavegar }) {
       ) : (
         <ListaLugares resumenes={enLista} total={resumenes.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
-          lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} mensajeVacio={mensajeVacio}>
+          lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} mensajeVacio={mensajeVacio}
+          fueraDeZona={fueraDeZona} onRevisarFuera={() => onNavegar('infraestructura')}>
           {/* Los filtros de órdenes de siempre, plegados para que no tapen la lista */}
           <details className="mas-filtros">
             <summary>
