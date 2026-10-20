@@ -151,8 +151,11 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
      fila por lugar: icono del tipo, nombre, "tipo · N trabajos abiertos" y la prioridad más alta (color y palabra).
      La lista y el mapa muestran los mismos lugares.
   2. **Mapa** con la leyenda.
-  3. **Ficha del lugar** (al elegir uno): tipo, nombre, estado y coordenadas; trabajos abiertos en tarjetas;
+  3. **Ficha del lugar** (al elegir uno): tipo, nombre, estado y coordenadas; **"+ Nueva OT acá"** (naranja, a lo
+     ancho: abre Trabajos con el lugar ya elegido y un aviso con "Volver al mapa"); trabajos abiertos en tarjetas;
      las últimas 3 novedades de su historia y "Ver toda la historia" (abre la Ficha histórica completa).
+     Los trabajos pendientes sin cuadrilla muestran **"Asignar cuadrilla"** (borde punteado): al tocarlo aparece el
+     desplegable con las cuadrillas que hacen ese trabajo, con las mismas reglas que la pantalla Cuadrillas.
 - Por debajo de 1050 px las columnas se apilan: lista, mapa (con la leyenda debajo) y ficha.
 
 ### Tarjeta de tarea (celular)

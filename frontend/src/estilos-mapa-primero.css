@@ -39,6 +39,9 @@
 .panel-lugar-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
 .boton-cerrar { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--borde); border-radius: 8px; background: var(--blanco); color: var(--texto); }
 .boton-cerrar:hover { background: #F0F5F6; }
+/* "+ Nueva OT acá": la acción principal de la ficha, a lo ancho debajo del nombre */
+.panel-lugar-cabecera { flex-wrap: wrap; }
+.boton-nueva-ot { flex: 1 1 100%; font-size: 0.9375rem; font-weight: 700; }
 .panel-lugar-seccion { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
 .panel-lugar-seccion + .panel-lugar-seccion { padding-top: 4px; }
 .panel-lugar-seccion h3 { font-size: 1rem; }
@@ -50,6 +53,12 @@
 .tarjeta-trabajo-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
 .tarjeta-trabajo strong { font-size: 0.9375rem; font-weight: 650; overflow-wrap: anywhere; }
 .tarjeta-trabajo-detalle { color: var(--texto-secundario); font-size: 0.8125rem; overflow-wrap: anywhere; }
+/* "Asignar cuadrilla" dentro de la tarjeta: primero un botón con borde punteado, después el desplegable */
+.boton-asignar { align-self: flex-start; min-height: 44px; padding: 0 14px; border: 1px dashed var(--enlace); border-radius: 8px; background: var(--blanco); color: var(--enlace); font-size: 0.875rem; font-weight: 650; }
+.boton-asignar:hover { background: #EAF6F8; }
+.asignar-en-tarjeta { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--borde); }
+.asignar-en-tarjeta .botones { justify-content: flex-end; }
+.panel-lugar-seccion .mensaje-exito { margin: 0; }
 
 .novedades { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
 .novedades li { display: flex; gap: 12px; }
