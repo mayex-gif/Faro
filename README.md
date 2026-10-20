@@ -82,6 +82,10 @@ Ver [Login y sesión — Sprint 3](./frontend/LOGIN_SESION.md) para conocer el f
 
 La pantalla de acceso ya utiliza la API de autenticación. La protección por rol y cuadrilla de las API de negocio todavía debe completarse en el backend; ocultar acciones en el frontend no reemplaza esa validación.
 
+## PWA y consulta local de tareas
+
+Ver [alcance, pasos de prueba y coordinación con backend](./frontend/PWA_CONSULTA_LOCAL.md). Esta primera parte prepara la copia local de tareas del capataz para consulta; la cola de modificaciones y la resolución de conflictos siguen pendientes.
+
 ## Tests del backend
 
 Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.

@@ -7,7 +7,11 @@ import Icono from '../components/Icono'
 import { tareasDeCuadrilla } from '../utils/tareas'
 import { useSesion } from '../context/useSesion'
 import { tieneRol } from '../utils/permisos'
+import { leerToken } from '../utils/sesion'
+import { borrarCopia, guardarCopia, leerCopia } from '../offline/almacen'
+import { crearCopia, fechaDeCopia } from '../offline/datosLocal'
 import '../estilos-mis-tareas.css'
+import '../offline/estilos-local.css'
 
 // El encargado puede elegir una cuadrilla para supervisar. El capataz usa la de su perfil.
 const CLAVE_CUADRILLA = 'faro.cuadrillaElegida'
@@ -45,6 +49,9 @@ function PaginaMisTareas({ onNavegar }) {
   const [idGuardando, setIdGuardando] = useState(null)
   const [mensaje, setMensaje] = useState('')
   const [errorAccion, setErrorAccion] = useState('')
+  const [copiaLocal, setCopiaLocal] = useState(null)
+  const [guardandoCopia, setGuardandoCopia] = useState(false)
+  const [avisoCopia, setAvisoCopia] = useState('')
 
   function cargarOrdenes() {
     // Sin los estados no se sabe qué se puede hacer con cada tarea: si falla uno de los dos pedidos, es un error de carga.
@@ -89,6 +96,14 @@ function PaginaMisTareas({ onNavegar }) {
     cargarCuadrillas()
   }, [])
 
+  useEffect(() => {
+    let vigente = true
+    if (esCapataz) leerCopia(usuario).then((copia) => {
+      if (vigente) setCopiaLocal(copia)
+    }).catch(() => {}) // La falta de almacenamiento no impide trabajar conectado.
+    return () => { vigente = false }
+  }, [usuario, esCapataz])
+
   function elegirCuadrilla(evento) {
     setCuadrillaId(evento.target.value)
     guardarCuadrilla(evento.target.value)
@@ -101,6 +116,30 @@ function PaginaMisTareas({ onNavegar }) {
   const tareas = cuadrillaActual ? tareasDeCuadrilla(ordenes, estados, cuadrillaActual.id) : []
   // Mientras el backend no informe a qué cuadrilla pertenece cada OT (CONTRATO_CUADRILLAS.md), no se puede saber cuáles son "mis" tareas.
   const faltaDatoDeCuadrilla = ordenes.length > 0 && !ordenes.some((orden) => 'cuadrillaId' in orden)
+
+  async function guardarConsulta() {
+    const token = leerToken()
+    setGuardandoCopia(true)
+    setAvisoCopia('')
+    try {
+      const copia = crearCopia(usuario, cuadrillaActual, ordenes, estados)
+      await guardarCopia(copia, token)
+      setCopiaLocal(copia)
+      setAvisoCopia('Copia guardada. Podés consultarla en este dispositivo mientras tu sesión esté vigente.')
+    } catch (e) {
+      setAvisoCopia(e.message || 'No pudimos guardar la copia. Revisá el espacio y los permisos del navegador.')
+    } finally { setGuardandoCopia(false) }
+  }
+
+  async function eliminarConsulta() {
+    setGuardandoCopia(true)
+    try {
+      await borrarCopia()
+      setCopiaLocal(null)
+      setAvisoCopia('Se eliminó la copia de este dispositivo.')
+    } catch { setAvisoCopia('No pudimos eliminar la copia. Intentá nuevamente.') }
+    finally { setGuardandoCopia(false) }
+  }
 
   function accion(orden, estadoNuevo) {
     if (esCapataz && (usuario.cuadrillaId == null || String(orden.cuadrillaId) !== String(usuario.cuadrillaId))) {
@@ -143,6 +182,23 @@ function PaginaMisTareas({ onNavegar }) {
         {mensaje && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensaje}</p>}
         {errorAccion && <p className="mensaje mensaje-error" role="alert">{errorAccion}</p>}
       </div>
+
+      {esCapataz && <section className="panel copia-local" aria-labelledby="titulo-consulta-local" aria-busy={guardandoCopia}>
+        <h2 id="titulo-consulta-local">Consulta sin conexión</h2>
+        <p>Guardá una copia de tus tareas antes de salir. Para iniciar o finalizar un trabajo seguís necesitando conexión.</p>
+        {copiaLocal && <p>Última copia: <time dateTime={copiaLocal.fechaGuardado}>{fechaDeCopia(copiaLocal.fechaGuardado)}</time>.</p>}
+        <div className="acciones">
+          <button type="button" className="boton boton-secundario" onClick={guardarConsulta}
+            disabled={guardandoCopia || cargando || cargandoCuadrillas || Boolean(error) || Boolean(errorCuadrillas) || !cuadrillaActual || faltaDatoDeCuadrilla}>
+            {guardandoCopia ? 'Procesando copia…' : copiaLocal ? 'Actualizar copia local' : 'Guardar copia local'}
+          </button>
+          {copiaLocal && <>
+            <a className="boton boton-secundario" href="/sin-conexion.html">Ver copia local</a>
+            <button type="button" className="boton boton-secundario" onClick={eliminarConsulta} disabled={guardandoCopia}>Eliminar copia local</button>
+          </>}
+        </div>
+        {avisoCopia && <p className="mensaje mensaje-informacion" role="status">{avisoCopia}</p>}
+      </section>}
 
       <section className="panel listado panel-cuadrillas" aria-labelledby="titulo-mi-cuadrilla" aria-busy={cargandoCuadrillas}>
         <div className="panel-encabezado">
