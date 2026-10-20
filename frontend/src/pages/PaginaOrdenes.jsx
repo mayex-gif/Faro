@@ -7,10 +7,14 @@ import TablaOrdenes from '../components/TablaOrdenes'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
+import { useSesion } from '../context/useSesion'
+import { puedeAsignar } from '../utils/permisos'
 
 // params.lugarId llega con "+ Nueva OT acá" (ficha del lugar en el mapa): el formulario arranca con ese lugar.
 // params.desde === 'mapa': se muestra "Volver al mapa" para seguir donde estaba.
 function PaginaOrdenes({ params, onNavegar }) {
+  const { usuario } = useSesion()
+  const puedeGestionar = puedeAsignar(usuario)
   const lugarInicial = params?.lugarId
   const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -65,6 +69,7 @@ function PaginaOrdenes({ params, onNavegar }) {
 
   // Botón "Editar" de la tabla
   function editar(orden) {
+    if (!puedeGestionar) return
     setOrdenEditando(orden)
     setMensaje('')
     document.getElementById('formulario-orden').scrollIntoView({
@@ -75,6 +80,7 @@ function PaginaOrdenes({ params, onNavegar }) {
 
   // Botones "Pasar a ..." de la tabla
   function cambiarEstado(orden, estadoNuevo) {
+    if (!puedeGestionar) return
     // Finalizada y Cancelada no tienen vuelta atrás: pedimos confirmación
     if (estadoNuevo.cierre) {
       const confirmado = window.confirm(
@@ -177,12 +183,12 @@ function PaginaOrdenes({ params, onNavegar }) {
           <TablaOrdenes 
             ordenes={ordenesFiltradas} 
             idEditando={ordenEditando?.id}
-            onEditar={editar} 
+            onEditar={puedeGestionar ? editar : undefined}
             errorCarga={Boolean(error) || !rangoValido}
             sinCoincidencias={ordenes.length > 0}
             onLimpiarFiltros={() => setFiltros(FILTROS_ORDENES_VACIOS)}
             estados={estados} 
-            onCambiarEstado={cambiarEstado} 
+            onCambiarEstado={puedeGestionar ? cambiarEstado : undefined}
             idCambiandoEstado={idCambiandoEstado} 
           />
         )}

@@ -48,7 +48,7 @@ function ListaLugares({
             </strong>{' '}
             y no {fueraDeZona.length === 1 ? 'se muestra' : 'se muestran'} en el mapa: {fueraDeZona.map((lugar) => lugar.nombre).join(', ')}.
           </p>
-          <button type="button" className="boton boton-secundario" onClick={onRevisarFuera}>Revisar en Infraestructura</button>
+          {onRevisarFuera && <button type="button" className="boton boton-secundario" onClick={onRevisarFuera}>Revisar en Infraestructura</button>}
         </div>
       )}
 
