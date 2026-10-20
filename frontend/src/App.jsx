@@ -7,7 +7,7 @@ import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
-import { INICIO, MAS, NUEVO, SECCIONES, estaEnMas, tituloDe } from './utils/navegacion'
+import { INICIO, MAS, NUEVO, SECCIONES, esPantallaCompleta, estaEnMas, tituloDe } from './utils/navegacion'
 import './App.css'
 import './estilos-navegacion.css'
 
@@ -27,6 +27,7 @@ function App() {
   const [vista, setVista] = useState({ clave: INICIO, params: {} })
   const paginaActual = vista.clave
   const Componente = PAGINAS[paginaActual]
+  const completa = esPantallaCompleta(paginaActual) // el mapa ocupa todo, sin márgenes ni pie de página
 
   // El nombre de la pestaña del navegador acompaña a la pantalla: "Trabajos | FARO"
   useEffect(() => {
@@ -46,7 +47,7 @@ function App() {
   }
 
   return (
-    <div className="aplicacion">
+    <div className={completa ? 'aplicacion aplicacion-completa' : 'aplicacion'}>
       <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
       <header className="barra-superior">
@@ -78,13 +79,15 @@ function App() {
           contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />
       </header>
 
-      <main className="pagina" id="contenido" tabIndex={-1}>
+      <main className={completa ? 'pagina-completa' : 'pagina'} id="contenido" tabIndex={-1}>
         <Componente key={paginaActual} params={vista.params} onNavegar={navegar} />
 
-        <footer className="pie-pagina">
-          <span>FARO · Gestión del mantenimiento municipal</span>
-          <span>Municipalidad de Estación General Paz · Córdoba, Argentina</span>
-        </footer>
+        {!completa && (
+          <footer className="pie-pagina">
+            <span>FARO · Gestión del mantenimiento municipal</span>
+            <span>Municipalidad de Estación General Paz · Córdoba, Argentina</span>
+          </footer>
+        )}
       </main>
 
       {/* En el celular las secciones bajan, al alcance del pulgar (en la compu esta barra no se muestra) */}
