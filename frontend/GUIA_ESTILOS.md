@@ -156,7 +156,12 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
      las últimas 3 novedades de su historia y "Ver toda la historia" (abre la Ficha histórica completa).
      Los trabajos pendientes sin cuadrilla muestran **"Asignar cuadrilla"** (borde punteado): al tocarlo aparece el
      desplegable con las cuadrillas que hacen ese trabajo, con las mismas reglas que la pantalla Cuadrillas.
-- Por debajo de 1050 px las columnas se apilan: lista, mapa (con la leyenda debajo) y ficha.
+- **Celular y tablet (hasta 1050 px)**, como en el lienzo: el mapa ocupa toda la pantalla; arriba, los botoncitos
+  en una fila que se desliza de costado y "Ver como lista" (la lista con "Más filtros" a pantalla completa, con
+  "Ver mapa" para volver); abajo a la izquierda, la leyenda chica (sin "Colorear por"). Al tocar un lugar sube una
+  **tarjeta desde abajo** (tipo y estado, nombre, "2 trabajos abiertos · 1 urgente", "+ Nueva OT acá" y
+  "Ver ficha e historia"), que abre la ficha completa encima del mapa; su "X" vuelve a la tarjeta.
+  El ancho está en `hooks/usePantallaAngosta.js` y en el `@media` de `estilos-mapa-primero.css`: deben coincidir.
 
 ### Tarjeta de tarea (celular)
 Cada tarea del capataz es una tarjeta (`li.tarjeta-tarea`) con un único botón principal de ancho completo y

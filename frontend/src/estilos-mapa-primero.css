@@ -97,13 +97,43 @@
 .leaflet-tooltip.etiqueta-lugar { padding: 6px 10px; border: 0; border-radius: 8px; background: var(--lateral); color: var(--blanco); font-family: var(--fuente); font-size: 0.8125rem; font-weight: 600; box-shadow: 0 2px 6px rgb(20 61 72 / 30%); }
 .leaflet-tooltip-top.etiqueta-lugar::before { border-top-color: var(--lateral); }
 
-/* Pantallas angostas (tablet y celular): una columna. El mapa y la ficha en el celular se rediseñan en el PR 4. */
+/* ---- Tarjeta desde abajo (celular): resumen del lugar elegido ---- */
+.tarjeta-lugar { position: absolute; right: 0; bottom: 0; left: 0; z-index: 3; display: flex; flex-direction: column; gap: 12px; padding: 10px 18px 18px; border-radius: 20px 20px 0 0; background: var(--blanco); box-shadow: 0 -4px 16px rgb(20 61 72 / 18%); }
+.tarjeta-lugar-agarre { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--borde); }
+.tarjeta-lugar-cabecera { display: flex; align-items: flex-start; gap: 12px; }
+.tarjeta-lugar h2 { font-size: 1.375rem; line-height: 1.25; overflow-wrap: anywhere; }
+.tarjeta-lugar-trabajos { color: var(--texto-secundario); font-size: 0.875rem; }
+.tarjeta-lugar-botones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tarjeta-lugar-botones .boton { min-height: 48px; font-size: 0.9375rem; }
+
+/* ---- Celular y tablet (hasta 1050 px; usePantallaAngosta usa el mismo ancho) ----
+   El mapa ocupa todo. Encima: los botoncitos arriba, "Ver como lista", la leyenda chica, la tarjeta desde abajo
+   y, si se abre, la ficha completa o la lista a pantalla completa. */
+.botoncitos-sobre-mapa, .boton-flotante { display: none; }
 @media (max-width: 1050px) {
-  .aplicacion-completa { display: block; height: auto; }
-  .pantalla-mapa, .pantalla-mapa-con-ficha { display: flex; flex-direction: column; height: auto; }
-  .pantalla-mapa .columna-lugares { border-right: 0; border-bottom: 1px solid var(--borde); }
-  .pantalla-mapa .columna-lugares { max-height: 70vh; }
-  .columna-mapa .mapa { height: 60vh; min-height: 320px; }
-  .leyenda-flotante { position: static; max-width: none; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--borde); }
-  .pantalla-mapa .panel-lugar { border-left: 0; overflow: visible; }
+  .pantalla-mapa-angosta { position: relative; display: block; height: 100%; overflow: hidden; }
+  .pantalla-mapa-angosta .columna-mapa { position: absolute; inset: 0; }
+  .pantalla-mapa-angosta .columna-lugares { position: absolute; inset: 0; z-index: 4; padding-bottom: 80px; border: 0; }
+  .pantalla-mapa-angosta.vista-mapa .columna-lugares { display: none; }
+  .pantalla-mapa-angosta .panel-lugar { position: absolute; inset: 0; z-index: 5; border: 0; }
+  .panel-lugar-datos h2:focus { outline: none; }
+
+  /* Botoncitos arriba del mapa: una sola fila que se desliza de costado */
+  .botoncitos-sobre-mapa { position: absolute; top: 12px; right: 0; left: 0; z-index: 2; display: flex; flex-wrap: nowrap; padding: 2px 12px 6px; overflow-x: auto; scrollbar-width: none; }
+  .botoncitos-sobre-mapa::-webkit-scrollbar { display: none; }
+  .botoncitos-sobre-mapa .botoncito { flex: none; min-height: 40px; border-color: transparent; box-shadow: 0 1px 4px rgb(20 61 72 / 25%); }
+  /* Los +/− del mapa bajan para no quedar debajo de los botoncitos */
+  .pantalla-mapa-angosta .leaflet-top { top: 112px; }
+
+  .boton-flotante { position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; background: var(--blanco); color: var(--texto); font-size: 0.875rem; font-weight: 650; box-shadow: 0 2px 8px rgb(20 61 72 / 25%); }
+  .boton-flotante .icono { width: 18px; height: 18px; color: var(--enlace); }
+  .boton-ver-lista { top: 66px; right: 12px; }
+  .boton-ver-mapa { bottom: 16px; left: 50%; z-index: 6; transform: translateX(-50%); background: var(--lateral); color: var(--blanco); }
+  .boton-ver-mapa .icono { color: var(--marca-celeste); }
+
+  /* Leyenda chica abajo a la izquierda; con la tarjeta abierta se esconde */
+  .pantalla-mapa-angosta .leyenda-flotante { left: 12px; bottom: 12px; max-width: calc(100% - 24px); padding: 6px 10px; }
+  .pantalla-mapa-angosta .leyenda-flotante .opciones-radio, .pantalla-mapa-angosta .leyenda-ayuda { display: none; }
+  .pantalla-mapa-angosta .leyenda-flotante .leyenda { gap: 2px 10px; font-size: 0.75rem; }
+  .pantalla-mapa-angosta.con-tarjeta .leyenda-flotante { display: none; }
 }
