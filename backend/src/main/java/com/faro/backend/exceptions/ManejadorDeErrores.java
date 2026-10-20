@@ -50,4 +50,18 @@ public class ManejadorDeErrores {
     public RespuestaError formatoInvalido(HttpMessageNotReadableException e) {
         return new RespuestaError(400, "El pedido tiene un formato inválido o algún valor no permitido", Map.of());
     }
+
+    // 401: credenciales incorrectas o sesión no autenticada
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public RespuestaError credencialesInvalidas(org.springframework.security.authentication.BadCredentialsException e) {
+        return new RespuestaError(401, e.getMessage(), Map.of());
+    }
+
+    // 403: acceso denegado por falta de permisos
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public RespuestaError accesoDenegado(org.springframework.security.access.AccessDeniedException e) {
+        return new RespuestaError(403, "No tiene permisos para realizar esta acción", Map.of());
+    }
 }
