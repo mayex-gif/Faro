@@ -51,3 +51,19 @@
   .nav-abajo-activo .nav-abajo-icono { background: #D6EEF3; }
   .nav-abajo:focus-visible { outline-offset: -4px; }
 }
+/* Buscador de la barra: "Buscar un lugar, una calle o un trabajo…" con su lista de resultados */
+.buscador { position: relative; display: flex; flex: 1 1 260px; align-items: center; gap: 8px; max-width: 520px; height: 44px; padding: 0 12px; border-radius: 10px; background: var(--blanco); color: var(--texto-secundario); }
+.buscador:focus-within { outline: 3px solid var(--marca-celeste); outline-offset: 2px; }
+.buscador input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: none; background: transparent; color: var(--texto); font-size: 0.9375rem; }
+.buscador-resultados { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 30; max-height: 70vh; padding: 6px; overflow-y: auto; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--blanco); box-shadow: 0 8px 24px rgb(20 61 72 / 18%); color: var(--texto); }
+.buscador-grupo { padding: 8px 10px 4px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; }
+.buscador-opcion { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+.buscador-opcion strong { font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
+.buscador-opcion span { color: var(--texto-secundario); font-size: 0.8125rem; }
+.buscador-opcion[aria-selected="true"] { background: #EAF6F9; box-shadow: inset 3px 0 0 var(--marca-cian); }
+.buscador-vacio { padding: 12px; color: var(--texto-secundario); font-size: 0.875rem; }
+@media (max-width: 760px) {
+  /* En el celular el buscador ocupa su propio renglón, debajo de la marca y "+ Nuevo" */
+  .barra-superior { flex-wrap: wrap; }
+  .buscador { order: 3; flex-basis: 100%; max-width: none; }
+}

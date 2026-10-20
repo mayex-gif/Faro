@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Icono from './components/Icono'
+import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
@@ -59,6 +60,10 @@ function App() {
           </div>
         </div>
 
+        {/* Elegir un lugar o un trabajo lleva al mapa con ese lugar elegido.
+            "vez" cambia en cada búsqueda: así el mapa se vuelve a armar aunque ya se esté viendo. */}
+        <Buscador onElegirLugar={(lugarId) => navegar('mapa', { lugarId, vez: Date.now() })} />
+
         <nav className="nav-secciones" aria-label="Secciones">
           {SECCIONES.map((seccion) => (
             <a key={seccion.clave} href="#contenido"
@@ -80,7 +85,7 @@ function App() {
       </header>
 
       <main className={completa ? 'pagina-completa' : 'pagina'} id="contenido" tabIndex={-1}>
-        <Componente key={paginaActual} params={vista.params} onNavegar={navegar} />
+        <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
 
         {!completa && (
           <footer className="pie-pagina">
