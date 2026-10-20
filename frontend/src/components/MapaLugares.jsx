@@ -9,8 +9,9 @@ import { etiquetaTipoLugar } from '../utils/lugares'
 // Los mosaicos públicos de OSM son para un uso moderado: si el uso crece, hay que pasar a un proveedor propio.
 const URL_MOSAICOS = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const ATRIBUCION = '&copy; Colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-// Solo se usa si todavía no hay lugares para encuadrar. Es el centro de Córdoba capital: ajustarlo a la zona del municipio.
-const CENTRO_POR_DEFECTO = [-31.4201, -64.1888]
+// Solo se usa si todavía no hay lugares para encuadrar: la plaza principal de Estación General Paz.
+// Leaflet pide [latitud, longitud] (al revés que GeoJSON, que guarda [longitud, latitud]).
+const CENTRO_POR_DEFECTO = [-31.13398511, -64.14037918]
 const MAXIMO_EN_POPUP = 5
 
 // El contenido del popup se arma con textContent (nunca con HTML): los nombres y descripciones los escriben usuarios.
