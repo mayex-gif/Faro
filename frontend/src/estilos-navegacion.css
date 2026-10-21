@@ -51,6 +51,18 @@
   .nav-abajo-activo .nav-abajo-icono { background: #D6EEF3; }
   .nav-abajo:focus-visible { outline-offset: -4px; }
 }
+/* Usuario logueado y botón "Cerrar sesión", a la derecha de "+ Nuevo" */
+.barra-usuario { display: flex; align-items: center; gap: 10px; }
+.barra-usuario-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: rgb(255 255 255 / 14%); color: var(--blanco); font-size: 0.75rem; font-weight: 700; }
+.barra-usuario-datos { display: none; line-height: 1.25; }
+.barra-usuario-nombre { display: block; color: var(--blanco); font-size: 0.8125rem; font-weight: 650; }
+.barra-usuario-rol { display: block; color: var(--marca-celeste); font-size: 0.75rem; }
+.barra-usuario-salir { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 8px; background: transparent; color: #DCEFF4; }
+.barra-usuario-salir:hover { background: rgb(255 255 255 / 8%); color: var(--blanco); }
+@media (min-width: 1000px) {
+  .barra-usuario-datos { display: block; }
+}
+
 /* Buscador de la barra: "Buscar un lugar, una calle o un trabajo…" con su lista de resultados */
 .buscador { position: relative; display: flex; flex: 1 1 260px; align-items: center; gap: 8px; max-width: 520px; height: 44px; padding: 0 12px; border-radius: 10px; background: var(--blanco); color: var(--texto-secundario); }
 .buscador:focus-within { outline: 3px solid var(--marca-celeste); outline-offset: 2px; }

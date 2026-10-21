@@ -12,6 +12,7 @@
 .tarea-otras summary { display: flex; align-items: center; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
 .tarea-otras-botones { display: grid; gap: 8px; padding-top: 4px; }
 .listado > .mensaje-informacion { margin: 20px; }
+.acciones-tareas { margin-bottom: 20px; }
 
 @media (max-width: 760px) {
   .lista-tareas { padding: 16px; }

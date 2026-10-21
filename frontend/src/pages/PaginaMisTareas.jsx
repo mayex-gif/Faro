@@ -5,9 +5,12 @@ import { listarCuadrillas } from '../api/cuadrillas'
 import TarjetaTarea from '../components/TarjetaTarea'
 import Icono from '../components/Icono'
 import { tareasDeCuadrilla } from '../utils/tareas'
+import { useAuth } from '../context/AuthContext'
+import { ROLES, tieneRol } from '../utils/auth'
 import '../estilos-mis-tareas.css'
 
-// Todavía no hay inicio de sesión (llega en el Sprint 3): el capataz elige su cuadrilla y el navegador la recuerda.
+// Fuera de un capataz logueado (ej. el encargado, que puede supervisar cualquier cuadrilla), la pantalla
+// recuerda la última cuadrilla elegida en este navegador.
 const CLAVE_CUADRILLA = 'faro.cuadrillaElegida'
 
 function leerCuadrillaGuardada() {
@@ -28,6 +31,10 @@ function guardarCuadrilla(id) {
 }
 
 function PaginaMisTareas({ onNavegar }) {
+  const { usuario } = useAuth()
+  // El capataz ve siempre su propia cuadrilla (FRONTEND_AUTENTICACION_Y_ROLES.md, 3.7): no elige.
+  const esCapataz = tieneRol(usuario, ROLES.CAPATAZ_CUADRILLA)
+
   const [ordenes, setOrdenes] = useState([])
   const [estados, setEstados] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -35,7 +42,7 @@ function PaginaMisTareas({ onNavegar }) {
   const [cuadrillas, setCuadrillas] = useState([])
   const [cargandoCuadrillas, setCargandoCuadrillas] = useState(true)
   const [errorCuadrillas, setErrorCuadrillas] = useState(null)
-  const [cuadrillaId, setCuadrillaId] = useState(leerCuadrillaGuardada)
+  const [cuadrillaId, setCuadrillaId] = useState(() => (esCapataz ? String(usuario.cuadrillaId ?? '') : leerCuadrillaGuardada()))
   // Id de la tarea que se está guardando (bloquea los botones de las demás mientras tanto)
   const [idGuardando, setIdGuardando] = useState(null)
   const [mensaje, setMensaje] = useState('')
@@ -125,8 +132,12 @@ function PaginaMisTareas({ onNavegar }) {
     <>
       <div className="encabezado-pagina">
         <p className="sobre-titulo">TRABAJO EN TERRITORIO</p>
-        <h1>Mis tareas</h1>
-        <p>Elegí tu cuadrilla para ver los trabajos que tenés asignados. Marcá cuándo empezás y cuándo terminás cada uno.</p>
+        <h1>{esCapataz && cuadrillaActual ? `Mis tareas — ${cuadrillaActual.nombre}` : 'Mis tareas'}</h1>
+        <p>
+          {esCapataz
+            ? 'Los trabajos asignados a tu cuadrilla. Marcá cuándo empezás y cuándo terminás cada uno.'
+            : 'Elegí una cuadrilla para supervisar sus trabajos. Marcá cuándo empieza y cuándo termina cada uno.'}
+        </p>
       </div>
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">
@@ -134,39 +145,49 @@ function PaginaMisTareas({ onNavegar }) {
         {errorAccion && <p className="mensaje mensaje-error" role="alert">{errorAccion}</p>}
       </div>
 
-      <section className="panel listado panel-cuadrillas" aria-labelledby="titulo-mi-cuadrilla" aria-busy={cargandoCuadrillas}>
-        <div className="panel-encabezado">
-          <div>
-            <h2 id="titulo-mi-cuadrilla">Tu cuadrilla</h2>
-            <p>Todavía no hay inicio de sesión: elegí la cuadrilla en la que trabajás. El teléfono la recuerda.</p>
+      {!esCapataz && (
+        <section className="panel listado panel-cuadrillas" aria-labelledby="titulo-mi-cuadrilla" aria-busy={cargandoCuadrillas}>
+          <div className="panel-encabezado">
+            <div>
+              <h2 id="titulo-mi-cuadrilla">Cuadrilla a supervisar</h2>
+              <p>Como encargado podés ver las tareas de cualquier cuadrilla. El teléfono recuerda la última elegida.</p>
+            </div>
           </div>
-        </div>
 
-        {errorCuadrillas && (
-          <div className="mensaje mensaje-error" role="alert">
-            <div><strong>No se pudo completar la operación</strong><p>{errorCuadrillas}</p></div>
-            <button type="button" className="boton boton-secundario" onClick={actualizar}>
-              Volver a cargar
+          {errorCuadrillas && (
+            <div className="mensaje mensaje-error" role="alert">
+              <div><strong>No se pudo completar la operación</strong><p>{errorCuadrillas}</p></div>
+              <button type="button" className="boton boton-secundario" onClick={actualizar}>
+                Volver a cargar
+              </button>
+            </div>
+          )}
+
+          <div className="selector-cuadrilla">
+            <div className="campo">
+              <label htmlFor="mi-cuadrilla">Cuadrilla</label>
+              <select id="mi-cuadrilla" value={cuadrillaActual ? String(cuadrillaActual.id) : ''}
+                onChange={elegirCuadrilla} disabled={cargandoCuadrillas || cuadrillas.length === 0}>
+                <option value="">{cargandoCuadrillas ? 'Cargando cuadrillas…' : 'Elegir cuadrilla'}</option>
+                {cuadrillas.map((cuadrilla) => (
+                  <option key={cuadrilla.id} value={cuadrilla.id}>{cuadrilla.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <button type="button" className="boton boton-secundario" onClick={actualizar} disabled={cargando}>
+              Actualizar tareas
             </button>
           </div>
-        )}
+        </section>
+      )}
 
-        <div className="selector-cuadrilla">
-          <div className="campo">
-            <label htmlFor="mi-cuadrilla">Cuadrilla</label>
-            <select id="mi-cuadrilla" value={cuadrillaActual ? String(cuadrillaActual.id) : ''}
-              onChange={elegirCuadrilla} disabled={cargandoCuadrillas || cuadrillas.length === 0}>
-              <option value="">{cargandoCuadrillas ? 'Cargando cuadrillas…' : 'Elegir cuadrilla'}</option>
-              {cuadrillas.map((cuadrilla) => (
-                <option key={cuadrilla.id} value={cuadrilla.id}>{cuadrilla.nombre}</option>
-              ))}
-            </select>
-          </div>
+      {esCapataz && (
+        <div className="botones acciones-tareas">
           <button type="button" className="boton boton-secundario" onClick={actualizar} disabled={cargando}>
             Actualizar tareas
           </button>
         </div>
-      </section>
+      )}
 
       <section className="panel listado" aria-labelledby="titulo-mis-tareas" aria-busy={cargando}>
         <div className="panel-encabezado">
@@ -205,8 +226,12 @@ function PaginaMisTareas({ onNavegar }) {
           !cuadrillaActual ? (
             <div className="estado-listado estado-vacio">
               <span className="icono-vacio"><Icono nombre="cuadrilla" /></span>
-              <h3>Elegí tu cuadrilla</h3>
-              <p>Cuando elijas una cuadrilla, vas a ver acá los trabajos que tiene asignados.</p>
+              <h3>{esCapataz ? 'Todavía no tenés una cuadrilla asignada' : 'Elegí una cuadrilla'}</h3>
+              <p>
+                {esCapataz
+                  ? 'Consultá con el encargado del corralón para que te asigne a una cuadrilla.'
+                  : 'Cuando elijas una cuadrilla, vas a ver acá los trabajos que tiene asignados.'}
+              </p>
             </div>
           ) : tareas.length === 0 ? (
             <div className="estado-listado estado-vacio">

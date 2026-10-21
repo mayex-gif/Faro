@@ -1,0 +1,85 @@
+/* Pantalla de inicio de sesión. Botones, mensajes y el panel base vienen de index.css;
+   acá solo va lo específico de esta pantalla. */
+
+.pantalla-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--lateral);
+}
+
+.tarjeta-login {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px 32px;
+}
+
+.carga-inicial { display: flex; align-items: center; gap: 12px; color: var(--blanco); font-size: 0.9375rem; }
+.carga-inicial .indicador-carga { border-color: rgb(255 255 255 / 25%); border-top-color: var(--marca-celeste); }
+
+.login-encabezado { margin-bottom: 28px; text-align: center; }
+.login-logo { display: block; margin: 0 auto 14px; }
+.login-encabezado .sobre-titulo { color: var(--texto-secundario); letter-spacing: 1.2px; }
+.login-encabezado h1 { margin: 8px 0 10px; }
+.login-encabezado p { color: var(--texto-secundario); font-size: 0.875rem; }
+
+.tarjeta-login form .campo { margin-bottom: 18px; }
+
+.campo-password { position: relative; }
+.campo-password input { padding-right: 92px; }
+.boton-mostrar-password {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--enlace);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+.boton-mostrar-password:hover { background: var(--fondo); }
+
+.boton-login { width: 100%; margin-top: 6px; }
+.indicador-carga-chico { width: 16px; height: 16px; border-width: 2px; }
+
+.cuentas-prueba { margin-top: 24px; border-top: 1px solid var(--borde); padding-top: 18px; }
+.cuentas-prueba-boton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--enlace);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.lista-cuentas-prueba { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lista-cuentas-prueba li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+}
+.lista-cuentas-prueba strong { display: block; font-size: 0.8125rem; }
+.lista-cuentas-prueba span { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; }
+.lista-cuentas-prueba .boton { min-height: 36px; padding: 6px 12px; font-size: 0.75rem; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .tarjeta-login { padding: 28px 20px; }
+  .lista-cuentas-prueba li { flex-direction: column; align-items: stretch; }
+}

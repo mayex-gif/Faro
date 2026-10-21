@@ -20,12 +20,35 @@ export class ErrorApi extends Error {
   }
 }
 
+// Token de la sesión activa, en memoria (no se lee de localStorage en cada pedido).
+// AuthContext lo sincroniza con localStorage al arrancar la app, al iniciar sesión y al cerrarla.
+// Mantenerlo acá, y no acceder a localStorage directamente, hace que este archivo se pueda
+// probar con "npm test" sin un navegador real.
+let token = null
+
+export function establecerToken(nuevoToken) {
+  token = nuevoToken
+}
+
+// A qué avisar cuando el backend dice que la sesión ya no vale (401 con un token enviado).
+// AuthContext se suscribe acá para cerrar la sesión y mandar al login, sin que este archivo
+// dependa del contexto de React.
+let alVencerSesion = null
+
+export function alRecibirSesionVencida(funcion) {
+  alVencerSesion = funcion
+}
+
 // Hace el pedido, revisa si salió bien y devuelve los datos
 export async function pedir(ruta, opciones = {}) {
-  const respuesta = await fetch(`${API_BASE}${ruta}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opciones,
-  })
+  const headers = { 'Content-Type': 'application/json', ...opciones.headers }
+  if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`
+
+  const respuesta = await fetch(`${API_BASE}${ruta}`, { ...opciones, headers })
+
+  // Un 401 sin token enviado es, por ejemplo, un login con contraseña incorrecta: no es una sesión
+  // que venció, así que no dispara el logout global (eso lo maneja la propia pantalla de login).
+  if (respuesta.status === 401 && token) alVencerSesion?.()
 
   if (!respuesta.ok) {
     let cuerpo = null

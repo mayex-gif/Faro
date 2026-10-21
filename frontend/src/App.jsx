@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react'
 import Icono from './components/Icono'
 import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
+import BarraUsuario from './components/BarraUsuario'
+import PaginaLogin from './pages/PaginaLogin'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
-import { INICIO, MAS, NUEVO, SECCIONES, esPantallaCompleta, estaEnMas, tituloDe } from './utils/navegacion'
+import { useAuth } from './context/AuthContext'
+import {
+  INICIO, NUEVO, esPantallaCompleta, estaEnMas, inicioPara, masPara, puedeVer, seccionesPara, tituloDe,
+} from './utils/navegacion'
 import './App.css'
 import './estilos-navegacion.css'
 
@@ -24,11 +29,22 @@ const PAGINAS = {
 }
 
 function App() {
-  // Qué pantalla se está mostrando y con qué datos (params: ej. { lugarId: 3 } para abrir la ficha de un lugar)
+  const { usuario, estaAutenticado } = useAuth()
+
+  // Qué pantalla se pidió ver y con qué datos (params: ej. { lugarId: 3 } para abrir la ficha de un lugar)
   const [vista, setVista] = useState({ clave: INICIO, params: {} })
-  const paginaActual = vista.clave
+
+  // La pantalla que realmente se dibuja: si la pedida no es para el rol logueado (por ejemplo, un
+  // capataz pidiendo Infraestructura, o recién inició sesión), se muestra la inicial de su rol en su
+  // lugar. El capataz arranca directo en "Mis tareas" (FRONTEND_AUTENTICACION_Y_ROLES.md, 3.6); el
+  // resto, en el mapa. Se calcula al dibujar (no en un efecto) para no duplicar el estado de la vista.
+  const paginaActual = usuario && !puedeVer(usuario.rol, vista.clave) ? inicioPara(usuario.rol) : vista.clave
+  const params = paginaActual === vista.clave ? vista.params : {}
   const Componente = PAGINAS[paginaActual]
   const completa = esPantallaCompleta(paginaActual) // el mapa ocupa todo, sin márgenes ni pie de página
+  const secciones = seccionesPara(usuario?.rol)
+  const mas = masPara(usuario?.rol)
+  const nuevo = usuario ? NUEVO.filter((opcion) => puedeVer(usuario.rol, opcion.clave)) : []
 
   // El nombre de la pestaña del navegador acompaña a la pantalla: "Trabajos | FARO"
   useEffect(() => {
@@ -45,6 +61,10 @@ function App() {
   function irA(evento, clave) {
     evento.preventDefault() // evita el salto del enlace: cambiamos de pantalla nosotros
     navegar(clave)
+  }
+
+  if (!estaAutenticado) {
+    return <PaginaLogin />
   }
 
   return (
@@ -65,7 +85,7 @@ function App() {
         <Buscador onElegirLugar={(lugarId) => navegar('mapa', { lugarId, vez: Date.now() })} />
 
         <nav className="nav-secciones" aria-label="Secciones">
-          {SECCIONES.map((seccion) => (
+          {secciones.map((seccion) => (
             <a key={seccion.clave} href="#contenido"
               className={seccion.clave === paginaActual ? 'nav-enlace nav-enlace-activo' : 'nav-enlace'}
               aria-current={seccion.clave === paginaActual ? 'page' : undefined}
@@ -73,19 +93,26 @@ function App() {
               {seccion.titulo}
             </a>
           ))}
-          <MenuDesplegable opciones={MAS} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
-            claseBoton={estaEnMas(paginaActual) ? 'nav-enlace nav-enlace-activo' : 'nav-enlace'}
-            contenidoBoton={<>Más<Icono nombre="abajo" /></>} />
+          {mas.length > 0 && (
+            <MenuDesplegable opciones={mas} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
+              claseBoton={estaEnMas(paginaActual) ? 'nav-enlace nav-enlace-activo' : 'nav-enlace'}
+              contenidoBoton={<>Más<Icono nombre="abajo" /></>} />
+          )}
         </nav>
 
-        {/* Siempre en el mismo lugar: crear algo nuevo no depende de en qué pantalla estés */}
-        <MenuDesplegable opciones={NUEVO} onElegir={(clave) => navegar(clave)}
-          claseBoton="boton boton-primario boton-nuevo"
-          contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />
+        {/* Siempre en el mismo lugar: crear algo nuevo no depende de en qué pantalla estés.
+            Si el rol no puede crear nada (ej. capataz), el botón no se muestra. */}
+        {nuevo.length > 0 && (
+          <MenuDesplegable opciones={nuevo} onElegir={(clave) => navegar(clave)}
+            claseBoton="boton boton-primario boton-nuevo"
+            contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />
+        )}
+
+        <BarraUsuario />
       </header>
 
       <main className={completa ? 'pagina-completa' : 'pagina'} id="contenido" tabIndex={-1}>
-        <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
+        <Componente key={`${paginaActual}-${params.vez ?? ''}`} params={params} onNavegar={navegar} />
 
         {!completa && (
           <footer className="pie-pagina">
@@ -97,7 +124,7 @@ function App() {
 
       {/* En el celular las secciones bajan, al alcance del pulgar (en la compu esta barra no se muestra) */}
       <nav className="barra-inferior" aria-label="Secciones">
-        {SECCIONES.map((seccion) => (
+        {secciones.map((seccion) => (
           <a key={seccion.clave} href="#contenido"
             className={seccion.clave === paginaActual ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
             aria-current={seccion.clave === paginaActual ? 'page' : undefined}
@@ -106,9 +133,11 @@ function App() {
             {seccion.titulo}
           </a>
         ))}
-        <MenuDesplegable haciaArriba opciones={MAS} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
-          claseBoton={estaEnMas(paginaActual) ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
-          contenidoBoton={<><span className="nav-abajo-icono"><Icono nombre="mas" /></span>Más</>} />
+        {mas.length > 0 && (
+          <MenuDesplegable haciaArriba opciones={mas} claveActual={paginaActual} onElegir={(clave) => navegar(clave)}
+            claseBoton={estaEnMas(paginaActual) ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
+            contenidoBoton={<><span className="nav-abajo-icono"><Icono nombre="mas" /></span>Más</>} />
+        )}
       </nav>
     </div>
   )
