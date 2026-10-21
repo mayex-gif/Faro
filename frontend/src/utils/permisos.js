@@ -37,3 +37,10 @@ export function puedeCrearOrden(usuario) {
 export function puedeAsignar(usuario) {
   return tieneRol(usuario, ENCARGADO)
 }
+
+// Agregar un lugar tocando el mapa: el encargado y mesa de entradas (por ejemplo, al recibir un reclamo
+// de un lugar que todavía no está cargado). El capataz no. Ojo: hoy solo lo controla la pantalla;
+// el backend todavía no valida roles (tarjeta "Agregar las validaciones por roles en el backend").
+export function puedeAgregarLugar(usuario) {
+  return tieneRol(usuario, ENCARGADO, MESA)
+}

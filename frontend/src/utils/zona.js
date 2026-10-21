@@ -22,3 +22,19 @@ export function separarPorZona(lugares, zona = ZONA_PUEBLO) {
   }
   return { dentro, fuera }
 }
+
+// ¿El punto tocado en el mapa está dentro del pueblo? (para agregar un lugar nuevo)
+export function puntoEnLaZona(latitud, longitud, zona = ZONA_PUEBLO) {
+  return Number.isFinite(latitud) && Number.isFinite(longitud)
+    && latitud >= zona.sur && latitud <= zona.norte && longitud >= zona.oeste && longitud <= zona.este
+}
+
+// Coordenadas con 6 decimales (unos 10 cm): suficiente para un poste y más fácil de leer.
+export function redondearCoordenada(valor) {
+  return Math.round(valor * 1e6) / 1e6
+}
+
+// Lo que necesita el backend para un lugar marcado en el mapa: GeoJSON guarda [longitud, latitud].
+export function ubicacionDelPunto({ latitud, longitud }) {
+  return { type: 'Point', coordinates: [redondearCoordenada(longitud), redondearCoordenada(latitud)] }
+}

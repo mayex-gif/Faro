@@ -31,17 +31,23 @@ function crearEtiqueta(resumen) {
 // - seleccion: { lugarId, vez } → centra el mapa en ese lugar y muestra su etiqueta (vez cambia aunque se repita el lugar)
 // - onSeleccionar(lugarId): se tocó un lugar en el mapa
 // - onLimites(zona): el mapa se movió; zona = { sur, oeste, norte, este } de lo que se ve
+// Para agregar un lugar nuevo tocando el mapa:
+// - agregando: true mientras se está eligiendo dónde va (el cursor cambia y tocar un lugar no abre su ficha)
+// - puntoNuevo: { latitud, longitud } donde va el pin del lugar nuevo (o null)
+// - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
+// - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
-function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites }) {
+function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const grupo = useRef(null)
   const capasPorLugar = useRef(new Map())
   const avisos = useRef({})
+  const pinNuevo = useRef(null)
 
-  // Los avisos siempre apuntan a las funciones más nuevas de la página.
+  // Los avisos siempre apuntan a las funciones y datos más nuevos de la página.
   useEffect(() => {
-    avisos.current = { onSeleccionar, onLimites }
+    avisos.current = { onSeleccionar, onLimites, onElegirPunto, agregando }
   })
 
   // Crear el mapa una sola vez.
@@ -66,6 +72,12 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     instancia.on('moveend', avisarZona)
     avisarZona()
 
+    // Agregar un lugar: tocar el mapa elige el punto (solo mientras se está agregando).
+    instancia.on('click', (evento) => {
+      if (!avisos.current.agregando) return
+      avisos.current.onElegirPunto?.({ latitud: evento.latlng.lat, longitud: evento.latlng.lng })
+    })
+
     // Si la caja del mapa cambia de tamaño (por ejemplo, se abre o se cierra la ficha del lugar al costado),
     // Leaflet tiene que volver a medirla; si no, quedan franjas grises sin mosaicos.
     const observador = new ResizeObserver(() => {
@@ -79,6 +91,7 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
       instancia.remove()
       mapa.current = null
       grupo.current = null
+      pinNuevo.current = null
       capas.clear()
     }
   }, [])
@@ -101,7 +114,10 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
         style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
       })
       capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
-      capa.on('click', () => avisos.current.onSeleccionar?.(resumen.lugar.id))
+      // Mientras se agrega un lugar, tocar uno existente no abre su ficha: el toque sigue al mapa y pone el pin ahí.
+      capa.on('click', () => {
+        if (!avisos.current.agregando) avisos.current.onSeleccionar?.(resumen.lugar.id)
+      })
       capa.addTo(grupo.current)
       capasPorLugar.current.set(resumen.lugar.id, capa)
     }
@@ -131,6 +147,41 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     }
     capa.openTooltip()
   }, [seleccion])
+
+  // El pin del lugar nuevo: se puede arrastrar para ajustar la posición (también con el teclado, con las flechas).
+  useEffect(() => {
+    if (!mapa.current) return
+    if (!puntoNuevo) {
+      pinNuevo.current?.remove()
+      pinNuevo.current = null
+      return
+    }
+    const posicion = [puntoNuevo.latitud, puntoNuevo.longitud]
+    if (pinNuevo.current) {
+      pinNuevo.current.setLatLng(posicion)
+    } else {
+      // El dibujo del pin es fijo (no lleva datos de usuarios), por eso puede ir como HTML.
+      const icono = L.divIcon({ className: 'pin-nuevo', html: '<span></span>', iconSize: [30, 30], iconAnchor: [15, 30] })
+      pinNuevo.current = L.marker(posicion, { icon: icono, draggable: true, title: 'Lugar nuevo: arrastralo para ajustar', alt: 'Lugar nuevo' })
+        .on('dragend', () => {
+          const { lat, lng } = pinNuevo.current.getLatLng()
+          avisos.current.onElegirPunto?.({ latitud: lat, longitud: lng })
+        })
+        .addTo(mapa.current)
+    }
+    // En el celular el formulario sube desde abajo y tapa parte del mapa: si el pin quedó debajo,
+    // corremos el mapa lo justo para que se vea arriba de la hoja (40 px arriba: el alto del pin y un margen).
+    const altoTapado = hojaAbajo?.current?.offsetHeight ?? 0
+    if (altoTapado > 0) {
+      mapa.current.panInside(posicion, { paddingTopLeft: [0, 40], paddingBottomRight: [0, altoTapado + 16] })
+    }
+  }, [puntoNuevo, hojaAbajo])
+
+  // Mientras se agrega un lugar, el cursor es una cruz. Se usa classList (y no className) porque
+  // Leaflet le agrega sus propias clases a este mismo div y React las borraría al cambiar className.
+  useEffect(() => {
+    contenedor.current?.classList.toggle('mapa-agregando', agregando)
+  }, [agregando])
 
   return (
     <div id="mapa-lugares" ref={contenedor} className="mapa" role="region"
