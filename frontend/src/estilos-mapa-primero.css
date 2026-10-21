@@ -141,3 +141,10 @@
 /* Aviso de lugares con la ubicación fuera del pueblo (columna de lugares) */
 .aviso-fuera-de-zona { flex-direction: column; align-items: flex-start; margin: 12px 12px 0; }
 .aviso-fuera-de-zona p { overflow-wrap: anywhere; }
+
+/* ---- Agregar un lugar tocando el mapa ---- */
+/* Mientras se elige el punto, el cursor es una cruz (en el mapa y sobre los lugares) */
+.mapa-agregando, .mapa-agregando .leaflet-interactive { cursor: crosshair; }
+/* El pin del lugar nuevo: gota naranja (color de la acción principal) con borde blanco, apoyada en la punta */
+.pin-nuevo span { display: block; width: 30px; height: 30px; border: 3px solid var(--blanco); border-radius: 50% 50% 50% 0; background: var(--marca-naranja); box-shadow: 0 2px 6px rgb(20 61 72 / 45%); transform: rotate(-45deg); }
+.pin-nuevo:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
