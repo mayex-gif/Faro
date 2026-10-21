@@ -6,6 +6,7 @@ import {
   limpiarSesion, olvidarSesionTemporal, terminarSesion, tokenVigente, vencimientoToken,
 } from '../utils/sesion'
 import { ContextoSesion } from './useSesion'
+import { borrarCopia } from '../offline/almacen'
 
 function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null)
@@ -16,6 +17,7 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     function alTerminar(evento) {
+      borrarCopia().catch(() => {})
       setUsuario(null)
       setError('')
       setMensaje(evento.detail)
@@ -93,6 +95,7 @@ function AuthProvider({ children }) {
     if (!tokenVigente(respuesta.token) || !respuesta.usuario?.activo || !rolConocido(respuesta.usuario.rol)) {
       throw new Error('No recibimos una sesión habilitada. Consultá al encargado.')
     }
+    await borrarCopia().catch(() => {})
     guardarSesion(respuesta.token, respuesta.usuario)
     setError('')
     setMensaje('')
@@ -101,6 +104,7 @@ function AuthProvider({ children }) {
 
   function logout() {
     limpiarSesion()
+    borrarCopia().catch(() => {})
     setUsuario(null)
     setError('')
     setMensaje('Cerraste tu sesión correctamente.')

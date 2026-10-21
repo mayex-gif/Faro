@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "FARO · Mantenimiento municipal",
+  "short_name": "FARO",
+  "lang": "es-AR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F4F7F8",
+  "theme_color": "#143D48",
+  "icons": [{ "src": "/icono-app.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
