@@ -1,0 +1,11 @@
+.panel.copia-local { padding: 24px; margin-bottom: 24px; }
+.copia-local h2 { margin-bottom: 8px; }
+.copia-local p { color: var(--texto-secundario); }
+.copia-local .acciones { margin-top: 16px; flex-wrap: wrap; }
+.copia-local .mensaje { margin-top: 16px; }
+.pagina.consulta-local { max-width: 900px; }
+.consulta-local > .mensaje { margin-bottom: 24px; }
+.consulta-acciones { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+@media (max-width: 760px) {
+  .consulta-acciones { width: 100%; justify-content: space-between; }
+}

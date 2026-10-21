@@ -11,8 +11,8 @@ import { accionesDeTarea, textoAccion } from '../utils/tareas'
 // - bloqueada: true si hay otra tarea guardándose (se deshabilitan los botones de las demás)
 // - onAccion(orden, estadoNuevo): se tocó "Iniciar", "Finalizar" u otra opción
 // - onVerFicha(lugarId): abre la ficha histórica del lugar
-function TarjetaTarea({ orden, estados, ocupada, bloqueada, onAccion, onVerFicha }) {
-  const { principal, otras } = accionesDeTarea(orden, estados)
+function TarjetaTarea({ orden, estados = [], ocupada, bloqueada, onAccion, onVerFicha, soloLectura = false }) {
+  const { principal, otras } = soloLectura ? { principal: null, otras: [] } : accionesDeTarea(orden, estados)
   const sinPermiso = ocupada || bloqueada
 
   return (
@@ -38,7 +38,7 @@ function TarjetaTarea({ orden, estados, ocupada, bloqueada, onAccion, onVerFicha
         <span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span>
       </div>
 
-      {principal ? (
+      {!soloLectura && (principal ? (
         <button type="button" className="boton boton-primario boton-tarea" disabled={sinPermiso}
           onClick={() => onAccion(orden, principal)}
           aria-label={`${textoAccion(principal, true)}: orden ${orden.id}`}>
@@ -47,7 +47,7 @@ function TarjetaTarea({ orden, estados, ocupada, bloqueada, onAccion, onVerFicha
         </button>
       ) : (
         <p className="orden-cerrada">No hay acciones disponibles para esta tarea.</p>
-      )}
+      ))}
 
       {otras.length > 0 && (
         <details className="tarea-otras">
@@ -64,11 +64,11 @@ function TarjetaTarea({ orden, estados, ocupada, bloqueada, onAccion, onVerFicha
         </details>
       )}
 
-      <button type="button" className="boton boton-secundario boton-tarea-secundario"
+      {onVerFicha && <button type="button" className="boton boton-secundario boton-tarea-secundario"
         onClick={() => onVerFicha(orden.lugarId)}
         aria-label={`Ver la ficha histórica de ${orden.lugarNombre}`}>
         <Icono nombre="historial" />Ficha del lugar
-      </button>
+      </button>}
     </li>
   )
 }
