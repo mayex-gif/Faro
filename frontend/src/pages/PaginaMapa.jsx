@@ -63,6 +63,7 @@ function PaginaMapa({ params, onNavegar }) {
   const [agregando, setAgregando] = useState(false)
   const [puntoNuevo, setPuntoNuevo] = useState(null) // { latitud, longitud } del pin
   const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
+  const hojaLugarNuevo = useRef(null) // celular: la hoja del formulario, para que el mapa no deje el pin debajo
 
   function cargarDatos() {
     // Sin los tres no se puede armar el mapa: si falla uno, es un error de carga.
@@ -232,7 +233,7 @@ function PaginaMapa({ params, onNavegar }) {
   const mostrarTarjeta = !agregando && angosta && resumenActivo && !fichaAbierta
   const mostrarPanel = !agregando && resumenActivo && (!angosta || fichaAbierta)
   let clase = 'pantalla-mapa'
-  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}`
+  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}${agregando ? ' agregando-lugar' : ''}`
   else if (resumenActivo || agregando) clase += ' pantalla-mapa-con-ficha'
 
   return (
@@ -283,7 +284,8 @@ function PaginaMapa({ params, onNavegar }) {
       <section className="columna-mapa" aria-label="Mapa de Estación General Paz">
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
-          agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo} />
+          agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo}
+          hojaAbajo={angosta ? hojaLugarNuevo : null} />
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
         {puedeAgregar && !agregando && !cargando && !error && (
@@ -352,7 +354,7 @@ function PaginaMapa({ params, onNavegar }) {
 
       {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
       {agregando && (
-        <div className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
+        <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
           <FormularioLugarMapa punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar} />
         </div>
       )}

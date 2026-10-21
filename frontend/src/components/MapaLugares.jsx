@@ -35,8 +35,9 @@ function crearEtiqueta(resumen) {
 // - agregando: true mientras se está eligiendo dónde va (el cursor cambia y tocar un lugar no abre su ficha)
 // - puntoNuevo: { latitud, longitud } donde va el pin del lugar nuevo (o null)
 // - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
+// - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
-function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto }) {
+function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const grupo = useRef(null)
@@ -158,17 +159,23 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     const posicion = [puntoNuevo.latitud, puntoNuevo.longitud]
     if (pinNuevo.current) {
       pinNuevo.current.setLatLng(posicion)
-      return
+    } else {
+      // El dibujo del pin es fijo (no lleva datos de usuarios), por eso puede ir como HTML.
+      const icono = L.divIcon({ className: 'pin-nuevo', html: '<span></span>', iconSize: [30, 30], iconAnchor: [15, 30] })
+      pinNuevo.current = L.marker(posicion, { icon: icono, draggable: true, title: 'Lugar nuevo: arrastralo para ajustar', alt: 'Lugar nuevo' })
+        .on('dragend', () => {
+          const { lat, lng } = pinNuevo.current.getLatLng()
+          avisos.current.onElegirPunto?.({ latitud: lat, longitud: lng })
+        })
+        .addTo(mapa.current)
     }
-    // El dibujo del pin es fijo (no lleva datos de usuarios), por eso puede ir como HTML.
-    const icono = L.divIcon({ className: 'pin-nuevo', html: '<span></span>', iconSize: [30, 30], iconAnchor: [15, 30] })
-    pinNuevo.current = L.marker(posicion, { icon: icono, draggable: true, title: 'Lugar nuevo: arrastralo para ajustar', alt: 'Lugar nuevo' })
-      .on('dragend', () => {
-        const { lat, lng } = pinNuevo.current.getLatLng()
-        avisos.current.onElegirPunto?.({ latitud: lat, longitud: lng })
-      })
-      .addTo(mapa.current)
-  }, [puntoNuevo])
+    // En el celular el formulario sube desde abajo y tapa parte del mapa: si el pin quedó debajo,
+    // corremos el mapa lo justo para que se vea arriba de la hoja (40 px arriba: el alto del pin y un margen).
+    const altoTapado = hojaAbajo?.current?.offsetHeight ?? 0
+    if (altoTapado > 0) {
+      mapa.current.panInside(posicion, { paddingTopLeft: [0, 40], paddingBottomRight: [0, altoTapado + 16] })
+    }
+  }, [puntoNuevo, hojaAbajo])
 
   // Mientras se agrega un lugar, el cursor es una cruz. Se usa classList (y no className) porque
   // Leaflet le agrega sus propias clases a este mismo div y React las borraría al cambiar className.

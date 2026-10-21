@@ -170,6 +170,9 @@
   /* Celular: el botón va a la izquierda (a la derecha está "Ver como lista") y el formulario sube desde abajo */
   .boton-agregar-lugar { top: 66px; right: auto; left: 12px; border-radius: 22px; }
   .pantalla-mapa-angosta.vista-lista .boton-agregar-lugar { display: none; }
+  /* Mientras se agrega un lugar, los filtros y "Ver como lista" no se usan: se esconden para dejar más mapa a la vista */
+  .pantalla-mapa-angosta.agregando-lugar .botoncitos-sobre-mapa,
+  .pantalla-mapa-angosta.agregando-lugar .boton-ver-lista { display: none; }
   .aviso-mapa { top: 120px; }
   .hoja-lugar-nuevo { position: absolute; right: 0; bottom: 0; left: 0; z-index: 5; max-height: 72%; overflow-y: auto; border-radius: 20px 20px 0 0; background: var(--blanco); box-shadow: 0 -4px 16px rgb(20 61 72 / 18%); }
   .hoja-lugar-nuevo .panel-lugar { position: static; overflow: visible; }
