@@ -5,6 +5,7 @@ import { listarPuntos } from '../api/infraestructura'
 import { listarCuadrillas } from '../api/cuadrillas'
 import BotoncitosLugares from '../components/BotoncitosLugares'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
+import FormularioLugarMapa from '../components/FormularioLugarMapa'
 import Icono from '../components/Icono'
 import ListaLugares from '../components/ListaLugares'
 import MapaLugares from '../components/MapaLugares'
@@ -20,7 +21,7 @@ import {
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { useSesion } from '../context/useSesion'
-import { puedeVer } from '../utils/permisos'
+import { puedeAgregarLugar, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
 
@@ -57,6 +58,11 @@ function PaginaMapa({ params, onNavegar }) {
   const angosta = usePantallaAngosta()
   const [vistaAngosta, setVistaAngosta] = useState('mapa')
   const [fichaAbierta, setFichaAbierta] = useState(false)
+  // Agregar un lugar tocando el mapa (encargado y mesa de entradas)
+  const puedeAgregar = puedeAgregarLugar(usuario)
+  const [agregando, setAgregando] = useState(false)
+  const [puntoNuevo, setPuntoNuevo] = useState(null) // { latitud, longitud } del pin
+  const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
 
   function cargarDatos() {
     // Sin los tres no se puede armar el mapa: si falla uno, es un error de carga.
@@ -99,6 +105,47 @@ function PaginaMapa({ params, onNavegar }) {
     cargarCuadrillas()
   }, [])
 
+  // Mientras se agrega un lugar, Escape cancela (como cerrar el formulario).
+  useEffect(() => {
+    if (!agregando) return
+    function alApretarTecla(evento) {
+      if (evento.key === 'Escape') cancelarAgregar()
+    }
+    document.addEventListener('keydown', alApretarTecla)
+    return () => document.removeEventListener('keydown', alApretarTecla)
+  }, [agregando])
+
+  // El aviso de "Se registró..." desaparece solo.
+  useEffect(() => {
+    if (!aviso) return
+    const reloj = window.setTimeout(() => setAviso(''), 6000)
+    return () => window.clearTimeout(reloj)
+  }, [aviso])
+
+  function empezarAgregar() {
+    setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
+    setFichaAbierta(false)
+    setVistaAngosta('mapa')
+    setPuntoNuevo(null)
+    setAviso('')
+    setAgregando(true)
+  }
+
+  function cancelarAgregar() {
+    setAgregando(false)
+    setPuntoNuevo(null)
+  }
+
+  // El backend registró el lugar: se suma a la lista, se elige y el mapa va hacia él.
+  function alGuardarLugar(creado) {
+    setAgregando(false)
+    setPuntoNuevo(null)
+    setLugares((anteriores) => [...anteriores, creado].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')))
+    setLugarActivoId(creado.id)
+    setSeleccion((anterior) => ({ lugarId: creado.id, vez: (anterior?.vez ?? 0) + 1 }))
+    setAviso(`Se registró "${creado.nombre}".`)
+  }
+
   // Se asignó una cuadrilla desde la ficha: reemplazamos esa OT (cambió de estado y de cuadrilla)
   // y volvemos a pedir las cuadrillas, porque su disponibilidad pudo cambiar.
   function alAsignar(actualizada) {
@@ -128,6 +175,7 @@ function PaginaMapa({ params, onNavegar }) {
   // Elegido desde la lista: además de abrir la ficha, el mapa va hacia el lugar.
   // En el celular se vuelve al mapa y sube la tarjeta del lugar.
   function elegirDesdeLista(lugarId) {
+    cancelarAgregar()
     setLugarActivoId(lugarId)
     setSeleccion((anterior) => ({ lugarId, vez: (anterior?.vez ?? 0) + 1 }))
     setVistaAngosta('mapa')
@@ -181,11 +229,11 @@ function PaginaMapa({ params, onNavegar }) {
     mensajeVacio = { titulo: 'No hay lugares en la zona que se ve', texto: 'Alejá el mapa para ver más lugares.' }
   }
 
-  const mostrarTarjeta = angosta && resumenActivo && !fichaAbierta
-  const mostrarPanel = resumenActivo && (!angosta || fichaAbierta)
+  const mostrarTarjeta = !agregando && angosta && resumenActivo && !fichaAbierta
+  const mostrarPanel = !agregando && resumenActivo && (!angosta || fichaAbierta)
   let clase = 'pantalla-mapa'
-  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta ? ' con-tarjeta' : ''}`
-  else if (resumenActivo) clase += ' pantalla-mapa-con-ficha'
+  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}`
+  else if (resumenActivo || agregando) clase += ' pantalla-mapa-con-ficha'
 
   return (
     <div className={clase}>
@@ -234,7 +282,19 @@ function PaginaMapa({ params, onNavegar }) {
 
       <section className="columna-mapa" aria-label="Mapa de Estación General Paz">
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
-          onSeleccionar={elegirEnMapa} onLimites={setZonaVisible} />
+          onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
+          agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo} />
+
+        {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
+        {puedeAgregar && !agregando && !cargando && !error && (
+          <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={empezarAgregar}>
+            <Icono nombre="agregar" />Agregar lugar
+          </button>
+        )}
+
+        <p className="aviso-mapa" role="status" aria-live="polite" hidden={!aviso}>
+          {aviso && <><Icono nombre="guardar" />{aviso}</>}
+        </p>
 
         {/* Celular y tablet: botoncitos arriba del mapa (se deslizan de costado) y "Ver como lista" */}
         {angosta && (
@@ -288,6 +348,13 @@ function PaginaMapa({ params, onNavegar }) {
         <button type="button" className="boton-flotante boton-ver-mapa" onClick={() => setVistaAngosta('mapa')}>
           <Icono nombre="mapa" />Ver mapa
         </button>
+      )}
+
+      {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
+      {agregando && (
+        <div className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
+          <FormularioLugarMapa punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar} />
+        </div>
       )}
 
       {mostrarTarjeta && (

@@ -159,3 +159,18 @@
 .campos-lugar-mapa { display: flex; flex-direction: column; gap: 14px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .campos-lugar-mapa .campo-check { margin-top: 0; }
 .formulario-lugar-mapa .botones { justify-content: flex-end; }
+/* Botón "Agregar lugar" sobre el mapa (arriba a la derecha en la compu) y aviso de lugar registrado */
+.boton-agregar-lugar { position: absolute; top: 16px; right: 16px; z-index: 2; box-shadow: 0 2px 8px rgb(20 61 72 / 25%); }
+.aviso-mapa { position: absolute; top: 16px; left: 50%; z-index: 2; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 10px; background: var(--lateral); color: var(--blanco); font-size: 0.875rem; font-weight: 600; box-shadow: 0 2px 8px rgb(20 61 72 / 30%); transform: translateX(-50%); }
+.aviso-mapa[hidden] { display: none; }
+.aviso-mapa .icono { color: var(--marca-celeste); }
+.contenedor-lugar-nuevo { display: flex; min-width: 0; min-height: 0; border-left: 1px solid var(--borde); }
+.contenedor-lugar-nuevo .panel-lugar { flex: 1; border-left: 0; }
+@media (max-width: 1050px) {
+  /* Celular: el botón va a la izquierda (a la derecha está "Ver como lista") y el formulario sube desde abajo */
+  .boton-agregar-lugar { top: 66px; right: auto; left: 12px; border-radius: 22px; }
+  .pantalla-mapa-angosta.vista-lista .boton-agregar-lugar { display: none; }
+  .aviso-mapa { top: 120px; }
+  .hoja-lugar-nuevo { position: absolute; right: 0; bottom: 0; left: 0; z-index: 5; max-height: 72%; overflow-y: auto; border-radius: 20px 20px 0 0; background: var(--blanco); box-shadow: 0 -4px 16px rgb(20 61 72 / 18%); }
+  .hoja-lugar-nuevo .panel-lugar { position: static; overflow: visible; }
+}
