@@ -148,3 +148,14 @@
 /* El pin del lugar nuevo: gota naranja (color de la acción principal) con borde blanco, apoyada en la punta */
 .pin-nuevo span { display: block; width: 30px; height: 30px; border: 3px solid var(--blanco); border-radius: 50% 50% 50% 0; background: var(--marca-naranja); box-shadow: 0 2px 6px rgb(20 61 72 / 45%); transform: rotate(-45deg); }
 .pin-nuevo:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+/* Formulario del lugar nuevo (en el lugar de la ficha) */
+.paso-agregar { display: flex; align-items: center; gap: 10px; padding: 14px; border: 2px dashed var(--marca-naranja); border-radius: 10px; background: #FFF6F0; font-weight: 650; }
+.paso-agregar .icono { color: #A44013; }
+.ubicacion-elegida { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; background: #EAF6F9; font-size: 0.8125rem; }
+.ubicacion-elegida strong { font-size: 0.9375rem; }
+.ubicacion-elegida span:nth-of-type(1) { font-variant-numeric: tabular-nums; }
+.ubicacion-elegida span:last-child { color: var(--texto-secundario); }
+.ubicacion-fuera { background: #FFF0EE; color: var(--error); }
+.campos-lugar-mapa { display: flex; flex-direction: column; gap: 14px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.campos-lugar-mapa .campo-check { margin-top: 0; }
+.formulario-lugar-mapa .botones { justify-content: flex-end; }
