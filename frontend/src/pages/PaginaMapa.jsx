@@ -19,6 +19,8 @@ import {
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
+import { useSesion } from '../context/useSesion'
+import { puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
 
@@ -32,6 +34,8 @@ const PRIORIDADES_DE_MAYOR_A_MENOR = [...PRIORIDADES].reverse()
 // "Ver ficha e historia" abre la ficha completa encima del mapa.
 // params.lugarId: el lugar con el que arranca abierta la ficha (por ejemplo, al volver de "+ Nueva OT acá").
 function PaginaMapa({ params, onNavegar }) {
+  const { usuario } = useSesion()
+  const puedeRevisar = puedeVer(usuario, 'infraestructura')
   const [lugares, setLugares] = useState([])
   const [ordenes, setOrdenes] = useState([])
   const [estados, setEstados] = useState([])
@@ -161,11 +165,12 @@ function PaginaMapa({ params, onNavegar }) {
   if (lugares.length === 0) {
     mensajeVacio = {
       titulo: 'Todavía no hay lugares registrados',
-      texto: 'Registralos en Infraestructura para verlos en el mapa.',
-      accion: { texto: 'Ir a Infraestructura', alHacer: () => onNavegar('infraestructura') },
+      texto: puedeRevisar ? 'Registralos en Infraestructura para verlos en el mapa.' : 'Consultá al encargado para registrar los lugares del municipio.',
+      accion: puedeRevisar ? { texto: 'Ir a Infraestructura', alHacer: () => onNavegar('infraestructura') } : undefined,
     }
   } else if (resumenes.length === 0) {
-    mensajeVacio = { titulo: 'Ningún lugar tiene la ubicación dentro del pueblo', texto: 'Revisá las coordenadas en Infraestructura.' }
+    mensajeVacio = { titulo: 'Ningún lugar tiene la ubicación dentro del pueblo',
+      texto: puedeRevisar ? 'Revisá las coordenadas en Infraestructura.' : 'Consultá al encargado para revisar las ubicaciones.' }
   } else if (enMapa.length === 0) {
     mensajeVacio = {
       titulo: 'Ningún lugar coincide con los filtros',
@@ -208,7 +213,7 @@ function PaginaMapa({ params, onNavegar }) {
         <ListaLugares resumenes={enLista} total={resumenes.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
           lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} mensajeVacio={mensajeVacio}
-          fueraDeZona={fueraDeZona} onRevisarFuera={() => onNavegar('infraestructura')}>
+          fueraDeZona={fueraDeZona} onRevisarFuera={puedeRevisar ? () => onNavegar('infraestructura') : undefined}>
           {/* Los filtros de órdenes de siempre, plegados para que no tapen la lista */}
           <details className="mas-filtros">
             <summary>

@@ -1,6 +1,8 @@
 import Icono from './Icono'
 import { textoTrabajos } from '../utils/listaLugares'
 import { etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { useSesion } from '../context/useSesion'
+import { puedeCrearOrden } from '../utils/permisos'
 
 // Tarjeta que sube desde abajo en el celular al tocar un lugar (pantalla Mapa, propuesta A).
 // Es el resumen del lugar; "Ver ficha e historia" abre la ficha completa (PanelLugar) encima del mapa.
@@ -10,6 +12,7 @@ import { etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
 // - onVerFicha(): abrir la ficha completa
 // - onNuevaOrden(lugarId): "+ Nueva OT acá"
 function TarjetaLugar({ resumen, onCerrar, onVerFicha, onNuevaOrden }) {
+  const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
 
   return (
@@ -26,9 +29,9 @@ function TarjetaLugar({ resumen, onCerrar, onVerFicha, onNuevaOrden }) {
         </button>
       </div>
       <div className="tarjeta-lugar-botones">
-        <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
+        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
-        </button>
+        </button>}
         <button type="button" className="boton boton-secundario" onClick={onVerFicha}>
           Ver ficha e historia
         </button>

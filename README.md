@@ -76,6 +76,12 @@ Para desarrollar las siguientes pantallas, consultar la [guia de estilos del fro
 
 El [avance de las pantallas base en Figma](./frontend/diseno/README.md) contiene el archivo editable, las pautas comunes y los pendientes de diseño. La entrega final está en preparación.
 
+## Login y sesión del frontend
+
+Ver [Login y sesión — Sprint 3](./frontend/LOGIN_SESION.md) para conocer el funcionamiento, las vistas por rol, las pruebas realizadas y los pendientes de coordinación con backend. Sigue la [guía de autenticación del equipo](./FRONTEND_AUTENTICACION_Y_ROLES.md).
+
+La pantalla de acceso ya utiliza la API de autenticación. La protección por rol y cuadrilla de las API de negocio todavía debe completarse en el backend; ocultar acciones en el frontend no reemplaza esa validación.
+
 ## Tests del backend
 
 Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.

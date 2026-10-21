@@ -6,6 +6,8 @@ import { esperaCuadrilla } from '../utils/asignacion'
 import { lineaNovedad, tituloEvento, ultimasNovedades } from '../utils/historia'
 import { describirUbicacion, etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
 import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
+import { useSesion } from '../context/useSesion'
+import { puedeAsignar, puedeCrearOrden } from '../utils/permisos'
 
 // Ficha del lugar elegido, en el panel derecho de la pantalla Mapa (no en otra página).
 // Muestra los datos del lugar, sus trabajos abiertos y las últimas novedades de su historia.
@@ -18,6 +20,7 @@ import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 //   para "Asignar cuadrilla" en los trabajos pendientes que todavía no tienen cuadrilla
 // La página lo dibuja con key={lugar.id}: al cambiar de lugar, el panel arranca de cero.
 function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion }) {
+  const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
   const [historia, setHistoria] = useState(null)
   const [error, setError] = useState(null)
@@ -72,9 +75,9 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
         </button>
-        <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
+        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
-        </button>
+        </button>}
       </div>
 
       <section className="panel-lugar-seccion" aria-labelledby="titulo-trabajos-abiertos">
@@ -103,7 +106,7 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
                 <span className="tarjeta-trabajo-detalle">
                   OT #{orden.id} · {etiqueta(TIPOS_TRABAJO, orden.tipo)} · {orden.cuadrillaNombre ? `Cuadrilla: ${orden.cuadrillaNombre}` : 'Sin cuadrilla asignada'}
                 </span>
-                {esperaCuadrilla(orden, asignacion.estados) && (
+                {puedeAsignar(usuario) && esperaCuadrilla(orden, asignacion.estados) && (
                   <AsignarCuadrilla orden={orden} cuadrillas={asignacion.cuadrillas}
                     cargandoCuadrillas={asignacion.cargandoCuadrillas} errorCuadrillas={asignacion.errorCuadrillas}
                     onAsignada={alAsignar} />
