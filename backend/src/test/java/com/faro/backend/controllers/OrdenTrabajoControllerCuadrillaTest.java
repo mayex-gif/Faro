@@ -37,14 +37,14 @@ class OrdenTrabajoControllerCuadrillaTest {
         when(service.asignarCuadrilla(7L, 20L)).thenReturn(
                 new OrdenTrabajoDTO(7L, "Podar el fresno", TipoTrabajo.PODA, OrigenOrden.ORDEN_DIRECTA,
                         PrioridadOrden.MEDIA, 3L, "Plaza San Martín", LocalDateTime.of(2026, 10, 1, 10, 0),
-                        3L, "En curso", "#9A4A12", 20L, "Cuadrilla Verde"));
+                        2L, "Planificada", "#086C80", 20L, "Cuadrilla Verde"));
 
         mockMvc.perform(patch(URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"cuadrillaId\": 20}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(7))
-                .andExpect(jsonPath("$.estadoNombre").value("En curso"))
+                .andExpect(jsonPath("$.estadoNombre").value("Planificada"))
                 .andExpect(jsonPath("$.cuadrillaId").value(20))
                 .andExpect(jsonPath("$.cuadrillaNombre").value("Cuadrilla Verde"));
     }
