@@ -88,7 +88,7 @@ function TablaReasignacion({ ordenes, cuadrillas, errorCuadrillas, cargandoCuadr
     return (
       <div className="estado-listado estado-vacio">
         <span className="icono-vacio"><Icono nombre="cuadrilla" /></span>
-        <h3>No hay órdenes asignadas en curso</h3>
+        <h3>No hay órdenes asignadas sin terminar</h3>
         <p>Cuando asignes una orden a una cuadrilla, va a aparecer acá por si necesitás pasársela a otra.</p>
       </div>
     )

@@ -61,7 +61,7 @@ Asigna una Orden de Trabajo a una cuadrilla.
   2. Verifica que la cuadrilla exista y esté disponible (`disponible: true`).
   3. Verifica que la cuadrilla realice el tipo de trabajo de la OT (`tiposTrabajo` contiene el `tipo`).
   4. **Permite múltiples asignaciones:** a una misma cuadrilla se le pueden asignar varias órdenes en simultáneo para cubrir su ruta o jornada diaria de trabajo.
-  5. **Avanza el estado de la OT:** pasa automáticamente la orden a **"En curso"** (o a la primera transición permitida no-cierre).
+  5. **Avanza el estado de la OT:** pasa automáticamente la orden a **"Planificada"** (ya tiene cuadrilla, pero todavía no empezó). Si el flujo configurado no tiene el camino a "Planificada", usa la primera transición permitida que no cierre la orden. El capataz la pasa a **"En curso"** cuando arranca (desde Mis tareas).
   6. Guarda la relación y retorna la orden actualizada.
 
 * **Respuesta exitosa (200 OK):**
@@ -121,7 +121,7 @@ Pasa una Orden de Trabajo que **ya tiene cuadrilla** a **otra** cuadrilla (tarea
 2. **Concurrencia de órdenes por cuadrilla:**
    * Se admiten múltiples órdenes activas por cuadrilla en simultáneo.
 3. **Paso de estado automático:**
-   * La asignación mueve la orden directamente a estado **"En curso"**, por lo que automáticamente sale de la lista de órdenes pendientes.
+   * La asignación mueve la orden a estado **"Planificada"**, por lo que automáticamente sale de la lista de órdenes pendientes. Recién pasa a **"En curso"** cuando el capataz empieza el trabajo (cambio del 25/10/2026: antes la asignación la pasaba directo a "En curso").
 4. **Reasignación en un endpoint separado:**
    * Asignar (`/cuadrilla`) y reasignar (`/reasignacion`) son dos endpoints distintos, aunque reciban el mismo cuerpo. Así el pedido dice claramente qué se quiere hacer: si dos personas tienen la pantalla abierta y las dos intentan asignar la misma OT pendiente, la segunda recibe `409 "La orden de trabajo ya no está pendiente"` en lugar de quitarle la orden en silencio a la cuadrilla que la acababa de recibir.
    * La reasignación no cambia el estado de la OT: el trabajo sigue en el mismo punto, solo cambia quién lo hace.
