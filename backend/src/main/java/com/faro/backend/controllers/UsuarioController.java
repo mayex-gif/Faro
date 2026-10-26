@@ -2,6 +2,7 @@ package com.faro.backend.controllers;
 
 import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
+import com.faro.backend.dto.UsuarioRequestDTO;
 import com.faro.backend.services.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,7 +10,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -49,5 +52,13 @@ public class UsuarioController {
                     + "Si el rol es CAPATAZ_CUADRILLA, la cuadrilla es obligatoria y tiene que existir.")
     public UsuarioDTO crear(@Valid @RequestBody UsuarioAltaRequestDTO request) {
         return service.crear(request);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Modificar un usuario",
+            description = "Cambia nombre, apellido, email, rol y cuadrilla (la clave no). El email no puede ser de otra persona (409). "
+                    + "No se le puede cambiar el rol al último encargado activo (409).")
+    public UsuarioDTO modificar(@PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO request) {
+        return service.modificar(id, request);
     }
 }

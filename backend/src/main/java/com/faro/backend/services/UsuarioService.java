@@ -2,6 +2,7 @@ package com.faro.backend.services;
 
 import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
+import com.faro.backend.dto.UsuarioRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.RolUsuario;
@@ -67,6 +68,54 @@ public class UsuarioService {
                 true
         );
         return UsuarioDTO.desdeEntidad(usuarioRepository.save(usuario));
+    }
+
+    /**
+     * Modifica nombre, apellido, email, rol y cuadrilla (la clave no). Reglas:
+     * - el usuario tiene que existir → 404;
+     * - el email nuevo no puede ser de otra persona → 409;
+     * - capataz: cuadrilla obligatoria y existente (igual que en el alta);
+     * - no se le puede sacar el rol al último encargado activo (nadie más podría administrar el corralón) → 409.
+     */
+    @Transactional
+    public UsuarioDTO modificar(Long id, UsuarioRequestDTO request) {
+        Usuario usuario = buscar(id);
+
+        String email = normalizarEmail(request.email());
+        usuarioRepository.findByEmailIgnoreCase(email)
+                .filter(otro -> !otro.getId().equals(id))
+                .ifPresent(otro -> {
+                    throw new OperacionNoPermitidaException("Ya existe un usuario con ese email");
+                });
+
+        if (dejariaDeSerEncargado(usuario, request.rol()) && esElUltimoEncargadoActivo(usuario)) {
+            throw new OperacionNoPermitidaException(
+                    "No se le puede cambiar el rol al último encargado activo: el corralón quedaría sin encargado");
+        }
+        Long cuadrillaId = validarCuadrilla(request.rol(), request.cuadrillaId());
+
+        usuario.setNombre(request.nombre().trim());
+        usuario.setApellido(request.apellido().trim());
+        usuario.setEmail(email);
+        usuario.setRol(request.rol());
+        usuario.setCuadrillaId(cuadrillaId);
+        return UsuarioDTO.desdeEntidad(usuarioRepository.save(usuario));
+    }
+
+    private Usuario buscar(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+    }
+
+    private static boolean dejariaDeSerEncargado(Usuario usuario, RolUsuario rolNuevo) {
+        return usuario.getRol() == RolUsuario.ENCARGADO_CORRALON && rolNuevo != RolUsuario.ENCARGADO_CORRALON;
+    }
+
+    /** True si este usuario es un encargado activo y no hay otro encargado activo. */
+    private boolean esElUltimoEncargadoActivo(Usuario usuario) {
+        return usuario.getRol() == RolUsuario.ENCARGADO_CORRALON
+                && usuario.isActivo()
+                && usuarioRepository.countByRolAndActivoTrue(RolUsuario.ENCARGADO_CORRALON) <= 1;
     }
 
     private static String normalizarEmail(String email) {

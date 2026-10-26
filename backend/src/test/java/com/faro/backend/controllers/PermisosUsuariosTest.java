@@ -3,6 +3,7 @@ package com.faro.backend.controllers;
 import com.faro.backend.config.security.SecurityConfig;
 import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
+import com.faro.backend.dto.UsuarioRequestDTO;
 import com.faro.backend.models.RolUsuario;
 import com.faro.backend.services.UsuarioService;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,13 @@ import static com.faro.backend.config.security.UsuariosDePrueba.capataz;
 import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static com.faro.backend.config.security.UsuariosDePrueba.mesaDeEntradas;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -122,6 +125,32 @@ class PermisosUsuariosTest {
     @Test
     void elCapatazNoPuedeDarDeAltaUnUsuario() throws Exception {
         mockMvc.perform(post(URL).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(service);
+    }
+
+    // ---------- Modificar ----------
+
+    @Test
+    void elEncargadoPuedeModificarUnUsuario() throws Exception {
+        when(service.modificar(eq(4L), any(UsuarioRequestDTO.class))).thenReturn(mesa());
+
+        mockMvc.perform(put(URL + "/4").with(user(encargado())).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void mesaDeEntradasPuedeModificarUnUsuario() throws Exception {
+        when(service.modificar(eq(4L), any(UsuarioRequestDTO.class))).thenReturn(mesa());
+
+        mockMvc.perform(put(URL + "/4").with(user(mesaDeEntradas())).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void elCapatazNoPuedeModificarUnUsuario() throws Exception {
+        mockMvc.perform(put(URL + "/4").with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(service);
