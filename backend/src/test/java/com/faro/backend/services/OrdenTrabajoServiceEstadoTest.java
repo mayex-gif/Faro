@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -51,6 +52,9 @@ class OrdenTrabajoServiceEstadoTest {
 
     @InjectMocks
     private OrdenTrabajoService service;
+
+    // Quien cambia el estado en estos tests: el encargado, que puede mover cualquier orden.
+    private static final Usuario ENCARGADO = encargado().getUsuario();
 
     // ===================== Ayudantes =====================
 
@@ -90,7 +94,7 @@ class OrdenTrabajoServiceEstadoTest {
         when(transicionRepository.existsByOrigenIdAndDestinoId(1L, 3L)).thenReturn(true); // hay flecha
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
 
-        OrdenTrabajoDTO resultado = service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L));
+        OrdenTrabajoDTO resultado = service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L), ENCARGADO);
 
         assertEquals("En curso", resultado.estadoNombre());
         assertSame(enCurso, orden.getEstado());
@@ -104,7 +108,7 @@ class OrdenTrabajoServiceEstadoTest {
         when(transicionRepository.existsByOrigenIdAndDestinoId(1L, 4L)).thenReturn(false); // NO hay flecha
 
         OperacionNoPermitidaException error = assertThrows(OperacionNoPermitidaException.class,
-                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(4L)));
+                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(4L), ENCARGADO));
 
         assertEquals("No se puede pasar una orden de Pendiente a Finalizada", error.getMessage());
         verify(ordenRepository, never()).save(any());
@@ -116,7 +120,7 @@ class OrdenTrabajoServiceEstadoTest {
         when(estadoRepository.findById(3L)).thenReturn(Optional.of(enCurso));
 
         OperacionNoPermitidaException error = assertThrows(OperacionNoPermitidaException.class,
-                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L)));
+                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L), ENCARGADO));
 
         assertEquals("No se puede pasar una orden de sin estado a En curso", error.getMessage());
         verify(ordenRepository, never()).save(any());
@@ -128,7 +132,7 @@ class OrdenTrabajoServiceEstadoTest {
         when(estadoRepository.findById(99L)).thenReturn(Optional.empty());
 
         RecursoNoEncontradoException error = assertThrows(RecursoNoEncontradoException.class,
-                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(99L)));
+                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(99L), ENCARGADO));
 
         assertEquals("Estado no encontrado", error.getMessage());
         verify(ordenRepository, never()).save(any());
@@ -139,7 +143,7 @@ class OrdenTrabajoServiceEstadoTest {
         when(ordenRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(RecursoNoEncontradoException.class,
-                () -> service.cambiarEstado(99L, new CambioEstadoRequestDTO(3L)));
+                () -> service.cambiarEstado(99L, new CambioEstadoRequestDTO(3L), ENCARGADO));
 
         verify(ordenRepository, never()).save(any());
     }

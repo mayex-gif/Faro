@@ -23,8 +23,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Configuración de Spring Security para FARO.
  * Establece arquitectura sin estado (stateless) basada en tokens JWT,
- * configurando los endpoints públicos de login y documentación Swagger,
- * y protegiendo las consultas de perfil de usuario.
+ * configurando los endpoints públicos de login y documentación Swagger.
+ * Todo lo demás (lugares, órdenes, cuadrillas, estados, perfil) exige haber iniciado sesión:
+ * sin token válido responde 401.
  */
 @Configuration
 @EnableWebSecurity
@@ -70,7 +71,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/perfil").authenticated()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().permitAll()
+                        // El resto de la API: solo con sesión iniciada (token válido). Sin token → 401.
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> escribirRespuestaNoAutorizada(response))

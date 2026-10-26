@@ -204,3 +204,47 @@ Se incorporaron **28 nuevas pruebas unitarias y de integración** en el backend:
 * **`InicializadorUsuariosTest`** (2 pruebas): Carga condicional en base vacía y prevención de duplicación.
 
 **Estado global**: **140 pruebas de backend aprobadas (100% éxito)** y **0 regresiones** sobre los módulos existentes (infraestructura, órdenes de trabajo, cuadrillas y eventos).
+
+---
+
+## 9. Permisos por rol
+
+Tarjeta del Sprint 3 "Agregar las validaciones por roles en el backend". Antes, `SecurityConfig` terminaba con `anyRequest().permitAll()`: cualquiera podía crear, editar o borrar sin iniciar sesión y los permisos solo los controlaba la pantalla. Ahora el backend valida lo mismo que el frontend (`frontend/src/utils/permisos.js`).
+
+### 9.1. Tres controles, en orden
+
+1. **Sesión** (`SecurityConfig`): toda la API exige un token válido (`anyRequest().authenticated()`). Sin token, o con uno vencido o inválido → **401**. Quedan abiertos: `/api/auth/login`, `/api/auth/validar`, Swagger (`/swagger-ui/**`, `/v3/api-docs/**`) y `/error`. El preflight CORS (OPTIONS) sigue pasando sin token.
+2. **Rol** (`@PreAuthorize` en cada método del controller): si el rol no alcanza → **403** `"No tiene permisos para realizar esta acción"`. El service no llega a ejecutarse.
+3. **Pertenencia** (en `OrdenTrabajoService.cambiarEstado`): el capataz solo puede cambiar el estado de las órdenes asignadas a **su** cuadrilla (`Usuario.cuadrillaId`). Si la orden es de otra cuadrilla o no tiene cuadrilla → **403** `"Esta orden no es de tu cuadrilla"` (`SinPermisoException`).
+
+### 9.2. Quién puede qué
+
+| Endpoint | Encargado | Mesa de entradas | Capataz |
+|---|:-:|:-:|:-:|
+| Todos los `GET` (lugares, historia, OT, estados, cuadrillas, perfil) | ✓ | ✓ | ✓ |
+| `POST /api/infraestructura` (agregar lugar) | ✓ | ✓ | ✗ |
+| `PUT` y `DELETE /api/infraestructura/{id}` | ✓ | ✗ | ✗ |
+| `POST /api/ordenes-trabajo` (crear OT) | ✓ | ✓ | ✗ |
+| `PUT /api/ordenes-trabajo/{id}` (editar OT) | ✓ | ✗ | ✗ |
+| `PATCH /api/ordenes-trabajo/{id}/cuadrilla` y `/reasignacion` | ✓ | ✗ | ✗ |
+| `PATCH /api/ordenes-trabajo/{id}/estado` | ✓ (cualquier OT) | ✗ | solo OT de su cuadrilla |
+
+Un rol nuevo (por ejemplo, uno de solo lectura) no aparece en ningún `@PreAuthorize`: puede consultar pero no escribir, sin tocar nada más.
+
+### 9.3. Swagger con login
+
+Swagger tiene el botón **Authorize** (`config/OpenApiConfig.java`):
+
+1. `POST /api/auth/login` → **Try it out** → email y contraseña → **Execute**.
+2. Copiar el valor de `token` (sin comillas).
+3. **Authorize** (arriba a la derecha) → pegarlo en **Value** → **Authorize** → **Close**.
+4. Desde ahí Swagger manda `Authorization: Bearer <token>` en cada **Execute**. Para cambiar de usuario: **Authorize → Logout** y repetir.
+
+### 9.4. Pruebas
+
+* **`PuertaCerradaTest`**: sin token → 401 con el formato de FARO; con sesión → 200; login y preflight abiertos.
+* **`PermisosInfraestructuraTest`** y **`PermisosOrdenesTest`**: cada endpoint que escribe, con cada rol (puede / 403).
+* **`OrdenTrabajoServicePermisosTest`**: capataz con OT de su cuadrilla, de otra, sin cuadrilla; encargado; mesa.
+* **`OrdenTrabajoControllerEstadoTest`**: el usuario del token llega al service y el 403 "no es de tu cuadrilla".
+
+Los demás tests de controllers (`@WebMvcTest`) no cargan `SecurityConfig` y prueban solo el controller. Los de permisos la importan a propósito (`@Import(SecurityConfig.class)`) y simulan el usuario con `user(...)` de `spring-security-test` (usuarios de prueba en `UsuariosDePrueba`).
