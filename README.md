@@ -82,9 +82,10 @@ Ver [Login y sesión — Sprint 3](./frontend/LOGIN_SESION.md) para conocer el f
 
 La pantalla de acceso ya utiliza la API de autenticación. La protección por rol y cuadrilla de las API de negocio todavía debe completarse en el backend; ocultar acciones en el frontend no reemplaza esa validación.
 
-## PWA y consulta local de tareas
+## PWA: consulta local y cambios sin señal
 
-Ver [alcance, pasos de prueba y coordinación con backend](./frontend/PWA_CONSULTA_LOCAL.md). Esta primera parte prepara la copia local de tareas del capataz para consulta; la cola de modificaciones y la resolución de conflictos siguen pendientes.
+- [Consulta local de tareas](./frontend/PWA_CONSULTA_LOCAL.md): el capataz guarda una copia de sus tareas y la abre sin señal.
+- [Sincronización sin señal](./frontend/PWA_SINCRONIZACION.md): lo que se hace sin señal (iniciar/finalizar tareas, crear OT) se guarda en el celular, se manda solo cuando vuelve la red y el backend resuelve los conflictos (`/api/sincronizacion`). Incluye el aviso "Hay una versión nueva de FARO" después de cada deploy.
 
 ## Tests del backend
 

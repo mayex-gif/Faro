@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { accionesDeTarea, tareasDeCuadrilla, textoAccion } from '../src/utils/tareas.js'
+import { accionesDeTarea, cerradasSinEnviar, tareasDeCuadrilla, textoAccion } from '../src/utils/tareas.js'
 
 // Mismo flujo que carga el backend por defecto (ids y caminos). Solo datos en memoria.
 const estados = [
@@ -59,4 +59,15 @@ test('el texto del botón sale del tipo de destino, no del nombre', () => {
   assert.equal(textoAccion(estados[2], true), 'Iniciar tarea')
   assert.equal(textoAccion(estados[3], true), 'Finalizar tarea')
   assert.equal(textoAccion(estados[4], false), 'Pasar a Cancelada')
+})
+
+test('lo finalizado o cancelado sin señal sigue a la vista de su cuadrilla hasta que se envía', () => {
+  const vistas = [
+    { id: 2, cuadrillaId: 7, estadoId: 4, sinEnviar: true },   // finalizada sin señal: se muestra
+    { id: 3, cuadrillaId: 7, estadoId: 4 },                    // finalizada que ya llegó: no
+    { id: 6, cuadrillaId: 7, estadoId: 3, sinEnviar: true },   // iniciada sin señal: sigue entre las tareas, no acá
+    { id: 4, cuadrillaId: 8, estadoId: 5, sinEnviar: true },   // de otra cuadrilla: no
+  ]
+  assert.deepEqual(cerradasSinEnviar(vistas, estados, '7').map((orden) => orden.id), [2])
+  assert.deepEqual(cerradasSinEnviar(vistas, estados, ''), [])
 })

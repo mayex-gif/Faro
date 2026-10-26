@@ -7,6 +7,7 @@ import {
 } from '../utils/sesion'
 import { ContextoSesion } from './useSesion'
 import { borrarCopia } from '../offline/almacen'
+import { olvidarSesionParaEnvios } from '../offline/cola'
 
 function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null)
@@ -18,6 +19,7 @@ function AuthProvider({ children }) {
   useEffect(() => {
     function alTerminar(evento) {
       borrarCopia().catch(() => {})
+      olvidarSesionParaEnvios().catch(() => {}) // el cuaderno queda; el envío con FARO cerrado, no (token viejo)
       setUsuario(null)
       setError('')
       setMensaje(evento.detail)
@@ -105,6 +107,7 @@ function AuthProvider({ children }) {
   function logout() {
     limpiarSesion()
     borrarCopia().catch(() => {})
+    olvidarSesionParaEnvios().catch(() => {}) // el cuaderno queda, pero nadie lo manda hasta que la persona vuelva a entrar
     setUsuario(null)
     setError('')
     setMensaje('Cerraste tu sesión correctamente.')

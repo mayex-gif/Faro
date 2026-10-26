@@ -1,27 +1,27 @@
 # PWA — consulta local de tareas (Sprint 3)
 
-Primera parte de la [tarjeta PWA: Sincronización Offline](https://trello.com/c/2RRyfzp1): **Service Worker e IndexedDB para consulta local**. No completa todavía la tarjeta: quedan la cola de cambios y la resolución de conflictos con backend.
+Primera parte de la [tarjeta PWA: Sincronización Offline](https://trello.com/c/2RRyfzp1): **Service Worker e IndexedDB para consulta local**. La segunda parte (cambios sin señal, envío automático y conflictos en el backend) está en [PWA_SINCRONIZACION.md](./PWA_SINCRONIZACION.md).
 
 La rama `feature/pwa-consulta-local` depende del Login del [PR #40](https://github.com/mayex-gif/Faro/pull/40), que todavía espera aceptación. El PR de PWA se presenta hacia `develop`, según la guía del equipo. **Integrar primero el #40** y después actualizar esta rama desde `develop` antes de aceptar la PWA. Mientras tanto, la comparación general también incluye el commit de Login; el commit posterior «Agrega consulta local de tareas y base PWA» contiene únicamente esta entrega. No fusionar el PR de PWA antes del Login.
 
 ## Qué permite
 
 - El capataz, con sesión verificada por el servidor, abre Mis tareas y elige **Guardar copia local**. Se guardan únicamente los trabajos abiertos de su cuadrilla, sin credenciales ni el listado del resto del municipio. También puede actualizar o eliminar esa copia.
-- **Ver copia local** abre una pantalla de solo consulta con la cuadrilla, la fecha de guardado y las tareas. Si no tenía tareas al guardar, se informa expresamente.
+- **Ver copia local** abre una pantalla con la cuadrilla, la fecha de guardado y las tareas. Si no tenía tareas al guardar, se informa expresamente. Desde la sincronización (26/10/2026) también se puede **iniciar y finalizar**: va al cuaderno del celular y se envía solo (ver [PWA_SINCRONIZACION.md](./PWA_SINCRONIZACION.md)). La copia guarda además los estados y sus caminos (versión 2).
 - Con la versión compilada preparada en ese navegador, la pantalla y los archivos necesarios se abren aunque no haya conexión al servidor. El Service Worker no guarda respuestas de la API, contraseñas ni mapas de terceros.
-- Si la aplicación no consigue verificar el perfil, ofrece **Consultar copia local**. No abre la navegación completa ni permite cambios con el perfil guardado.
+- Si la aplicación no consigue verificar el perfil, ofrece **Consultar copia local**. No abre la navegación completa; lo que se cambia desde la copia el servidor lo valida al recibirlo (permisos, cuadrilla, conflictos).
 - La copia está vinculada al usuario y a su cuadrilla. Su lectura requiere que la sesión guardada siga vigente. Al cerrar o cambiar de sesión se intenta eliminar la copia; si el navegador falla, el control de usuario/cuadrilla evita presentarla a otra cuenta.
 
 **Los datos pueden estar desactualizados.** La consulta local no comprueba si la cuenta fue desactivada o si la OT se reasignó mientras el dispositivo estaba sin red. No otorga permisos para operar: el acceso normal vuelve a consultar el perfil al servidor. No sustituye las autorizaciones que todavía faltan en las API de negocio.
 
 ## Qué queda pendiente
 
-- Cambiar estados sin señal, encolar operaciones y reenviarlas al reconectar.
-- Resolver conflictos cuando una OT cambió de estado o de cuadrilla en otro dispositivo.
+- ~~Cambiar estados sin señal, encolar operaciones y reenviarlas al reconectar.~~ Hecho: ver [PWA_SINCRONIZACION.md](./PWA_SINCRONIZACION.md).
+- ~~Resolver conflictos cuando una OT cambió de estado o de cuadrilla en otro dispositivo.~~ Hecho en el backend (`/api/sincronizacion`).
 - Instalar/verificar en teléfonos físicos. El manifiesto y el icono son la base; no se afirma compatibilidad verificada con todos los navegadores.
 - Guardar cartografía o consultar toda la ficha histórica sin red. Solo se conserva el resumen de las tareas.
 
-Antes de la cola de cambios, acordar con backend: versión de la OT que se modificó, identificación de cada operación para evitar duplicados, validación de usuario/cuadrilla al sincronizar y respuesta ante conflictos. Una operación rechazada debe quedar visible para revisión; no se debe sobrescribir automáticamente el trabajo de otro compañero.
+Lo que había que acordar con backend quedó resuelto así: el estado en que se vio la OT (`estadoAnteriorId`), un número por operación para evitar duplicados (`operacionId`), la validación de usuario/cuadrilla al recibir y un 409 con el motivo ante un conflicto. Una operación rechazada queda visible para revisión y nunca sobrescribe el trabajo de otro compañero.
 
 ## Cómo está organizado
 
@@ -32,7 +32,7 @@ Antes de la cola de cambios, acordar con backend: versión de la OT que se modif
 - `scripts/generar-sw.js` y `service-worker.js`: generan la versión de caché y la lista de recursos del build. Solo interceptan los archivos estáticos propios de FARO.
 - `public/manifest.webmanifest` e `icono-app.svg`: nombre, colores y logo original del proyecto. El SVG contiene el logo existente dentro de un margen de seguridad.
 
-El Service Worker nuevo espera a que se cierren las pestañas de la versión anterior. No fuerza una recarga mientras alguien está trabajando. El navegador puede eliminar el almacenamiento: si no hay copia se pide volver a guardarla con conexión. No hay bibliotecas nuevas.
+Después de un deploy, las páginas se piden primero a la red (al abrir FARO se ve la versión nueva) y, con FARO abierto, aparece "Hay una versión nueva de FARO → Actualizar": la recarga la decide la persona, nunca se fuerza mientras alguien está trabajando. El navegador puede eliminar el almacenamiento: si no hay copia se pide volver a guardarla con conexión. No hay bibliotecas nuevas.
 
 ## Cómo revisar
 

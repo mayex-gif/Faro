@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cambiarEstadoOrden, listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarCuadrillas } from '../api/cuadrillas'
 import TarjetaTarea from '../components/TarjetaTarea'
+import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
 import Icono from '../components/Icono'
-import { tareasDeCuadrilla } from '../utils/tareas'
+import { cerradasSinEnviar, tareasDeCuadrilla } from '../utils/tareas'
 import { useSesion } from '../context/useSesion'
 import { tieneRol } from '../utils/permisos'
 import { leerToken } from '../utils/sesion'
 import { borrarCopia, guardarCopia, leerCopia } from '../offline/almacen'
 import { crearCopia, fechaDeCopia } from '../offline/datosLocal'
+import { guardarOperacion } from '../offline/cola'
+import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado } from '../offline/datosCola'
+import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import '../estilos-mis-tareas.css'
 import '../offline/estilos-local.css'
 
@@ -24,6 +28,14 @@ function leerCuadrillaGuardada() {
   }
 }
 
+// Lo último que se cargó con señal, por persona. Vive mientras FARO esté abierto (no se guarda en el celular):
+// si se corta la señal y se toca "Actualizar", o se va al mapa y se vuelve, se siguen viendo las tareas en vez de un error.
+const ultimaCarga = new Map()
+
+function horaDe(fecha) {
+  return fecha ? new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+}
+
 function guardarCuadrilla(id) {
   try {
     if (id) localStorage.setItem(CLAVE_CUADRILLA, id)
@@ -36,12 +48,18 @@ function guardarCuadrilla(id) {
 function PaginaMisTareas({ onNavegar }) {
   const { usuario } = useSesion()
   const esCapataz = tieneRol(usuario, 'CAPATAZ_CUADRILLA')
-  const [ordenes, setOrdenes] = useState([])
-  const [estados, setEstados] = useState([])
-  const [cargando, setCargando] = useState(true)
+  // Fijo mientras la pantalla está abierta (App la vuelve a armar si entra otra persona)
+  const idUsuario = useRef(usuario.id)
+  const recordada = ultimaCarga.get(usuario.id)
+  const [ordenes, setOrdenes] = useState(() => recordada?.ordenes ?? [])
+  const [estados, setEstados] = useState(() => recordada?.estados ?? [])
+  const [cargadasA, setCargadasA] = useState(() => recordada?.hora ?? null)
+  const [cargando, setCargando] = useState(() => !recordada?.ordenes)
   const [error, setError] = useState(null)
-  const [cuadrillas, setCuadrillas] = useState([])
-  const [cargandoCuadrillas, setCargandoCuadrillas] = useState(true)
+  // true si el último intento de traer las tareas falló por falta de señal (se muestran las que ya estaban)
+  const [sinSenal, setSinSenal] = useState(false)
+  const [cuadrillas, setCuadrillas] = useState(() => recordada?.cuadrillas ?? [])
+  const [cargandoCuadrillas, setCargandoCuadrillas] = useState(() => !recordada?.cuadrillas)
   const [errorCuadrillas, setErrorCuadrillas] = useState(null)
   const [cuadrillaElegida, setCuadrillaId] = useState(leerCuadrillaGuardada)
   const cuadrillaId = esCapataz ? usuario.cuadrillaId : cuadrillaElegida
@@ -52,6 +70,8 @@ function PaginaMisTareas({ onNavegar }) {
   const [copiaLocal, setCopiaLocal] = useState(null)
   const [guardandoCopia, setGuardandoCopia] = useState(false)
   const [avisoCopia, setAvisoCopia] = useState('')
+  // El cuaderno: los cambios hechos sin señal que todavía no llegaron (o que hay que revisar)
+  const { cola, pendientes, conflictos } = useColaCambios(usuario)
 
   function cargarOrdenes() {
     // Sin los estados no se sabe qué se puede hacer con cada tarea: si falla uno de los dos pedidos, es un error de carga.
@@ -59,9 +79,16 @@ function PaginaMisTareas({ onNavegar }) {
       .then(([datosOrdenes, datosEstados]) => {
         setOrdenes(datosOrdenes)
         setEstados(datosEstados)
+        setCargadasA(new Date().toISOString())
         setError(null)
+        setSinSenal(false)
       })
       .catch((e) => {
+        // Sin señal, pero con tareas ya cargadas: se siguen mostrando (con un aviso) en vez de borrar la lista
+        if (clasificarError(e) === REINTENTAR && ultimaCarga.get(idUsuario.current)?.ordenes) {
+          setSinSenal(true)
+          return
+        }
         console.error(e)
         setError('No pudimos cargar las tareas. Revisá la conexión e intentá nuevamente.')
       })
@@ -75,6 +102,7 @@ function PaginaMisTareas({ onNavegar }) {
         setErrorCuadrillas(null)
       })
       .catch((e) => {
+        if (clasificarError(e) === REINTENTAR && ultimaCarga.get(idUsuario.current)?.cuadrillas) return // se usan las que ya estaban
         console.error(e)
         setErrorCuadrillas('No pudimos cargar las cuadrillas. Revisá la conexión e intentá nuevamente.')
       })
@@ -94,7 +122,23 @@ function PaginaMisTareas({ onNavegar }) {
   useEffect(() => {
     cargarOrdenes()
     cargarCuadrillas()
+    // Cuando vuelve la señal se trae cómo están las tareas ahora
+    window.addEventListener('online', cargarOrdenes)
+    return () => window.removeEventListener('online', cargarOrdenes)
   }, [])
+
+  // Se recuerda lo cargado (también después de iniciar o finalizar con señal) para usarlo si se corta la señal
+  useEffect(() => {
+    if (cargando || cargandoCuadrillas || error || errorCuadrillas) return
+    ultimaCarga.set(usuario.id, { ordenes, estados, cuadrillas, hora: cargadasA })
+  }, [usuario.id, ordenes, estados, cuadrillas, cargadasA, cargando, cargandoCuadrillas, error, errorCuadrillas])
+
+  // Cuando un cambio del cuaderno llega al servidor (o queda para revisar), se trae cómo quedaron las tareas
+  // y se avisa cuántos llegaron bien (los que quedaron para revisar los muestra el cartel).
+  useCuandoSeEnvian({ pendientes, conflictos }, (enviados) => {
+    setMensaje(enviados === 0 ? '' : `Volvió la señal: ${enviados === 1 ? 'se envió 1 cambio' : `se enviaron ${enviados} cambios`} que habías hecho sin señal.`)
+    cargarOrdenes()
+  })
 
   useEffect(() => {
     let vigente = true
@@ -113,7 +157,11 @@ function PaginaMisTareas({ onNavegar }) {
 
   // Solo vale la cuadrilla recordada si todavía existe.
   const cuadrillaActual = cuadrillas.find((cuadrilla) => String(cuadrilla.id) === String(cuadrillaId))
-  const tareas = cuadrillaActual ? tareasDeCuadrilla(ordenes, estados, cuadrillaActual.id) : []
+  // El capataz ve sus tareas con los cambios hechos sin señal ya aplicados (marcados "Sin enviar")
+  const ordenesVistas = esCapataz ? aplicarPendientes(ordenes, cola, estados) : ordenes
+  const tareas = cuadrillaActual ? tareasDeCuadrilla(ordenesVistas, estados, cuadrillaActual.id) : []
+  // Lo finalizado o cancelado sin señal sigue a la vista (sin botones, con "Sin enviar") hasta que llega
+  const cerradas = cuadrillaActual ? cerradasSinEnviar(ordenesVistas, estados, cuadrillaActual.id) : []
   // Mientras el backend no informe a qué cuadrilla pertenece cada OT (CONTRATO_CUADRILLAS.md), no se puede saber cuáles son "mis" tareas.
   const faltaDatoDeCuadrilla = ordenes.length > 0 && !ordenes.some((orden) => 'cuadrillaId' in orden)
 
@@ -141,6 +189,16 @@ function PaginaMisTareas({ onNavegar }) {
     finally { setGuardandoCopia(false) }
   }
 
+  // Sin señal (solo el capataz): el cambio se anota en el cuaderno del celular y se manda solo cuando vuelva la red
+  async function guardarSinSenal(orden, estadoNuevo) {
+    try {
+      await guardarOperacion(crearCambioEstado(usuario, orden, estadoNuevo))
+      setMensaje(`No hay señal: la OT #${orden.id} quedó en "${estadoNuevo.nombre}" en este celular. Se envía sola cuando vuelva la señal.`)
+    } catch {
+      setErrorAccion('No hay señal y este navegador no permite guardar el cambio. Intentá de nuevo cuando tengas conexión.')
+    }
+  }
+
   function accion(orden, estadoNuevo) {
     if (esCapataz && (usuario.cuadrillaId == null || String(orden.cuadrillaId) !== String(usuario.cuadrillaId))) {
       setErrorAccion('Esta tarea no pertenece a tu cuadrilla.')
@@ -152,9 +210,13 @@ function PaginaMisTareas({ onNavegar }) {
         `¿Pasar la OT #${orden.id} a "${estadoNuevo.nombre}"? Después ya no se va a poder modificar.`)
       if (!confirmado) return
     }
-    setIdGuardando(orden.id)
     setMensaje('')
     setErrorAccion('')
+    if (esCapataz && navigator.onLine === false) {
+      guardarSinSenal(orden, estadoNuevo)
+      return
+    }
+    setIdGuardando(orden.id)
     cambiarEstadoOrden(orden.id, estadoNuevo.id)
       .then((actualizada) => {
         // reemplazamos solo esa OT: si quedó cerrada, deja de figurar entre las tareas
@@ -162,6 +224,9 @@ function PaginaMisTareas({ onNavegar }) {
         setMensaje(`La OT #${actualizada.id} pasó a "${actualizada.estadoNombre}".`)
       })
       .catch((e) => {
+        // Se cortó la señal en el camino (o el servidor falló): no se pierde, va al cuaderno.
+        // Si en realidad había llegado, el servidor lo reconoce al recibirlo de nuevo ("ya estaba así").
+        if (esCapataz && clasificarError(e) === REINTENTAR) return guardarSinSenal(orden, estadoNuevo)
         console.error(e)
         // e.message trae el motivo que explica el backend
         setErrorAccion(e.message || 'No se pudo guardar el cambio. Intentá nuevamente.')
@@ -183,9 +248,11 @@ function PaginaMisTareas({ onNavegar }) {
         {errorAccion && <p className="mensaje mensaje-error" role="alert">{errorAccion}</p>}
       </div>
 
+      {esCapataz && <AvisoCambiosPendientes cola={cola} />}
+
       {esCapataz && <section className="panel copia-local" aria-labelledby="titulo-consulta-local" aria-busy={guardandoCopia}>
         <h2 id="titulo-consulta-local">Consulta sin conexión</h2>
-        <p>Guardá una copia de tus tareas antes de salir. Para iniciar o finalizar un trabajo seguís necesitando conexión.</p>
+        <p>Guardá una copia de tus tareas antes de salir, para poder consultarlas aunque abras FARO sin señal. Si la señal se corta mientras trabajás, lo que inicies o finalices queda guardado en este celular y se envía solo.</p>
         {copiaLocal && <p>Última copia: <time dateTime={copiaLocal.fechaGuardado}>{fechaDeCopia(copiaLocal.fechaGuardado)}</time>.</p>}
         <div className="acciones">
           <button type="button" className="boton boton-secundario" onClick={guardarConsulta}
@@ -261,6 +328,13 @@ function PaginaMisTareas({ onNavegar }) {
           </div>
         )}
 
+        {sinSenal && !error && !cargando && (
+          <p className="mensaje mensaje-informacion" role="status">
+            Sin señal: estás viendo las tareas cargadas a las {horaDe(cargadasA)}.
+            {esCapataz && ' Lo que inicies o finalices queda guardado en este celular y se envía solo.'}
+          </p>
+        )}
+
         {faltaDatoDeCuadrilla && !error && (
           <p className="mensaje mensaje-informacion" role="status">
             El servidor todavía no informa a qué cuadrilla está asignada cada orden, por eso no se pueden mostrar las tareas de una cuadrilla.
@@ -280,7 +354,7 @@ function PaginaMisTareas({ onNavegar }) {
               <p>{esCapataz ? 'Consultá al encargado del corralón para poder ver tus tareas.'
                 : 'Cuando elijas una cuadrilla, vas a ver acá los trabajos que tiene asignados.'}</p>
             </div>
-          ) : tareas.length === 0 ? (
+          ) : tareas.length === 0 && cerradas.length === 0 ? (
             <div className="estado-listado estado-vacio">
               <span className="icono-vacio"><Icono nombre="tareas" /></span>
               <h3>No hay tareas asignadas a {cuadrillaActual.nombre}</h3>
@@ -293,6 +367,10 @@ function PaginaMisTareas({ onNavegar }) {
                   ocupada={orden.id === idGuardando}
                   bloqueada={idGuardando != null && orden.id !== idGuardando}
                   onAccion={accion}
+                  onVerFicha={(lugarId) => onNavegar('ficha', { lugarId })} />
+              ))}
+              {cerradas.map((orden) => (
+                <TarjetaTarea key={orden.id} orden={orden} soloLectura
                   onVerFicha={(lugarId) => onNavegar('ficha', { lugarId })} />
               ))}
             </ul>

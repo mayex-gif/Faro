@@ -1,0 +1,27 @@
+/* Cartel del cuaderno (cambios hechos sin señal): AvisoCambiosPendientes.jsx.
+   Reutiliza las variables de index.css y las clases .panel, .boton y .mensaje. */
+
+.panel.aviso-cola { display: grid; gap: 20px; padding: 20px 24px; margin-bottom: 24px; border-left: 6px solid var(--marca-cian); }
+.aviso-cola-bloque { display: grid; gap: 8px; }
+.aviso-cola-bloque h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.aviso-cola-bloque h3 .icono { width: 20px; height: 20px; color: var(--enlace); }
+.aviso-cola-bloque > p { color: var(--texto-secundario); font-size: 0.875rem; }
+.aviso-cola-revisar h3, .aviso-cola-revisar h3 .icono { color: var(--error); }
+.aviso-cola-lista { display: grid; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.aviso-cola-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo); }
+.aviso-cola-revisar .aviso-cola-item { border-color: #EBC4C1; background: #FFF8F7; }
+.aviso-cola-texto { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.aviso-cola-texto strong { font-size: 0.9375rem; overflow-wrap: anywhere; }
+.aviso-cola-texto span { color: var(--texto-secundario); font-size: 0.8125rem; }
+.aviso-cola-texto p { margin-top: 4px; font-size: 0.875rem; }
+.aviso-cola-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.aviso-cola .mensaje { margin: 0; }
+
+/* La marca "Sin enviar" en la tarjeta de una tarea cambiada sin señal */
+.estado.estado-sin-enviar { color: var(--enlace); background: #EFF8FA; border: 1px dashed var(--marca-cian); }
+
+@media (max-width: 760px) {
+  .panel.aviso-cola { padding: 16px; }
+  .aviso-cola-acciones { width: 100%; }
+  .aviso-cola-acciones .boton { flex: 1; min-height: 48px; }
+}
