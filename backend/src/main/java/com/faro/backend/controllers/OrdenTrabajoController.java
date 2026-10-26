@@ -9,10 +9,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Órdenes de Trabajo (OT).
+ * Consultar: cualquier usuario con sesión iniciada.
+ * Crear: encargado del corralón y mesa de entradas (ej.: al recibir un reclamo).
+ * Modificar, asignar y reasignar cuadrilla: solo el encargado del corralón.
+ * Cambiar el estado: el encargado y el capataz (Empezar / Terminé desde Mis tareas).
+ * Si el rol no alcanza, @PreAuthorize corta antes de llegar al service y responde 403.
+ */
 @RestController
 @RequestMapping("/api/ordenes-trabajo")
 @Tag(name = "Órdenes de Trabajo", description = "Creación, edición y consulta de Órdenes de Trabajo (OT)")
@@ -38,6 +47,7 @@ public class OrdenTrabajoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'MESA_ENTRADAS')")
     @ResponseStatus(HttpStatus.CREATED) // responde 201 en vez de 200
     @Operation(summary = "Crear una orden de trabajo")
     public OrdenTrabajoDTO crear(@Valid @RequestBody OrdenTrabajoRequestDTO request) {
@@ -45,12 +55,14 @@ public class OrdenTrabajoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ENCARGADO_CORRALON')")
     @Operation(summary = "Modificar una orden de trabajo")
     public OrdenTrabajoDTO modificar(@PathVariable Long id, @Valid @RequestBody OrdenTrabajoRequestDTO request) {
         return service.modificar(id, request);
     }
 
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'CAPATAZ_CUADRILLA')")
     @Operation(summary = "Cambiar el estado de una orden de trabajo",
             description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409).")
     public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request) {
@@ -58,6 +70,7 @@ public class OrdenTrabajoController {
     }
 
     @PatchMapping("/{id}/cuadrilla")
+    @PreAuthorize("hasRole('ENCARGADO_CORRALON')")
     @Operation(summary = "Asignar cuadrilla a una orden de trabajo",
             description = "Asigna la OT a una cuadrilla disponible y la avanza al estado En curso.")
     public OrdenTrabajoDTO asignarCuadrilla(@PathVariable Long id, @Valid @RequestBody AsignarCuadrillaRequestDTO request) {
@@ -65,6 +78,7 @@ public class OrdenTrabajoController {
     }
 
     @PatchMapping("/{id}/reasignacion")
+    @PreAuthorize("hasRole('ENCARGADO_CORRALON')")
     @Operation(summary = "Reasignar una orden de trabajo a otra cuadrilla",
             description = "Pasa una OT que ya tiene cuadrilla (y no está cerrada) a otra cuadrilla disponible "
                     + "que realice ese tipo de trabajo. El estado de la OT no cambia.")
