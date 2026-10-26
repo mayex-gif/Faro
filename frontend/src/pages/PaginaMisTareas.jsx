@@ -12,8 +12,8 @@ import { leerToken } from '../utils/sesion'
 import { borrarCopia, guardarCopia, leerCopia } from '../offline/almacen'
 import { crearCopia, fechaDeCopia } from '../offline/datosLocal'
 import { guardarOperacion } from '../offline/cola'
-import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado, cuantosSeEnviaron } from '../offline/datosCola'
-import { useColaCambios } from '../hooks/useColaCambios'
+import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado } from '../offline/datosCola'
+import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import '../estilos-mis-tareas.css'
 import '../offline/estilos-local.css'
 
@@ -135,18 +135,10 @@ function PaginaMisTareas({ onNavegar }) {
 
   // Cuando un cambio del cuaderno llega al servidor (o queda para revisar), se trae cómo quedaron las tareas
   // y se avisa cuántos llegaron bien (los que quedaron para revisar los muestra el cartel).
-  const colaAntes = useRef({ pendientes, conflictos })
-  const enviadosSeguidos = useRef(0) // los que van llegando uno tras otro se suman en un solo aviso
-  useEffect(() => {
-    if (pendientes > colaAntes.current.pendientes) enviadosSeguidos.current = 0 // se anotó uno nuevo: aviso nuevo
-    if (pendientes < colaAntes.current.pendientes) {
-      enviadosSeguidos.current += cuantosSeEnviaron(colaAntes.current, { pendientes, conflictos })
-      const enviados = enviadosSeguidos.current
-      setMensaje(enviados === 0 ? '' : `Volvió la señal: ${enviados === 1 ? 'se envió 1 cambio' : `se enviaron ${enviados} cambios`} que habías hecho sin señal.`)
-      cargarOrdenes()
-    }
-    colaAntes.current = { pendientes, conflictos }
-  }, [pendientes, conflictos])
+  useCuandoSeEnvian({ pendientes, conflictos }, (enviados) => {
+    setMensaje(enviados === 0 ? '' : `Volvió la señal: ${enviados === 1 ? 'se envió 1 cambio' : `se enviaron ${enviados} cambios`} que habías hecho sin señal.`)
+    cargarOrdenes()
+  })
 
   useEffect(() => {
     let vigente = true

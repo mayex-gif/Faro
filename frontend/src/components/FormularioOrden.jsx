@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
-import { actualizarOrden, crearOrden } from '../api/ordenesTrabajo'
+import { actualizarOrden } from '../api/ordenesTrabajo'
+import { enviarOperacion } from '../api/sincronizacion'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO } from '../utils/ordenesTrabajo'
 import Icono from './Icono'
+import { useSesion } from '../context/useSesion'
+import { guardarOperacion } from '../offline/cola'
+import { REINTENTAR, clasificarError, crearAltaOrden } from '../offline/datosCola'
 
 // Valores con los que arranca el formulario al crear una OT.
 // Tipo, origen y lugar arrancan vacíos para obligar a elegirlos; la prioridad arranca en "Media".
@@ -28,10 +32,11 @@ function ordenAFormulario(orden) {
 // - lugares: lista de lugares para el desplegable
 // - errorLugares: true si no se pudieron cargar los lugares
 // - ordenEditando: la OT a editar, o null si se está creando una nueva
-// - onGuardado(texto): se llama cuando se guardó bien
+// - onGuardado(texto, { sinSenal }): se llama cuando se guardó bien (sinSenal: true si quedó guardada en el celular)
 // - onCancelar: se llama al cancelar la edición
 // - lugarInicial: id del lugar con el que arranca una OT nueva ("+ Nueva OT acá" en la ficha del mapa); puede faltar
 function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial }) {
+  const { usuario } = useSesion()
   const editando = ordenEditando != null
   const [datos, setDatos] = useState(() => {
     if (editando) return ordenAFormulario(ordenEditando)
@@ -91,21 +96,48 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
     try {
       if (editando) {
         await actualizarOrden(ordenEditando.id, orden)
+        onGuardado('Los cambios de la orden se guardaron correctamente.')
       } else {
-        await crearOrden(orden)
-        setDatos(FORMULARIO_VACIO)
+        await registrar(orden)
       }
-      onGuardado(editando ? 'Los cambios de la orden se guardaron correctamente.' : 'La orden de trabajo se registró correctamente.')
     } catch (e) {
       console.error(e)
       // Si el backend devolvió errores por campo (400), los mostramos debajo de cada campo
-      if (e.errores && Object.keys(e.errores).length > 0) setErrores(e.errores)
-      // 400 y 404 traen un mensaje claro del backend; para el resto, uno genérico
-      setError(e.estado === 400 || e.estado === 404
+      // (la ventanilla de altas los nombra "orden.descripcion": nos quedamos con "descripcion")
+      if (e.errores && Object.keys(e.errores).length > 0) {
+        setErrores(Object.fromEntries(Object.entries(e.errores).map(([campo, texto]) => [campo.replace(/^orden\./, ''), texto])))
+      }
+      // 400, 404 y 409 traen un mensaje claro del backend (y "propio" marca los nuestros); para el resto, uno genérico
+      setError([400, 404, 409].includes(e.estado) || e.propio
         ? e.message
         : 'No pudimos guardar la orden. Revisá la conexión e intentá nuevamente. Tus datos siguen en el formulario.')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  // Una OT nueva se manda con su número de comanda (PUT /api/sincronizacion/altas-orden/{numero}).
+  // Si se corta la señal, se anota en el cuaderno con ESE MISMO número: aunque el primer envío hubiera llegado,
+  // el backend la reconoce y no la crea dos veces. Cuando vuelve la red, el cartero la manda sola.
+  async function registrar(orden) {
+    const lugar = lugares.find((opcion) => String(opcion.id) === String(orden.lugarId))
+    const operacion = crearAltaOrden(usuario, orden, lugar?.nombre ?? '')
+    try {
+      if (navigator.onLine === false) throw new TypeError('Sin señal')
+      await enviarOperacion(operacion)
+      setDatos(FORMULARIO_VACIO)
+      onGuardado('La orden de trabajo se registró correctamente.')
+    } catch (e) {
+      if (clasificarError(e) !== REINTENTAR) throw e
+      try {
+        await guardarOperacion(operacion)
+      } catch {
+        throw Object.assign(new Error('No hay señal y este navegador no permite guardar la orden. Tus datos siguen en el formulario.'),
+          { propio: true })
+      }
+      setDatos(FORMULARIO_VACIO)
+      onGuardado(`No hay señal: la orden "${orden.descripcion}" quedó guardada en este celular y se registra sola cuando vuelva la señal.`,
+        { sinSenal: true })
     }
   }
 
