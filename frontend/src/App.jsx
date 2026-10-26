@@ -14,6 +14,7 @@ import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
 import PaginaUsuarios from './pages/PaginaUsuarios'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
+import { iniciarSincronizacion } from './offline/sincronizar'
 import './App.css'
 import './estilos-navegacion.css'
 
@@ -47,6 +48,10 @@ function Aplicacion() {
   useEffect(() => {
     document.title = `${tituloDe(paginaActual)} | FARO`
   }, [paginaActual])
+
+  // Lo que se hizo sin señal se manda solo: al entrar, cuando vuelve la red y al volver a la pestaña.
+  // Devuelve la función que lo apaga: React la llama al cerrar sesión (y así nunca se manda con otra cuenta).
+  useEffect(() => iniciarSincronizacion(usuario), [usuario])
 
   // Las pantallas reciben "onNavegar" para llevar al usuario a otra pantalla: onNavegar('ficha', { lugarId: 3 })
   function navegar(clave, params = {}) {
