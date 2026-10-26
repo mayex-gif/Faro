@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { EVENTO_COLA, guardarOperacion, leerCola, leerTodaLaCola, quitarOperacion } from '../src/offline/cola.js'
+import { EVENTO_COLA, guardarOperacion, leerCola, leerTodaLaCola, quitarDePersona, quitarOperacion } from '../src/offline/cola.js'
 import { enviarOperacion } from '../src/api/sincronizacion.js'
 import { ErrorApi } from '../src/api/cliente.js'
 import { crearAltaOrden, crearCambioEstado, marcarConflicto } from '../src/offline/datosCola.js'
@@ -133,4 +133,13 @@ test('un conflicto llega como ErrorApi con el motivo del backend', async (t) => 
 
   await assert.rejects(enviarOperacion(cambio(carlos, 30, 'a')), (error) => error instanceof ErrorApi
     && error.estado === 409 && error.errores.motivo === 'ESTADO_CAMBIADO')
+})
+
+test('se pueden borrar todos los renglones de una persona sin tocar los de otra', async (t) => {
+  prepararBase(t)
+  await guardarOperacion(cambio(carlos, 30, 'a'))
+  await guardarOperacion(cambio(carlos, 31, 'b'))
+  await guardarOperacion(cambio(juan, 32, 'c'))
+  await quitarDePersona(5)
+  assert.deepEqual((await leerTodaLaCola()).map((operacion) => operacion.operacionId), ['c'])
 })

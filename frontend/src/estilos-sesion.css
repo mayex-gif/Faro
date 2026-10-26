@@ -46,3 +46,9 @@
   .contador-cola { padding: 4px 8px; }
   .contador-cola-texto { display: none; } /* en el celular alcanza con el ícono y el número */
 }
+
+/* Aviso en el ingreso: cambios hechos sin señal que esperan en este celular (PaginaLogin.jsx) */
+.mensaje.aviso-cuaderno-ingreso { display: grid; gap: 8px; }
+.aviso-cuaderno-ingreso ul { display: grid; gap: 8px; margin: 0; padding-left: 18px; }
+.aviso-cuaderno-ingreso li { overflow-wrap: anywhere; }
+.aviso-cuaderno-ingreso .boton { display: flex; margin-top: 8px; }

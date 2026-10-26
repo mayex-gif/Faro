@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {
   ALTA_ORDEN, CAMBIO_ESTADO, CONFLICTO, PENDIENTE, REINTENTAR, SESION,
   aplicarIgual, aplicarPendientes, clasificarError, conflictoDesdeError, crearAltaOrden, crearCambioEstado, cuantosSeEnviaron,
-  cuerpoDeEnvio, estaEsperando, marcarConflicto, nuevoNumero, operacionValida, resumenCola, siguienteParaEnviar, sumarIntento,
+  cuadernoPorPersona, cuerpoDeEnvio, estaEsperando, marcarConflicto, nuevoNumero, operacionValida, resumenCola, siguienteParaEnviar, sumarIntento,
 } from '../src/offline/datosCola.js'
 
 const capataz = { id: 5, nombre: 'Carlos', apellido: 'Rodríguez', rol: 'CAPATAZ_CUADRILLA', cuadrillaId: 1 }
@@ -30,7 +30,7 @@ test('el número de comanda es un UUID, también donde no existe crypto.randomUU
 test('un cambio de estado guarda en qué estado se vio la OT y lo necesario para mostrarlo sin señal', () => {
   const operacion = cambio(ot7, enCurso, 32, 'n-1')
   assert.deepEqual(operacion, {
-    operacionId: 'n-1', tipo: CAMBIO_ESTADO, usuarioId: 5, usuarioNombre: 'Carlos Rodríguez', estado: PENDIENTE,
+    operacionId: 'n-1', tipo: CAMBIO_ESTADO, usuarioId: 5, usuarioNombre: 'Carlos Rodríguez', usuarioEmail: null, estado: PENDIENTE,
     creadaEn: '2026-10-26T13:32:00.000Z', intentos: 0, conflicto: null,
     ordenId: 7, estadoId: 3, estadoAnteriorId: 2,
     descripcion: 'Podar el fresno', lugarNombre: 'Plaza San Martín',
@@ -149,4 +149,15 @@ test('cuenta cuántos cambios llegaron bien (los que pasaron a revisar no cuenta
   assert.equal(cuantosSeEnviaron({ pendientes: 1, conflictos: 0 }, { pendientes: 0, conflictos: 1 }), 0)
   assert.equal(cuantosSeEnviaron({ pendientes: 0, conflictos: 1 }, { pendientes: 0, conflictos: 0 }), 0) // se descartó uno
   assert.equal(cuantosSeEnviaron({ pendientes: 0, conflictos: 1 }, { pendientes: 1, conflictos: 0 }), 0) // "aplicar igual"
+})
+
+test('en el ingreso se muestra de quién son los cambios que esperan en el celular', () => {
+  const juan = { id: 6, nombre: 'Juan', apellido: 'López', email: 'capataz.alumbrado@generalpaz.gob.ar' }
+  const deJuan = crearCambioEstado(juan, ot8, enCurso, { ahora: new Date(Date.UTC(2026, 9, 26, 13, 33)), numero: 'c' })
+  assert.equal(deJuan.usuarioEmail, 'capataz.alumbrado@generalpaz.gob.ar')
+  assert.deepEqual(cuadernoPorPersona([cambio(ot7, enCurso, 30, 'a'), deJuan, marcarConflicto(cambio(ot8, enCurso, 31, 'b'), {})]), [
+    { usuarioId: 5, usuarioNombre: 'Carlos Rodríguez', usuarioEmail: null, cantidad: 2 },
+    { usuarioId: 6, usuarioNombre: 'Juan López', usuarioEmail: 'capataz.alumbrado@generalpaz.gob.ar', cantidad: 1 },
+  ])
+  assert.deepEqual(cuadernoPorPersona([]), [])
 })

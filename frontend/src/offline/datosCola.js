@@ -34,6 +34,7 @@ function base(usuario, tipo, ahora, numero) {
     tipo,
     usuarioId: usuario.id,
     usuarioNombre: `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim(), // para el aviso en el ingreso
+    usuarioEmail: usuario.email ?? null, // para ofrecer descartar si esa cuenta fue dada de baja
     estado: PENDIENTE,
     creadaEn: ahora.toISOString(), // también es la hora real en que se hizo (hechoEn)
     intentos: 0,
@@ -189,4 +190,18 @@ export function cuantosSeEnviaron(antes, ahora) {
   const salieron = antes.pendientes - ahora.pendientes
   const pasaronARevisar = Math.max(0, ahora.conflictos - antes.conflictos)
   return Math.max(0, salieron - pasaronARevisar)
+}
+
+// Para el ingreso: de quién son los renglones que esperan en este celular (una fila por persona).
+// Decisión del equipo (26/10): el cuaderno espera a que vuelva a entrar LA MISMA persona; nunca se manda con otra cuenta.
+export function cuadernoPorPersona(cola) {
+  const porPersona = new Map()
+  for (const operacion of ordenarCola(cola)) {
+    const clave = String(operacion.usuarioId)
+    const fila = porPersona.get(clave) ?? { usuarioId: operacion.usuarioId, usuarioNombre: operacion.usuarioNombre || 'otra persona',
+      usuarioEmail: operacion.usuarioEmail ?? null, cantidad: 0 }
+    fila.cantidad += 1
+    porPersona.set(clave, fila)
+  }
+  return [...porPersona.values()]
 }

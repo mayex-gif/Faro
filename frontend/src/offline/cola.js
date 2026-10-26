@@ -72,3 +72,11 @@ export async function leerTodaLaCola() {
   const todas = await operar('readonly', (tabla) => tabla.getAll())
   return ordenarCola((todas ?? []).filter(operacionValida))
 }
+
+// Borra todos los renglones de una persona (solo se ofrece si su cuenta fue dada de baja: ya no se podrían enviar)
+export async function quitarDePersona(usuarioId) {
+  for (const operacion of await leerCola(usuarioId)) {
+    await operar('readwrite', (tabla) => tabla.delete(operacion.operacionId))
+  }
+  avisar()
+}

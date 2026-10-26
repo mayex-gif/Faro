@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSesion } from '../context/useSesion'
+import { EVENTO_COLA, leerTodaLaCola, quitarDePersona } from '../offline/cola'
+import { cuadernoPorPersona } from '../offline/datosCola'
 import '../estilos-sesion.css'
 
 function PaginaLogin() {
@@ -10,6 +12,25 @@ function PaginaLogin() {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
   const aviso = useRef(null)
+  // Cambios hechos sin señal que esperan en este celular (de esta u otra persona): se avisan antes de entrar
+  const [cuaderno, setCuaderno] = useState([])
+  // Email que respondió "cuenta desactivada" (con la clave correcta): sus cambios ya no se podrán enviar
+  const [emailDesactivado, setEmailDesactivado] = useState('')
+
+  useEffect(() => {
+    let vigente = true
+    function leer() {
+      leerTodaLaCola()
+        .then((cola) => { if (vigente) setCuaderno(cuadernoPorPersona(cola)) })
+        .catch(() => {}) // sin almacenamiento no hay cuaderno que mostrar
+    }
+    leer()
+    window.addEventListener(EVENTO_COLA, leer)
+    return () => {
+      vigente = false
+      window.removeEventListener(EVENTO_COLA, leer)
+    }
+  }, [])
 
   useEffect(() => { document.title = 'Iniciar sesión | FARO' }, [])
   useEffect(() => { if (error) aviso.current?.focus() }, [error])
@@ -22,6 +43,7 @@ function PaginaLogin() {
     try {
       await login(email, password)
     } catch (e) {
+      setEmailDesactivado(e.estado === 409 ? email.trim().toLowerCase() : '')
       let mensajeError
       if (e.estado === 401) mensajeError = 'El correo o la contraseña son incorrectos. Revisalos e intentá nuevamente.'
       else if (e.estado === 409) mensajeError = 'Tu cuenta está desactivada. Consultá al encargado del corralón.'
@@ -57,6 +79,26 @@ function PaginaLogin() {
           <p>Ingresá con tu correo y contraseña.</p>
           {mensaje && <p className="mensaje mensaje-informacion" role="status">{mensaje}</p>}
           {error && <p ref={aviso} tabIndex={-1} className="mensaje mensaje-error" role="alert">{error}</p>}
+          {cuaderno.length > 0 && <section className="mensaje mensaje-informacion aviso-cuaderno-ingreso" aria-labelledby="titulo-cuaderno-ingreso">
+            <strong id="titulo-cuaderno-ingreso">Hay cambios guardados en este celular</strong>
+            <ul>
+              {cuaderno.map((persona) => {
+                const desactivada = Boolean(persona.usuarioEmail) && persona.usuarioEmail.toLowerCase() === emailDesactivado
+                const uno = persona.cantidad === 1
+                return (
+                  <li key={persona.usuarioId}>
+                    {uno ? '1 cambio' : `${persona.cantidad} cambios`} de {persona.usuarioNombre}:{' '}
+                    {desactivada ? `esta cuenta está desactivada, así que ya no ${uno ? 'se va' : 'se van'} a poder enviar.`
+                      : `${uno ? 'se envía solo' : 'se envían solos'} cuando esa persona vuelva a entrar.`}
+                    {desactivada && <button type="button" className="boton boton-secundario"
+                      onClick={() => quitarDePersona(persona.usuarioId).catch(() => {})}>
+                      {uno ? 'Descartar este cambio' : 'Descartar estos cambios'}
+                    </button>}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>}
           <form onSubmit={ingresar} aria-busy={enviando}>
             <div className="campo">
               <label htmlFor="correo-login">Correo electrónico</label>
