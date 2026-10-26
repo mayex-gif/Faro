@@ -5,12 +5,15 @@ import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.exceptions.SinPermisoException;
 import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.EventoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
+import com.faro.backend.models.RolUsuario;
 import com.faro.backend.models.TransicionEstado;
+import com.faro.backend.models.Usuario;
 import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.EventoOrdenRepository;
@@ -107,8 +110,9 @@ public class OrdenTrabajoService {
 
     /** Pasa una OT a otro estado, SOLO si existe el camino en la tabla de transiciones. */
     @Transactional
-    public OrdenTrabajoDTO cambiarEstado(Long id, CambioEstadoRequestDTO request) {
+    public OrdenTrabajoDTO cambiarEstado(Long id, CambioEstadoRequestDTO request, Usuario quienLaCambia) {
         OrdenTrabajo orden = buscarOrden(id);
+        validarQuePuedeCambiarElEstado(orden, quienLaCambia);
         EstadoOrden nuevo = estadoRepository.findById(request.estadoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Estado no encontrado"));
         EstadoOrden actual = orden.getEstado();
@@ -125,6 +129,29 @@ public class OrdenTrabajoService {
         // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
         eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
         return convertirADto(guardada);
+    }
+
+    /**
+     * ¿Esta persona puede mover esta orden?
+     * - Encargado del corralón: cualquier orden.
+     * - Capataz: solo las órdenes asignadas a SU cuadrilla (si no tiene cuadrilla o es de otra → 403).
+     * - Cualquier otro rol: no (el controller ya lo frena; acá se repite por las dudas).
+     */
+    private void validarQuePuedeCambiarElEstado(OrdenTrabajo orden, Usuario usuario) {
+        if (usuario == null) {
+            throw new SinPermisoException("Hay que iniciar sesión para cambiar el estado de una orden");
+        }
+        if (usuario.getRol() == RolUsuario.ENCARGADO_CORRALON) {
+            return;
+        }
+        if (usuario.getRol() == RolUsuario.CAPATAZ_CUADRILLA) {
+            Cuadrilla cuadrilla = orden.getCuadrilla();
+            if (cuadrilla == null || !Objects.equals(cuadrilla.getId(), usuario.getCuadrillaId())) {
+                throw new SinPermisoException("Esta orden no es de tu cuadrilla");
+            }
+            return;
+        }
+        throw new SinPermisoException("Tu rol no puede cambiar el estado de las órdenes");
     }
 
     // ===================== ASIGNACIÓN A CUADRILLAS =====================

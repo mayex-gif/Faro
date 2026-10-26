@@ -58,7 +58,14 @@ public class ManejadorDeErrores {
         return new RespuestaError(401, e.getMessage(), Map.of());
     }
 
-    // 403: acceso denegado por falta de permisos
+    // 403: tiene el rol, pero esta acción puntual no le toca (ej: una orden de otra cuadrilla). Explica el motivo.
+    @ExceptionHandler(SinPermisoException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public RespuestaError sinPermiso(SinPermisoException e) {
+        return new RespuestaError(403, e.getMessage(), Map.of());
+    }
+
+    // 403: acceso denegado por falta de permisos (el rol no alcanza, ej: @PreAuthorize)
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public RespuestaError accesoDenegado(org.springframework.security.access.AccessDeniedException e) {

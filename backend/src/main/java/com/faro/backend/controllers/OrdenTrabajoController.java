@@ -1,15 +1,18 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.config.security.UsuarioDetalles;
 import com.faro.backend.dto.AsignarCuadrillaRequestDTO;
 import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.services.OrdenTrabajoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +22,7 @@ import java.util.List;
  * Consultar: cualquier usuario con sesión iniciada.
  * Crear: encargado del corralón y mesa de entradas (ej.: al recibir un reclamo).
  * Modificar, asignar y reasignar cuadrilla: solo el encargado del corralón.
- * Cambiar el estado: el encargado y el capataz (Empezar / Terminé desde Mis tareas).
+ * Cambiar el estado: el encargado (cualquier orden) y el capataz (solo las de su cuadrilla: lo controla el service).
  * Si el rol no alcanza, @PreAuthorize corta antes de llegar al service y responde 403.
  */
 @RestController
@@ -64,9 +67,12 @@ public class OrdenTrabajoController {
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'CAPATAZ_CUADRILLA')")
     @Operation(summary = "Cambiar el estado de una orden de trabajo",
-            description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409).")
-    public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request) {
-        return service.cambiarEstado(id, request);
+            description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409). "
+                    + "El capataz solo puede cambiar las órdenes de su cuadrilla (si no, responde 403).")
+    public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request,
+                                         @Parameter(hidden = true) @AuthenticationPrincipal UsuarioDetalles usuario) {
+        // @AuthenticationPrincipal: Spring nos da el usuario que mandó el token (quién pide el plato)
+        return service.cambiarEstado(id, request, usuario.getUsuario());
     }
 
     @PatchMapping("/{id}/cuadrilla")

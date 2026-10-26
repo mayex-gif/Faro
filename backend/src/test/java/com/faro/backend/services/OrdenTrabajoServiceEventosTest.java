@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -52,6 +53,9 @@ class OrdenTrabajoServiceEventosTest {
 
     @InjectMocks
     private OrdenTrabajoService service;
+
+    // Quien cambia el estado en estos tests: el encargado, que puede mover cualquier orden.
+    private static final Usuario ENCARGADO = encargado().getUsuario();
 
     // ===================== Ayudantes =====================
 
@@ -98,7 +102,7 @@ class OrdenTrabajoServiceEventosTest {
         when(transicionRepository.existsByOrigenIdAndDestinoId(1L, 2L)).thenReturn(true);
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
 
-        service.cambiarEstado(7L, new CambioEstadoRequestDTO(2L));
+        service.cambiarEstado(7L, new CambioEstadoRequestDTO(2L), ENCARGADO);
 
         EventoOrden evento = eventoGuardado();
         assertEquals(TipoEventoOrden.CAMBIO_ESTADO, evento.getTipo());
@@ -115,7 +119,7 @@ class OrdenTrabajoServiceEventosTest {
         when(transicionRepository.existsByOrigenIdAndDestinoId(1L, 3L)).thenReturn(false); // NO hay flecha
 
         assertThrows(OperacionNoPermitidaException.class,
-                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L)));
+                () -> service.cambiarEstado(7L, new CambioEstadoRequestDTO(3L), ENCARGADO));
 
         verify(eventoRepository, never()).save(any());
     }

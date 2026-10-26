@@ -7,6 +7,7 @@ import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
 import com.faro.backend.models.TipoTrabajo;
+import com.faro.backend.models.Usuario;
 import com.faro.backend.services.OrdenTrabajoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,7 +199,7 @@ class PermisosOrdenesTest {
 
     @Test
     void elEncargadoPuedeCambiarElEstado() throws Exception {
-        when(service.cambiarEstado(eq(7L), eq(new CambioEstadoRequestDTO(3L)))).thenReturn(ordenGuardada());
+        when(service.cambiarEstado(eq(7L), eq(new CambioEstadoRequestDTO(3L)), any(Usuario.class))).thenReturn(ordenGuardada());
 
         mockMvc.perform(patch(URL + "/7/estado").with(user(encargado())).contentType(MediaType.APPLICATION_JSON).content(JSON_ESTADO))
                 .andExpect(status().isOk());
@@ -206,7 +207,7 @@ class PermisosOrdenesTest {
 
     @Test
     void elCapatazPuedeCambiarElEstado() throws Exception {
-        when(service.cambiarEstado(eq(7L), eq(new CambioEstadoRequestDTO(3L)))).thenReturn(ordenGuardada());
+        when(service.cambiarEstado(eq(7L), eq(new CambioEstadoRequestDTO(3L)), any(Usuario.class))).thenReturn(ordenGuardada());
 
         mockMvc.perform(patch(URL + "/7/estado").with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ESTADO))
                 .andExpect(status().isOk());
