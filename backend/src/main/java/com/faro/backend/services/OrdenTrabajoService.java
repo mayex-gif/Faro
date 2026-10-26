@@ -33,6 +33,9 @@ import java.util.Optional;
 @Service
 public class OrdenTrabajoService {
 
+    // Estado en el que queda una OT cuando se le asigna una cuadrilla (ver buscarEstadoDestinoAsignacion).
+    private static final String ESTADO_AL_ASIGNAR = "Planificada";
+
     private final OrdenTrabajoRepository ordenRepository;
     private final PuntoInfraestructuraRepository lugarRepository;
     private final EstadoOrdenRepository estadoRepository;
@@ -134,7 +137,8 @@ public class OrdenTrabajoService {
      * 1. Verifica que la orden esté pendiente (en estado inicial).
      * 2. Verifica que la cuadrilla exista y esté disponible (en servicio).
      * 3. Verifica que la cuadrilla cubra el tipo de trabajo de la OT.
-     * 4. Pasa la orden al estado siguiente del flujo (ej: "En curso").
+     * 4. Deja la orden "Planificada": ya tiene quién la haga, pero todavía no empezó.
+     *    El capataz la pasa a "En curso" cuando arranca (desde Mis tareas).
      */
     @Transactional
     public OrdenTrabajoDTO asignarCuadrilla(Long id, Long cuadrillaId) {
@@ -211,16 +215,19 @@ public class OrdenTrabajoService {
         }
     }
 
+    // Al asignar, la OT queda "Planificada" (aunque el flujo también permita ir directo a "En curso"):
+    // tener cuadrilla no es lo mismo que haber empezado. Si el flujo configurado no tiene el camino
+    // a "Planificada", se usa el primer estado permitido que no cierre la orden.
     private EstadoOrden buscarEstadoDestinoAsignacion(EstadoOrden estadoActual) {
         List<TransicionEstado> transiciones = transicionRepository.findByOrigenId(estadoActual.getId());
 
-        Optional<EstadoOrden> enCurso = transiciones.stream()
+        Optional<EstadoOrden> planificada = transiciones.stream()
                 .map(TransicionEstado::getDestino)
-                .filter(destino -> "En curso".equalsIgnoreCase(destino.getNombre()))
+                .filter(destino -> ESTADO_AL_ASIGNAR.equalsIgnoreCase(destino.getNombre()))
                 .findFirst();
 
-        if (enCurso.isPresent()) {
-            return enCurso.get();
+        if (planificada.isPresent()) {
+            return planificada.get();
         }
 
         return transiciones.stream()

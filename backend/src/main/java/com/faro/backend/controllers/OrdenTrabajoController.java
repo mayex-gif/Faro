@@ -59,7 +59,8 @@ public class OrdenTrabajoController {
 
     @PatchMapping("/{id}/cuadrilla")
     @Operation(summary = "Asignar cuadrilla a una orden de trabajo",
-            description = "Asigna la OT a una cuadrilla disponible y la avanza al estado En curso.")
+            description = "Asigna la OT a una cuadrilla disponible y la deja en estado Planificada "
+                    + "(el capataz la pasa a En curso cuando empieza).")
     public OrdenTrabajoDTO asignarCuadrilla(@PathVariable Long id, @Valid @RequestBody AsignarCuadrillaRequestDTO request) {
         return service.asignarCuadrilla(id, request.cuadrillaId());
     }

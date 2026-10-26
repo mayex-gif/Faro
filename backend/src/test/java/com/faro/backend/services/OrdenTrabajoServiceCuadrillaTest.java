@@ -50,6 +50,7 @@ class OrdenTrabajoServiceCuadrillaTest {
     private OrdenTrabajoService service;
 
     private EstadoOrden pendiente;
+    private EstadoOrden planificada;
     private EstadoOrden enCurso;
     private EstadoOrden finalizada;
     private PuntoInfraestructura plaza;
@@ -59,6 +60,9 @@ class OrdenTrabajoServiceCuadrillaTest {
     void setUp() {
         pendiente = new EstadoOrden("Pendiente", "#566A73", true, false, 1);
         pendiente.setId(1L);
+
+        planificada = new EstadoOrden("Planificada", "#086C80", false, false, 2);
+        planificada.setId(2L);
 
         enCurso = new EstadoOrden("En curso", "#9A4A12", false, false, 3);
         enCurso.setId(3L);
@@ -88,13 +92,15 @@ class OrdenTrabajoServiceCuadrillaTest {
     }
 
     @Test
-    void asignarCuadrillaExitosaPasaAEnCursoYGuardaCuadrilla() {
+    void asignarCuadrillaExitosaPasaAPlanificadaYGuardaCuadrilla() {
         OrdenTrabajo orden = ordenPendiente(1L, TipoTrabajo.PODA);
 
         when(ordenRepository.findById(1L)).thenReturn(Optional.of(orden));
         when(cuadrillaRepository.findById(20L)).thenReturn(Optional.of(cuadrillaVerde));
+        // Como en el flujo de fábrica: desde Pendiente se puede ir a "En curso" y a "Planificada".
+        // Aunque "En curso" venga primero, al asignar la OT queda Planificada (todavía no empezó).
         when(transicionRepository.findByOrigenId(1L))
-                .thenReturn(List.of(new TransicionEstado(pendiente, enCurso)));
+                .thenReturn(List.of(new TransicionEstado(pendiente, enCurso), new TransicionEstado(pendiente, planificada)));
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         OrdenTrabajoDTO resultado = service.asignarCuadrilla(1L, 20L);
@@ -102,10 +108,10 @@ class OrdenTrabajoServiceCuadrillaTest {
         assertNotNull(resultado);
         assertEquals(20L, resultado.cuadrillaId());
         assertEquals("Cuadrilla Verde", resultado.cuadrillaNombre());
-        assertEquals("En curso", resultado.estadoNombre());
-        assertEquals(3L, resultado.estadoId());
+        assertEquals("Planificada", resultado.estadoNombre());
+        assertEquals(2L, resultado.estadoId());
         assertSame(cuadrillaVerde, orden.getCuadrilla());
-        assertSame(enCurso, orden.getEstado());
+        assertSame(planificada, orden.getEstado());
     }
 
     @Test
@@ -117,7 +123,7 @@ class OrdenTrabajoServiceCuadrillaTest {
         when(ordenRepository.findById(2L)).thenReturn(Optional.of(orden2));
         when(cuadrillaRepository.findById(20L)).thenReturn(Optional.of(cuadrillaVerde));
         when(transicionRepository.findByOrigenId(1L))
-                .thenReturn(List.of(new TransicionEstado(pendiente, enCurso)));
+                .thenReturn(List.of(new TransicionEstado(pendiente, planificada)));
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         OrdenTrabajoDTO dto1 = service.asignarCuadrilla(1L, 20L);
@@ -125,8 +131,8 @@ class OrdenTrabajoServiceCuadrillaTest {
 
         assertEquals(20L, dto1.cuadrillaId());
         assertEquals(20L, dto2.cuadrillaId());
-        assertEquals("En curso", dto1.estadoNombre());
-        assertEquals("En curso", dto2.estadoNombre());
+        assertEquals("Planificada", dto1.estadoNombre());
+        assertEquals("Planificada", dto2.estadoNombre());
     }
 
     @Test
@@ -191,21 +197,19 @@ class OrdenTrabajoServiceCuadrillaTest {
     }
 
     @Test
-    void asignarSinTransicionEnCursoUsaPrimerEstadoNoCierre() {
-        EstadoOrden planificada = new EstadoOrden("Planificada", "#086C80", false, false, 2);
-        planificada.setId(2L);
-
+    void asignarSinTransicionAPlanificadaUsaPrimerEstadoNoCierre() {
         OrdenTrabajo orden = ordenPendiente(1L, TipoTrabajo.PODA);
 
         when(ordenRepository.findById(1L)).thenReturn(Optional.of(orden));
         when(cuadrillaRepository.findById(20L)).thenReturn(Optional.of(cuadrillaVerde));
-        // Solo hay transición a "Planificada" (no a "En curso")
+        // Un flujo configurado sin "Planificada": se salta el estado de cierre y queda "En curso"
         when(transicionRepository.findByOrigenId(1L))
-                .thenReturn(List.of(new TransicionEstado(pendiente, planificada)));
+                .thenReturn(List.of(new TransicionEstado(pendiente, finalizada), new TransicionEstado(pendiente, enCurso)));
         when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(inv -> inv.getArgument(0));
 
         OrdenTrabajoDTO resultado = service.asignarCuadrilla(1L, 20L);
 
-        assertEquals("Planificada", resultado.estadoNombre());
+        assertEquals("En curso", resultado.estadoNombre());
+        assertSame(enCurso, orden.getEstado());
     }
 }
