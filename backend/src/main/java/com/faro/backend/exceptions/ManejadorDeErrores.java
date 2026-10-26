@@ -34,6 +34,21 @@ public class ManejadorDeErrores {
         return new RespuestaError(409, e.getMessage(), Map.of());
     }
 
+    // 409: un cambio hecho sin señal que ya no vale (otra persona cambió la OT antes, se cerró, se reasignó...).
+    // "errores" dice el motivo, en qué estado está ahora y si todavía se puede "aplicar igual".
+    @ExceptionHandler(ConflictoSincronizacionException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public RespuestaError conflictoSinSenal(ConflictoSincronizacionException e) {
+        Map<String, String> detalle = new LinkedHashMap<>(); // LinkedHashMap (y no Map.of) porque algún dato puede faltar
+        detalle.put("motivo", e.getMotivo().name());
+        detalle.put("sePuedeAplicar", String.valueOf(e.isSePuedeAplicar()));
+        if (e.getEstadoActualId() != null) {
+            detalle.put("estadoActualId", String.valueOf(e.getEstadoActualId()));
+            detalle.put("estadoActual", e.getEstadoActual());
+        }
+        return new RespuestaError(409, e.getMessage(), detalle);
+    }
+
     // 400: no pasó las validaciones (@NotBlank, @NotNull...). Detalla cada campo con problema.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

@@ -4,6 +4,8 @@ import com.faro.backend.config.security.SecurityConfig;
 import com.faro.backend.dto.AltaOrdenSinSenalDTO;
 import com.faro.backend.dto.CambioEstadoSinSenalDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
+import com.faro.backend.exceptions.ConflictoSincronizacionException;
+import com.faro.backend.exceptions.ConflictoSincronizacionException.Motivo;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
@@ -49,7 +51,7 @@ class SincronizacionControllerTest {
     private static final String URL_ALTA = "/api/sincronizacion/altas-orden/" + COMANDA;
 
     private static final String JSON_ESTADO = """
-            { "ordenId": 7, "estadoId": 3, "hechoEn": "2026-10-26T10:32:00-03:00" }
+            { "ordenId": 7, "estadoId": 3, "estadoAnteriorId": 2, "hechoEn": "2026-10-26T10:32:00-03:00" }
             """;
 
     private static final String JSON_ALTA = """
@@ -91,6 +93,7 @@ class SincronizacionControllerTest {
         verify(service).cambiarEstado(eq(UUID.fromString(COMANDA)), pedido.capture(), quien.capture());
         assertEquals(7L, pedido.getValue().ordenId());
         assertEquals(3L, pedido.getValue().estadoId());
+        assertEquals(2L, pedido.getValue().estadoAnteriorId());
         assertTrue(pedido.getValue().hechoEn().isEqual(OffsetDateTime.parse("2026-10-26T10:32:00-03:00")));
         assertEquals("capataz.verde@generalpaz.gob.ar", quien.getValue().getEmail()); // quién lo mandó sale del token
     }
@@ -141,6 +144,34 @@ class SincronizacionControllerTest {
         mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ESTADO))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje").value("Ese número de operación ya se usó para otro cambio"));
+    }
+
+    @Test
+    void siOtraPersonaCambioLaOrdenResponde409ConElMotivoYSiSePuedeAplicarIgual() throws Exception {
+        when(service.cambiarEstado(any(), any(), any())).thenThrow(new ConflictoSincronizacionException(
+                Motivo.ESTADO_CAMBIADO, "Mientras no tenías señal, la OT #7 pasó a Pendiente: tu cambio no se aplicó.",
+                1L, "Pendiente", true));
+
+        mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ESTADO))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.estado").value(409))
+                .andExpect(jsonPath("$.mensaje").value("Mientras no tenías señal, la OT #7 pasó a Pendiente: tu cambio no se aplicó."))
+                .andExpect(jsonPath("$.errores.motivo").value("ESTADO_CAMBIADO"))
+                .andExpect(jsonPath("$.errores.sePuedeAplicar").value("true"))
+                .andExpect(jsonPath("$.errores.estadoActualId").value("1"))
+                .andExpect(jsonPath("$.errores.estadoActual").value("Pendiente"));
+    }
+
+    @Test
+    void unConflictoSinEstadoNoInformaEstado() throws Exception {
+        when(service.cambiarEstado(any(), any(), any())).thenThrow(new ConflictoSincronizacionException(
+                Motivo.ORDEN_NO_EXISTE, "Ya no existe la OT #7: tu cambio no se aplicó."));
+
+        mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ESTADO))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errores.motivo").value("ORDEN_NO_EXISTE"))
+                .andExpect(jsonPath("$.errores.sePuedeAplicar").value("false"))
+                .andExpect(jsonPath("$.errores.estadoActual").doesNotExist());
     }
 
     // ===================== Altas de orden =====================

@@ -38,7 +38,9 @@ public class SincronizacionController {
     @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'CAPATAZ_CUADRILLA')")
     @Operation(summary = "Recibir un cambio de estado hecho sin señal",
             description = "Aplica el cambio una sola vez aunque llegue repetido (mismo operacionId): la segunda vez "
-                    + "responde la OT como quedó, sin volver a cambiarla. Mismas reglas que PATCH /api/ordenes-trabajo/{id}/estado.")
+                    + "responde la OT como quedó, sin volver a cambiarla. Mismas reglas que PATCH /api/ordenes-trabajo/{id}/estado. "
+                    + "Si la OT cambió mientras no había señal (otra persona la movió, se cerró, se reasignó), "
+                    + "no se aplica y responde 409 con el motivo y si todavía se puede aplicar igual.")
     public OrdenTrabajoDTO cambiarEstado(@PathVariable UUID operacionId, @Valid @RequestBody CambioEstadoSinSenalDTO pedido,
                                          @Parameter(hidden = true) @AuthenticationPrincipal UsuarioDetalles usuario) {
         return service.cambiarEstado(operacionId, pedido, usuario.getUsuario());

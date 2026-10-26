@@ -16,6 +16,11 @@ public record CambioEstadoSinSenalDTO(
         @NotNull(message = "El estado nuevo es obligatorio")
         Long estadoId,
 
+        // En qué estado estaba la OT en el celular cuando se tocó el botón ("yo la vi en Planificada").
+        // Si en el servidor ya está en otro estado, el cambio NO se aplica: es un conflicto.
+        // Opcional: si no viene, no se compara.
+        Long estadoAnteriorId,
+
         // Cuándo se hizo en el celular (opcional, ej: "2026-10-26T10:32:00-03:00")
         OffsetDateTime hechoEn
 ) {}
