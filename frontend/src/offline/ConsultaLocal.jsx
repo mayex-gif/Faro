@@ -7,7 +7,7 @@ import { leerSesion, leerToken, limpiarSesion, tokenVigente } from '../utils/ses
 import { cerradasSinEnviar, tareasDeCuadrilla } from '../utils/tareas'
 import { borrarCopia, guardarCopia, leerCopia } from './almacen'
 import { actualizarCopia, esCapatazConCuadrilla, fechaDeCopia } from './datosLocal'
-import { guardarOperacion } from './cola'
+import { guardarOperacion, olvidarSesionParaEnvios } from './cola'
 import { aplicarPendientes, crearCambioEstado } from './datosCola'
 import { EVENTO_RESPUESTA, iniciarSincronizacion } from './sincronizar'
 
@@ -81,6 +81,7 @@ function ConsultaLocal() {
     limpiarSesion()
     setCopia(null)
     await borrarCopia().catch(() => {})
+    await olvidarSesionParaEnvios().catch(() => {})
     window.location.assign('/')
   }
 

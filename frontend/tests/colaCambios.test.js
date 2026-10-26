@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { EVENTO_COLA, guardarOperacion, leerCola, leerTodaLaCola, quitarDePersona, quitarOperacion } from '../src/offline/cola.js'
+import {
+  EVENTO_COLA, guardarOperacion, leerCola, leerSesionParaEnvios, leerTodaLaCola, olvidarSesionParaEnvios, pedirEnvioEnSegundoPlano,
+  quitarDePersona, quitarOperacion, recordarSesionParaEnvios,
+} from '../src/offline/cola.js'
 import { enviarOperacion } from '../src/api/sincronizacion.js'
 import { ErrorApi } from '../src/api/cliente.js'
 import { crearAltaOrden, crearCambioEstado, marcarConflicto } from '../src/offline/datosCola.js'
@@ -14,20 +17,24 @@ function cambio(usuario, minuto, numero) {
   return crearCambioEstado(usuario, ot7, enCurso, { ahora: new Date(Date.UTC(2026, 9, 26, 13, minuto)), numero })
 }
 
-// Doble de IndexedDB con una tabla en memoria (put, get, getAll, delete). El navegador prueba el almacenamiento real.
+// Doble de IndexedDB con sus dos tablas en memoria (put, get, getAll, delete). El navegador prueba el almacenamiento real.
 function prepararBase(t) {
   const anterior = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB')
-  const filas = new Map()
-  const base = { close() {}, transaction() {
+  const tablas = { operaciones: new Map(), sesion: new Map() }
+  const claves = { operaciones: 'operacionId', sesion: 'id' }
+  const filas = tablas.operaciones
+  const base = { close() {}, transaction(nombre) {
     const transaccion = { abort() {}, objectStore() {
+      const tabla = tablas[nombre]
       function pedido(resultado) {
         queueMicrotask(() => transaccion.oncomplete())
         return { result: resultado }
       }
       return {
-        put: (valor) => { filas.set(valor.operacionId, structuredClone(valor)); return pedido(valor.operacionId) },
-        getAll: () => pedido([...filas.values()].map((fila) => structuredClone(fila))),
-        delete: (clave) => { filas.delete(clave); return pedido(undefined) },
+        put: (valor) => { tabla.set(valor[claves[nombre]], structuredClone(valor)); return pedido(valor[claves[nombre]]) },
+        get: (clave) => pedido(structuredClone(tabla.get(clave))),
+        getAll: () => pedido([...tabla.values()].map((fila) => structuredClone(fila))),
+        delete: (clave) => { tabla.delete(clave); return pedido(undefined) },
       }
     } }
     return transaccion
@@ -142,4 +149,32 @@ test('se pueden borrar todos los renglones de una persona sin tocar los de otra'
   await guardarOperacion(cambio(juan, 32, 'c'))
   await quitarDePersona(5)
   assert.deepEqual((await leerTodaLaCola()).map((operacion) => operacion.operacionId), ['c'])
+})
+
+// ===================== Envío con FARO cerrado (Background Sync) =====================
+
+test('se recuerda con qué cuenta y a qué backend mandar, aparte del cuaderno, y se olvida al cerrar sesión', async (t) => {
+  prepararBase(t)
+  await guardarOperacion(cambio(carlos, 30, 'a'))
+  await recordarSesionParaEnvios({ usuarioId: 5, token: 'x.y.z', apiBase: 'https://faro-backend.test/api' })
+  assert.deepEqual(await leerSesionParaEnvios(), { id: 'actual', usuarioId: 5, token: 'x.y.z', apiBase: 'https://faro-backend.test/api' })
+  assert.equal((await leerTodaLaCola()).length, 1) // no se mezcla con los renglones del cuaderno
+  await olvidarSesionParaEnvios()
+  assert.equal(await leerSesionParaEnvios(), null)
+  assert.equal((await leerTodaLaCola()).length, 1) // el cuaderno queda
+})
+
+test('se le pide al navegador que despierte al worker cuando vuelva la señal (si sabe hacerlo)', async (t) => {
+  const anterior = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+  t.after(() => Object.defineProperty(globalThis, 'navigator', anterior))
+  const pedidos = []
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { serviceWorker: { getRegistration: async () => ({ sync: { register: async (tag) => pedidos.push(tag) } }) } } })
+  await pedirEnvioEnSegundoPlano()
+  assert.deepEqual(pedidos, ['faro-cola-cambios'])
+  // Safari (sin Background Sync), sin service worker o si el navegador lo rechaza: no pasa nada
+  for (const navegador of [{ serviceWorker: { getRegistration: async () => ({}) } }, { serviceWorker: { getRegistration: async () => undefined } }, {},
+    { serviceWorker: { getRegistration: async () => ({ sync: { register: async () => { throw new Error('no') } } }) } }]) {
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: navegador })
+    await pedirEnvioEnSegundoPlano()
+  }
 })

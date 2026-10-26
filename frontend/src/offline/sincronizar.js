@@ -5,8 +5,13 @@
 // - cuando se vuelve a la pestaña de FARO (visibilitychange),
 // - apenas se anota un cambio nuevo en el cuaderno,
 // - y si falló por falta de señal, de nuevo más tarde, esperando cada vez un poco más.
+// En Chrome/Android, además, se le pide al navegador que despierte al service worker cuando vuelva la señal
+// (Background Sync): así se manda aunque FARO esté cerrado (scripts/envio-segundo-plano.js).
 import { enviarOperacion } from '../api/sincronizacion.js'
-import { EVENTO_COLA, guardarOperacion, leerCola, quitarOperacion } from './cola.js'
+import { API_BASE } from '../api/cliente.js'
+import {
+  EVENTO_COLA, guardarOperacion, leerCola, pedirEnvioEnSegundoPlano, quitarOperacion, recordarSesionParaEnvios,
+} from './cola.js'
 import {
   CONFLICTO, REINTENTAR, SESION, clasificarError, conflictoDesdeError, marcarConflicto, siguienteParaEnviar, sumarIntento,
 } from './datosCola.js'
@@ -121,7 +126,10 @@ export function iniciarSincronizacion(usuario, { enviar = enviarOperacion } = {}
   // Devuelve true si tiene sentido dar otra vuelta enseguida
   async function unaVuelta() {
     ventana.clearTimeout(reloj)
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return false
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      pedirEnvioEnSegundoPlano() // "despertame cuando vuelva la señal", aunque cierren FARO
+      return false
+    }
     try {
       const resultado = await conCandado(() => enviarPendientes(usuario, { enviar }))
       if (apagado) return false // se cerró la sesión mientras se mandaba
@@ -130,6 +138,7 @@ export function iniciarSincronizacion(usuario, { enviar = enviarOperacion } = {}
         return false
       }
       if (resultado.freno === REINTENTAR) {
+        pedirEnvioEnSegundoPlano()
         intento += 1
         reloj = ventana.setTimeout(intentar, esperaParaReintentar(intento))
         return false
@@ -151,6 +160,12 @@ export function iniciarSincronizacion(usuario, { enviar = enviarOperacion } = {}
   function alVolverALaPestana() {
     if (documento.visibilityState === 'visible') intentar()
   }
+
+  // El service worker necesita con qué cuenta y a qué backend mandar (se borra al cerrar sesión: AuthContext)
+  try {
+    const apiBase = new URL(API_BASE, ventana.location?.origin ?? 'http://localhost').href.replace(/\/+$/, '')
+    recordarSesionParaEnvios({ usuarioId: usuario.id, token: leerSesion().token, apiBase }).catch(() => {})
+  } catch { /* sin almacenamiento: queda el cartero de la página */ }
 
   ventana.addEventListener('online', alVolverLaRed)
   ventana.addEventListener(EVENTO_COLA, intentar)

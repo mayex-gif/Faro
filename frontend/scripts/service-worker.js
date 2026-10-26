@@ -1,4 +1,4 @@
-/* global CACHE_FARO, ARCHIVOS_FARO */
+/* global CACHE_FARO, ARCHIVOS_FARO, enviarEnSegundoPlano */
 // El build agrega el nombre de versión y las rutas exactas de sus archivos estáticos.
 self.addEventListener('install', (evento) => {
   evento.waitUntil(caches.open(CACHE_FARO).then((cache) => cache.addAll(ARCHIVOS_FARO)))
@@ -15,6 +15,12 @@ self.addEventListener('activate', (evento) => {
 // Nunca se hace sola: así no se recarga la pantalla en medio de un trabajo.
 self.addEventListener('message', (evento) => {
   if (evento.data?.tipo === 'ACTUALIZAR') self.skipWaiting()
+})
+
+// Background Sync (Chrome/Android): el navegador despierta al worker cuando vuelve la señal, aunque FARO esté cerrado,
+// y el worker manda el cuaderno (envio-segundo-plano.js). Si falla, el navegador lo vuelve a intentar más tarde.
+self.addEventListener('sync', (evento) => {
+  if (evento.tag === 'faro-cola-cambios') evento.waitUntil(enviarEnSegundoPlano())
 })
 
 // Las páginas (index.html, sin-conexion.html) se piden PRIMERO a la red: así, al abrir FARO después de un deploy,
