@@ -4,6 +4,7 @@ import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
 import BarraUsuario from './components/BarraUsuario'
 import RutaProtegida from './components/RutaProtegida'
+import AvisoVersionNueva from './components/AvisoVersionNueva'
 import { useSesion } from './context/useSesion'
 import { inicioDe, puedeVer, tieneRol } from './utils/permisos'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
@@ -136,7 +137,13 @@ function Aplicacion() {
 
 function App() {
   const { usuario } = useSesion()
-  return <RutaProtegida>{usuario && <Aplicacion key={usuario.id} />}</RutaProtegida>
+  return (
+    <>
+      <RutaProtegida>{usuario && <Aplicacion key={usuario.id} />}</RutaProtegida>
+      {/* Después de un deploy: "Hay una versión nueva de FARO → Actualizar" (también en la pantalla de ingreso) */}
+      <AvisoVersionNueva />
+    </>
+  )
 }
 
 export default App
