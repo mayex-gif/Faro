@@ -44,3 +44,12 @@ export function textoAccion(estado, esPrincipal) {
   if (!esPrincipal) return `Pasar a ${estado.nombre}`
   return estado.cierre ? 'Finalizar tarea' : 'Iniciar tarea'
 }
+
+// Las tareas que se finalizaron o cancelaron SIN SEÑAL y todavía no llegaron al servidor (marcadas "sinEnviar").
+// Siguen a la vista, sin botones, hasta que se envían: si no, la tarjeta desaparece y parece que no pasó nada.
+export function cerradasSinEnviar(ordenes, estados, cuadrillaId) {
+  if (cuadrillaId == null || cuadrillaId === '') return []
+  const cierre = new Set(estados.filter((estado) => estado.cierre).map((estado) => estado.id))
+  return ordenes.filter((orden) => orden.sinEnviar && cierre.has(orden.estadoId)
+    && orden.cuadrillaId != null && Number(orden.cuadrillaId) === Number(cuadrillaId))
+}

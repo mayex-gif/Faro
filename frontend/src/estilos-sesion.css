@@ -37,3 +37,12 @@
   .usuario-salir { min-height: 44px; padding: 8px; font-size: 0.75rem; }
   .barra-superior .boton-nuevo { padding-inline: 10px; }
 }
+
+/* Contador del cuaderno (cambios hechos sin señal) en la barra de arriba: BarraUsuario.jsx */
+.contador-cola { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #E3F4F8; color: var(--lateral); font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
+.contador-cola .icono { width: 14px; height: 14px; }
+.contador-cola-revisar { background: #FFE7E4; color: var(--error); }
+@media (max-width: 760px) {
+  .contador-cola { padding: 4px 8px; }
+  .contador-cola-texto { display: none; } /* en el celular alcanza con el ícono y el número */
+}

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   ALTA_ORDEN, CAMBIO_ESTADO, CONFLICTO, PENDIENTE, REINTENTAR, SESION,
-  aplicarIgual, aplicarPendientes, clasificarError, conflictoDesdeError, crearAltaOrden, crearCambioEstado,
+  aplicarIgual, aplicarPendientes, clasificarError, conflictoDesdeError, crearAltaOrden, crearCambioEstado, cuantosSeEnviaron,
   cuerpoDeEnvio, estaEsperando, marcarConflicto, nuevoNumero, operacionValida, resumenCola, siguienteParaEnviar, sumarIntento,
 } from '../src/offline/datosCola.js'
 
@@ -141,4 +141,12 @@ test('solo se aceptan renglones completos (lo leído del celular puede estar rot
     { ...crearAltaOrden(capataz, { descripcion: 'Bache' }, 'X', { numero: 'b' }), orden: null }]) {
     assert.equal(operacionValida(roto), false)
   }
+})
+
+test('cuenta cuántos cambios llegaron bien (los que pasaron a revisar no cuentan)', () => {
+  assert.equal(cuantosSeEnviaron({ pendientes: 3, conflictos: 0 }, { pendientes: 0, conflictos: 0 }), 3)
+  assert.equal(cuantosSeEnviaron({ pendientes: 3, conflictos: 0 }, { pendientes: 0, conflictos: 1 }), 2)
+  assert.equal(cuantosSeEnviaron({ pendientes: 1, conflictos: 0 }, { pendientes: 0, conflictos: 1 }), 0)
+  assert.equal(cuantosSeEnviaron({ pendientes: 0, conflictos: 1 }, { pendientes: 0, conflictos: 0 }), 0) // se descartó uno
+  assert.equal(cuantosSeEnviaron({ pendientes: 0, conflictos: 1 }, { pendientes: 1, conflictos: 0 }), 0) // "aplicar igual"
 })

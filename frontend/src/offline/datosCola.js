@@ -182,3 +182,11 @@ export function operacionValida(operacion) {
     ? operacion.ordenId != null && operacion.estadoId != null
     : operacion.orden != null && typeof operacion.orden.descripcion === 'string'
 }
+
+// ¿Cuántos renglones llegaron bien al servidor entre dos lecturas del cuaderno?
+// Los pendientes que se fueron, menos los que no se fueron sino que pasaron a "para revisar".
+export function cuantosSeEnviaron(antes, ahora) {
+  const salieron = antes.pendientes - ahora.pendientes
+  const pasaronARevisar = Math.max(0, ahora.conflictos - antes.conflictos)
+  return Math.max(0, salieron - pasaronARevisar)
+}

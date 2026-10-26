@@ -11,6 +11,7 @@ import { accionesDeTarea, textoAccion } from '../utils/tareas'
 // - bloqueada: true si hay otra tarea guardándose (se deshabilitan los botones de las demás)
 // - onAccion(orden, estadoNuevo): se tocó "Iniciar", "Finalizar" u otra opción
 // - onVerFicha(lugarId): abre la ficha histórica del lugar
+// - orden.sinEnviar: true si el estado que se ve se cambió sin señal y todavía no llegó al servidor
 function TarjetaTarea({ orden, estados = [], ocupada, bloqueada, onAccion, onVerFicha, soloLectura = false }) {
   const { principal, otras } = soloLectura ? { principal: null, otras: [] } : accionesDeTarea(orden, estados)
   const sinPermiso = ocupada || bloqueada
@@ -36,6 +37,8 @@ function TarjetaTarea({ orden, estados = [], ocupada, bloqueada, onAccion, onVer
           </span>
         )}
         <span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span>
+        {/* Cambiada sin señal: todavía no llegó al servidor (ver AvisoCambiosPendientes) */}
+        {orden.sinEnviar && <span className="estado estado-sin-enviar">Sin enviar</span>}
       </div>
 
       {!soloLectura && (principal ? (
