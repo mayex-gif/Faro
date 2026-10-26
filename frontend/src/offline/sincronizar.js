@@ -12,6 +12,16 @@ import {
 } from './datosCola.js'
 import { leerSesion, tokenVigente } from '../utils/sesion.js'
 
+// Se avisa cada respuesta del servidor (bien o conflicto): la consulta local la usa para poner al día su copia.
+// detail = { operacion, respuesta } o { operacion, conflicto }
+export const EVENTO_RESPUESTA = 'faro:operacion-respondida'
+
+function avisarRespuesta(detalle) {
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent(EVENTO_RESPUESTA, { detail: detalle }))
+  }
+}
+
 /**
  * Manda el cuaderno de UNA persona, de a un renglón y en orden, hasta vaciarlo o hasta que algo lo frene.
  * Devuelve { enviadas, conflictos, freno }:
@@ -32,15 +42,18 @@ export async function enviarPendientes(usuario, { enviar = enviarOperacion, ahor
     const operacion = siguienteParaEnviar(await leerCola(usuario.id))
     if (!operacion) return { enviadas, conflictos, freno: null }
     try {
-      await enviar(operacion)
+      const respuesta = await enviar(operacion)
       await quitarOperacion(operacion.operacionId) // llegó: se tacha del cuaderno
       enviadas += 1
+      avisarRespuesta({ operacion, respuesta })
     } catch (error) {
       const queHacer = clasificarError(error)
       if (queHacer === CONFLICTO) {
         // Ya no vale tal cual: queda marcado para que la persona decida, y se sigue con el resto
-        await guardarOperacion(marcarConflicto(operacion, conflictoDesdeError(error)))
+        const conflicto = conflictoDesdeError(error)
+        await guardarOperacion(marcarConflicto(operacion, conflicto))
         conflictos += 1
+        avisarRespuesta({ operacion, conflicto })
         continue
       }
       if (queHacer === REINTENTAR) await guardarOperacion(sumarIntento(operacion, ahora()))

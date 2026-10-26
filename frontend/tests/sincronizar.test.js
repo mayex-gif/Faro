@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
-import { enviarPendientes, esperaParaReintentar, iniciarSincronizacion } from '../src/offline/sincronizar.js'
+import { EVENTO_RESPUESTA, enviarPendientes, esperaParaReintentar, iniciarSincronizacion } from '../src/offline/sincronizar.js'
 import { guardarOperacion, leerCola } from '../src/offline/cola.js'
 import { CONFLICTO, PENDIENTE, REINTENTAR, SESION, crearCambioEstado } from '../src/offline/datosCola.js'
 import { ErrorApi } from '../src/api/cliente.js'
@@ -219,4 +219,21 @@ test('apagado (al cerrar sesión) ya no manda nada', async (t) => {
   await esperar()
   assert.deepEqual(recibidas, [])
   assert.equal(typeof iniciarSincronizacion(null), 'function') // sin usuario no arranca, pero se puede "apagar"
+})
+
+test('cada respuesta del servidor (bien o conflicto) se avisa, para poner al día la copia local', async (t) => {
+  preparar(t)
+  const { ventana } = navegadorFalso(t, { enLinea: false }) // sin red: el cartero automático no interfiere
+  const avisos = []
+  ventana.addEventListener(EVENTO_RESPUESTA, (evento) => avisos.push(evento.detail))
+  await guardarOperacion(cambio({ id: 7, estadoId: 2 }, enCurso, 30, 'a'))
+  await guardarOperacion(cambio({ id: 8, estadoId: 2 }, enCurso, 31, 'b'))
+  const { enviar } = servidor((operacion) => {
+    if (operacion.operacionId === 'b') throw new ErrorApi(409, 'Ya no vale', { motivo: 'ORDEN_CERRADA', sePuedeAplicar: 'false', estadoActualId: '5', estadoActual: 'Cancelada' })
+    return { id: 7, estadoId: 3, estadoNombre: 'En curso' }
+  })
+
+  await enviarPendientes(carlos, { enviar })
+  assert.deepEqual(avisos.map((aviso) => [aviso.operacion.operacionId, aviso.respuesta?.estadoNombre ?? aviso.conflicto?.motivo]),
+    [['a', 'En curso'], ['b', 'ORDEN_CERRADA']])
 })
