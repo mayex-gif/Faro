@@ -1,0 +1,74 @@
+// El cuaderno guardado en el celular (IndexedDB).
+// Es una base APARTE de la copia local ("faro-consulta-local"): al cerrar sesión o con un 401 se borra la copia,
+// pero el cuaderno NO, para no perder lo hecho sin señal (se manda cuando la misma persona vuelve a entrar).
+import { operacionValida, ordenarCola } from './datosCola.js'
+
+const BASE = 'faro-cola-cambios'
+const TABLA = 'operaciones'
+
+// Se avisa a la pantalla cada vez que el cuaderno cambia (el contador de arriba y los carteles lo escuchan)
+export const EVENTO_COLA = 'faro:cola-cambio'
+
+function abrir() {
+  return new Promise((resolver, rechazar) => {
+    if (typeof indexedDB === 'undefined') {
+      rechazar(new Error('Este navegador no permite guardar cambios sin conexión.'))
+      return
+    }
+    const pedido = indexedDB.open(BASE, 1)
+    pedido.onupgradeneeded = () => pedido.result.createObjectStore(TABLA, { keyPath: 'operacionId' })
+    pedido.onerror = () => rechazar(pedido.error)
+    pedido.onblocked = () => rechazar(new Error('Cerrá las otras pestañas de FARO e intentá nuevamente.'))
+    pedido.onsuccess = () => resolver(pedido.result)
+  })
+}
+
+async function operar(modo, accion) {
+  const base = await abrir()
+  try {
+    return await new Promise((resolver, rechazar) => {
+      const transaccion = base.transaction(TABLA, modo)
+      let pedido
+      try { pedido = accion(transaccion.objectStore(TABLA)) } catch (error) {
+        transaccion.abort()
+        rechazar(error)
+        return
+      }
+      transaccion.oncomplete = () => resolver(pedido.result)
+      transaccion.onerror = () => rechazar(transaccion.error)
+      transaccion.onabort = () => rechazar(transaccion.error || new Error('No se pudo guardar el cambio en el celular.'))
+    })
+  } finally {
+    base.close()
+  }
+}
+
+function avisar() {
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent(EVENTO_COLA))
+  }
+}
+
+// Anota un renglón nuevo o reemplaza uno existente (mismo operacionId)
+export async function guardarOperacion(operacion) {
+  if (!operacionValida(operacion)) throw new Error('El cambio no se pudo anotar: faltan datos.')
+  await operar('readwrite', (tabla) => tabla.put(operacion))
+  avisar()
+}
+
+export async function quitarOperacion(operacionId) {
+  await operar('readwrite', (tabla) => tabla.delete(operacionId))
+  avisar()
+}
+
+// Los renglones de UNA persona, en el orden en que se escribieron. Nunca se mezclan con los de otra cuenta.
+export async function leerCola(usuarioId) {
+  if (usuarioId == null) return []
+  return (await leerTodaLaCola()).filter((operacion) => String(operacion.usuarioId) === String(usuarioId))
+}
+
+// Todos los renglones (para avisar en el ingreso que hay cambios sin enviar de otra persona)
+export async function leerTodaLaCola() {
+  const todas = await operar('readonly', (tabla) => tabla.getAll())
+  return ordenarCola((todas ?? []).filter(operacionValida))
+}
