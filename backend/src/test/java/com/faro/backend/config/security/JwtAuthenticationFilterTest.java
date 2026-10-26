@@ -111,6 +111,27 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void conTokenValidoDeCuentaDesactivada_noAutenticaYContinuaCadena() throws ServletException, IOException {
+        String token = "tokenViejoDeCuentaDadaDeBaja";
+        String email = "mesa@generalpaz.gob.ar";
+        UserDetails cuentaDesactivada = User.withUsername(email)
+                .password("clave-hasheada")
+                .authorities(new SimpleGrantedAuthority("ROLE_MESA_ENTRADAS"))
+                .disabled(true)
+                .build();
+
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtService.extraerEmail(token)).thenReturn(email);
+        when(userDetailsService.loadUserByUsername(email)).thenReturn(cuentaDesactivada);
+
+        filter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(jwtService, never()).esTokenValido(anyString(), anyString());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
     void conExcepcionAlProcesarToken_atrapaErrorYContinuaCadena() throws ServletException, IOException {
         String token = "tokenCorrupto";
 
