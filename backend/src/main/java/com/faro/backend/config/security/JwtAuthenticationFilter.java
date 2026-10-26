@@ -48,7 +48,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-                if (jwtService.esTokenValido(jwt, userDetails.getUsername())) {
+                // Una cuenta dada de baja (activo = false) no entra aunque su token
+                // todavía no haya vencido: el usuario se lee de la base en cada pedido,
+                // así que la baja rige desde el pedido siguiente (responde 401).
+                if (userDetails.isEnabled() && jwtService.esTokenValido(jwt, userDetails.getUsername())) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,

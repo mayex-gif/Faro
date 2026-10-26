@@ -17,6 +17,7 @@ export const SECCIONES = [
 export const MAS = [
   { clave: 'infraestructura', titulo: 'Infraestructura', icono: 'infraestructura' },
   { clave: 'tareas', titulo: 'Mis tareas', icono: 'tareas' },
+  { clave: 'usuarios', titulo: 'Usuarios', icono: 'usuario' },
 ]
 
 // Pantallas que existen pero no están en el menú: se llega desde otra pantalla.

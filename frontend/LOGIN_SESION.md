@@ -15,11 +15,11 @@ Implementación del frontend sobre la guía `FRONTEND_AUTENTICACION_Y_ROLES.md`,
 
 | Rol | Pantallas y acciones visibles |
 | --- | --- |
-| Encargado del corralón | Todas las pantallas existentes. Puede cargar, editar y asignar trabajos. Mantiene el selector de cuadrilla para supervisión. |
-| Mesa de entradas | Mapa, carga y consulta de órdenes y ficha histórica. Sin edición de estados ni asignación de cuadrillas. |
+| Encargado del corralón | Todas las pantallas existentes. Puede cargar, editar y asignar trabajos. Mantiene el selector de cuadrilla para supervisión. Gestiona el personal en **Más → Usuarios**. |
+| Mesa de entradas | Mapa, carga y consulta de órdenes y ficha histórica. Sin edición de estados ni asignación de cuadrillas. Gestiona el personal en **Más → Usuarios** (los mismos permisos que el encargado). |
 | Capataz de cuadrilla | Inicia en Mis tareas; mapa y consulta de ficha histórica desde los trabajos. La cuadrilla se obtiene de `usuario.cuadrillaId`, sin selector. No puede crear ni asignar OT desde el mapa. |
 
-Las cuentas inactivas y los roles desconocidos no habilitan el ingreso. Si el capataz no tiene una cuadrilla existente vinculada, se muestra un aviso para consultar al encargado.
+Las cuentas inactivas y los roles desconocidos no habilitan el ingreso. Una cuenta dada de baja con la sesión abierta recibe 401 en el pedido siguiente y vuelve al ingreso; si intenta entrar con su clave correcta ve "Tu cuenta está desactivada" (409). Si el capataz no tiene una cuadrilla existente vinculada, se muestra un aviso para consultar al encargado.
 
 ## Archivos principales
 
@@ -60,4 +60,4 @@ Las cuentas de demostración son las precargadas por `InicializadorUsuarios` en 
 
 La persistencia en `localStorage` sigue la guía del equipo; un script ejecutado en el mismo origen podría leer el token. No es una cookie HttpOnly. No se agrega un mecanismo de renovación ni se modifica el contrato de autenticación.
 
-La administración de usuarios/roles y la PWA/offline corresponden a sus tarjetas separadas y no forman parte de este cambio.
+La administración de usuarios (pantalla **Usuarios**) se agregó en la tarjeta "12. Gestión de Usuarios y Roles": ver [Gestión de usuarios](../LOGIN_Y_ACCESOS_BACKEND.md#10-gestión-de-usuarios). La PWA/offline corresponde a su tarjeta.

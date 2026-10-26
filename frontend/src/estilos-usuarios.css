@@ -1,0 +1,41 @@
+/* Pantalla "Usuarios" (gestión del personal). Reutiliza paneles, formularios, filtros y tablas de App.css. */
+.campos-usuario { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* "Mostrar la clave": casilla chica (.campo input le daría 44 px de alto y todo el ancho) */
+.campo .mostrar-clave { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; font-weight: 400; cursor: pointer; }
+.campo .mostrar-clave input { width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; accent-color: var(--enlace); }
+.formulario-cuerpo > .mensaje-informacion { margin-top: 20px; }
+
+/* Tabla del personal */
+.tabla-usuarios { min-width: 900px; }
+.tabla-usuarios tbody th { min-width: 220px; }
+.nombre-usuario { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.email-usuario { display: block; margin-top: 3px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; overflow-wrap: anywhere; }
+.marca-tu-cuenta { padding: 1px 7px; border-radius: 5px; background: #EAF6F8; color: var(--enlace); font-size: 0.6875rem; font-weight: 650; }
+.cuadrilla-usuario { color: var(--texto-secundario); }
+.estado-baja { color: var(--texto-secundario); background: #F1F4F5; }
+.fila-de-baja th, .fila-de-baja td.cuadrilla-usuario { color: var(--texto-secundario); }
+.acciones-usuario { flex-wrap: wrap; align-items: center; }
+.motivo-sin-baja { color: var(--texto-secundario); font-size: 0.75rem; }
+
+/* Filtros: buscador ancho + "Mostrar" */
+.filtros-usuarios { grid-template-columns: 2fr 1fr; }
+
+/* Aviso para confirmar una baja o escribir la clave nueva (en lugar de window.confirm) */
+.aviso-usuario { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 24px; padding: 22px 28px; border-color: var(--marca-cian); scroll-margin-top: 24px; }
+.aviso-usuario:focus { outline: 2px solid var(--foco); outline-offset: 2px; }
+.aviso-baja { border-color: #EBC4C1; background: #FFFBFA; }
+.aviso-usuario-cuerpo { min-width: 0; max-width: 640px; }
+.aviso-usuario h2 { font-size: 1.125rem; }
+.aviso-usuario-cuerpo > p { margin-top: 6px; color: var(--texto-secundario); font-size: 0.875rem; line-height: 1.5; }
+.aviso-usuario .mensaje { margin-top: 14px; }
+.campo-clave-nueva { margin-top: 14px; max-width: 360px; }
+.aviso-usuario .botones { flex-shrink: 0; }
+.boton-peligro { background: var(--error); border-color: var(--error); color: white; }
+.boton-peligro:hover:not(:disabled) { filter: brightness(0.92); }
+
+@media (max-width: 760px) {
+  .aviso-usuario { flex-direction: column; align-items: stretch; padding: 20px; }
+}
+@media (max-width: 540px) {
+  .campos-usuario, .filtros-usuarios { grid-template-columns: minmax(0, 1fr); }
+}
