@@ -39,8 +39,8 @@ export function puedeAsignar(usuario) {
 }
 
 // Agregar un lugar tocando el mapa: el encargado y mesa de entradas (por ejemplo, al recibir un reclamo
-// de un lugar que todavía no está cargado). El capataz no. Ojo: hoy solo lo controla la pantalla;
-// el backend todavía no valida roles (tarjeta "Agregar las validaciones por roles en el backend").
+// de un lugar que todavía no está cargado). El capataz no. El backend valida lo mismo: si otro rol lo intenta,
+// responde 403 (ver "Permisos por rol" en LOGIN_Y_ACCESOS_BACKEND.md).
 export function puedeAgregarLugar(usuario) {
   return tieneRol(usuario, ENCARGADO, MESA)
 }

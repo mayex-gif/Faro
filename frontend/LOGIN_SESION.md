@@ -54,9 +54,9 @@ Las cuentas de demostración son las precargadas por `InicializadorUsuarios` en 
 - Revisados el formulario y la navegación con anchos de celular de 320 y 390 px, sin desborde horizontal. El capataz abre Mis tareas con Cuadrilla Verde y sin selector manual.
 - No se crearon ni modificaron OT, lugares o cuadrillas para estas comprobaciones. La base local no tiene tareas asignadas a Cuadrilla Verde; el cambio de estado de una tarea desde esa cuenta queda pendiente de comprobar con datos de prueba acordados por el equipo.
 
-## Coordinación pendiente con backend
+## Autorización en el backend
 
-**La visibilidad del frontend no reemplaza la autorización del servidor.** En la configuración actual, `/auth/perfil` requiere autenticación pero las API de negocio todavía usan `permitAll()`. El equipo de backend debe exigir autenticación y validar roles y pertenencia de cuadrilla en cada operación antes de utilizar FARO con datos reales. El filtrado local de Mis tareas no impide consultar otras OT directamente a la API actual.
+**La visibilidad del frontend no reemplaza la autorización del servidor**, y desde la tarjeta "Agregar las validaciones por roles en el backend" el servidor también la aplica: toda la API (salvo el login y Swagger) exige un token válido (401 si falta) y cada operación valida el rol (403 si no le corresponde). El capataz solo puede cambiar el estado de las órdenes de su cuadrilla. Las consultas (lugares, OT, cuadrillas, estados) quedan abiertas para todos los roles con sesión iniciada, así que el filtrado de Mis tareas sigue siendo de la pantalla. Detalle en [Permisos por rol](../LOGIN_Y_ACCESOS_BACKEND.md#9-permisos-por-rol).
 
 La persistencia en `localStorage` sigue la guía del equipo; un script ejecutado en el mismo origen podría leer el token. No es una cookie HttpOnly. No se agrega un mecanismo de renovación ni se modifica el contrato de autenticación.
 

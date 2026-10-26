@@ -119,3 +119,7 @@ Con el entorno Docker encendido: `docker compose exec -T frontend npm test`.
 ## Despliegue
 
 El frontend y el backend están desplegados en Render y la base de datos en Neon. Ver [DESPLIEGUE.md](./DESPLIEGUE.md): direcciones, variables de entorno, cómo redesplegar y advertencias del plan gratis.
+
+## Permisos por rol
+
+La API exige iniciar sesión (token JWT) y valida el rol en cada operación: 401 sin token, 403 si al rol no le corresponde. Ver [la tabla de quién puede qué y cómo usar Swagger con login](./LOGIN_Y_ACCESOS_BACKEND.md#9-permisos-por-rol).
