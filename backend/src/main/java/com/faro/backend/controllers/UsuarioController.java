@@ -1,12 +1,18 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
 import com.faro.backend.services.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -34,5 +40,14 @@ public class UsuarioController {
             description = "Devuelve todo el personal (activos y dados de baja), ordenado por apellido. Nunca incluye la clave.")
     public List<UsuarioDTO> listar() {
         return service.listar();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED) // responde 201 en vez de 200
+    @Operation(summary = "Dar de alta un usuario",
+            description = "Crea la cuenta con una clave inicial. El email no se puede repetir (409). "
+                    + "Si el rol es CAPATAZ_CUADRILLA, la cuadrilla es obligatoria y tiene que existir.")
+    public UsuarioDTO crear(@Valid @RequestBody UsuarioAltaRequestDTO request) {
+        return service.crear(request);
     }
 }

@@ -1,6 +1,7 @@
 package com.faro.backend.controllers;
 
 import com.faro.backend.config.security.SecurityConfig;
+import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
 import com.faro.backend.models.RolUsuario;
 import com.faro.backend.services.UsuarioService;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,10 +18,12 @@ import java.util.List;
 import static com.faro.backend.config.security.UsuariosDePrueba.capataz;
 import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static com.faro.backend.config.security.UsuariosDePrueba.mesaDeEntradas;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,6 +36,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PermisosUsuariosTest {
 
     private static final String URL = "/api/usuarios";
+
+    private static final String JSON_ALTA = """
+            {
+              "nombre": "Ana",
+              "apellido": "Martínez",
+              "email": "mesadeentradas@generalpaz.gob.ar",
+              "rol": "MESA_ENTRADAS",
+              "clave": "clave-de-prueba"
+            }
+            """;
 
     @Autowired
     private MockMvc mockMvc;
@@ -82,6 +96,33 @@ class PermisosUsuariosTest {
     void sinSesionNoSePuedenListarLosUsuarios() throws Exception {
         mockMvc.perform(get(URL))
                 .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(service);
+    }
+
+    // ---------- Alta ----------
+
+    @Test
+    void elEncargadoPuedeDarDeAltaUnUsuario() throws Exception {
+        when(service.crear(any(UsuarioAltaRequestDTO.class))).thenReturn(mesa());
+
+        mockMvc.perform(post(URL).with(user(encargado())).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(4));
+    }
+
+    @Test
+    void mesaDeEntradasPuedeDarDeAltaUnUsuario() throws Exception {
+        when(service.crear(any(UsuarioAltaRequestDTO.class))).thenReturn(mesa());
+
+        mockMvc.perform(post(URL).with(user(mesaDeEntradas())).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void elCapatazNoPuedeDarDeAltaUnUsuario() throws Exception {
+        mockMvc.perform(post(URL).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isForbidden());
 
         verifyNoInteractions(service);
     }
