@@ -123,3 +123,5 @@ El frontend y el backend están desplegados en Render y la base de datos en Neon
 ## Permisos por rol
 
 La API exige iniciar sesión (token JWT) y valida el rol en cada operación: 401 sin token, 403 si al rol no le corresponde. Ver [la tabla de quién puede qué y cómo usar Swagger con login](./LOGIN_Y_ACCESOS_BACKEND.md#9-permisos-por-rol).
+
+El encargado y la mesa de entradas gestionan el personal (altas, bajas, roles y claves) en **Más → Usuarios**: ver [Gestión de usuarios](./LOGIN_Y_ACCESOS_BACKEND.md#10-gestión-de-usuarios).
