@@ -12,6 +12,7 @@ import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
+import PaginaUsuarios from './pages/PaginaUsuarios'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
 import './App.css'
 import './estilos-navegacion.css'
@@ -25,6 +26,7 @@ const PAGINAS = {
   mapa: PaginaMapa,
   ficha: PaginaFichaLugar,
   tareas: PaginaMisTareas,
+  usuarios: PaginaUsuarios,
 }
 
 function Aplicacion() {
