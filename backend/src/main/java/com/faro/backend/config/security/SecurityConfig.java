@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -42,6 +43,11 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider(UsuarioDetallesService usuarioDetallesService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(usuarioDetallesService);
         authProvider.setPasswordEncoder(passwordEncoder);
+        // Primero la clave, después si la cuenta está activa. Por defecto Spring hace al revés:
+        // avisaría "cuenta desactivada" aunque la clave esté mal (cualquiera sabría que ese email existe).
+        // Así, con clave incorrecta → 401; con la clave correcta de una cuenta dada de baja → DisabledException (409).
+        authProvider.setPreAuthenticationChecks(cuenta -> { });
+        authProvider.setPostAuthenticationChecks(new AccountStatusUserDetailsChecker());
         return authProvider;
     }
 

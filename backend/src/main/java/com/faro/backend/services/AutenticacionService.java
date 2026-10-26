@@ -11,6 +11,7 @@ import com.faro.backend.models.Usuario;
 import com.faro.backend.repositories.UsuarioRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AutenticacionService {
+
+    static final String CUENTA_DESACTIVADA = "La cuenta de usuario se encuentra desactivada. Contacte a la administración.";
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -46,13 +49,16 @@ public class AutenticacionService {
             );
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException("Correo o contraseña incorrectos");
+        } catch (DisabledException e) {
+            // Clave correcta, pero la cuenta está dada de baja (ver SecurityConfig.authenticationProvider)
+            throw new OperacionNoPermitidaException(CUENTA_DESACTIVADA);
         }
 
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con correo: " + email));
 
         if (!usuario.isActivo()) {
-            throw new OperacionNoPermitidaException("La cuenta de usuario se encuentra desactivada. Contacte a la administración.");
+            throw new OperacionNoPermitidaException(CUENTA_DESACTIVADA);
         }
 
         String token = jwtService.generarToken(usuario);
