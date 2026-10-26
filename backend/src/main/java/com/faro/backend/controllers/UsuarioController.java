@@ -1,15 +1,21 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.config.security.UsuarioDetalles;
+import com.faro.backend.dto.CambioActivoRequestDTO;
+import com.faro.backend.dto.CambioClaveRequestDTO;
 import com.faro.backend.dto.UsuarioAltaRequestDTO;
 import com.faro.backend.dto.UsuarioDTO;
 import com.faro.backend.dto.UsuarioRequestDTO;
 import com.faro.backend.services.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -60,5 +66,23 @@ public class UsuarioController {
                     + "No se le puede cambiar el rol al último encargado activo (409).")
     public UsuarioDTO modificar(@PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO request) {
         return service.modificar(id, request);
+    }
+
+    @PatchMapping("/{id}/activo")
+    @Operation(summary = "Dar de baja o reactivar un usuario",
+            description = "{ \"activo\": false } da de baja (no puede entrar más, ni con un token viejo); { \"activo\": true } reactiva. "
+                    + "No se borra nada. Nadie se puede dar de baja a sí mismo ni al último encargado activo (409).")
+    public UsuarioDTO cambiarActivo(@PathVariable Long id, @Valid @RequestBody CambioActivoRequestDTO request,
+                                    @Parameter(hidden = true) @AuthenticationPrincipal UsuarioDetalles usuario) {
+        // @AuthenticationPrincipal: quién hace el pedido (para que nadie se dé de baja a sí mismo)
+        return service.cambiarActivo(id, request.activo(), usuario.getUsuario());
+    }
+
+    @PatchMapping("/{id}/clave")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // 204: salió bien y no hay nada que devolver (la clave nunca se devuelve)
+    @Operation(summary = "Restablecer la clave de un usuario",
+            description = "Quien la restablece escribe la clave nueva (mínimo 8 caracteres) y se la pasa a la persona.")
+    public void restablecerClave(@PathVariable Long id, @Valid @RequestBody CambioClaveRequestDTO request) {
+        service.restablecerClave(id, request.clave());
     }
 }

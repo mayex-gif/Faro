@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -151,6 +152,42 @@ class PermisosUsuariosTest {
     @Test
     void elCapatazNoPuedeModificarUnUsuario() throws Exception {
         mockMvc.perform(put(URL + "/4").with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON).content(JSON_ALTA))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(service);
+    }
+
+    // ---------- Baja / reactivar y restablecer clave ----------
+
+    @Test
+    void mesaDeEntradasPuedeDarDeBajaUnUsuario() throws Exception {
+        when(service.cambiarActivo(eq(4L), eq(false), any())).thenReturn(mesa());
+
+        mockMvc.perform(patch(URL + "/4/activo").with(user(mesaDeEntradas()))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"activo\": false }"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void elCapatazNoPuedeDarDeBajaUnUsuario() throws Exception {
+        mockMvc.perform(patch(URL + "/4/activo").with(user(capataz(1L)))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"activo\": false }"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void elEncargadoPuedeRestablecerUnaClave() throws Exception {
+        mockMvc.perform(patch(URL + "/4/clave").with(user(encargado()))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"clave\": \"clave-nueva-123\" }"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void elCapatazNoPuedeRestablecerUnaClave() throws Exception {
+        mockMvc.perform(patch(URL + "/4/clave").with(user(capataz(1L)))
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"clave\": \"clave-nueva-123\" }"))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(service);

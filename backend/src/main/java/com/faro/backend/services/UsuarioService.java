@@ -102,6 +102,35 @@ public class UsuarioService {
         return UsuarioDTO.desdeEntidad(usuarioRepository.save(usuario));
     }
 
+    /**
+     * Da de baja (activo = false) o reactiva (activo = true) una cuenta. No se borra nada:
+     * la persona sigue en la lista y en la historia, pero no puede entrar (ni con un token viejo).
+     * Reglas para la baja: nadie se da de baja a sí mismo y no se puede dar de baja al último encargado activo → 409.
+     */
+    @Transactional
+    public UsuarioDTO cambiarActivo(Long id, boolean activo, Usuario quienLoHace) {
+        Usuario usuario = buscar(id);
+        if (!activo) {
+            if (id.equals(quienLoHace.getId())) {
+                throw new OperacionNoPermitidaException("No te podés dar de baja a vos mismo");
+            }
+            if (esElUltimoEncargadoActivo(usuario)) {
+                throw new OperacionNoPermitidaException(
+                        "No se puede dar de baja al último encargado activo: el corralón quedaría sin encargado");
+            }
+        }
+        usuario.setActivo(activo);
+        return UsuarioDTO.desdeEntidad(usuarioRepository.save(usuario));
+    }
+
+    /** Restablece la clave (por ejemplo, si alguien se la olvidó). Se guarda encriptada. */
+    @Transactional
+    public void restablecerClave(Long id, String claveNueva) {
+        Usuario usuario = buscar(id);
+        usuario.setPassword(passwordEncoder.encode(claveNueva));
+        usuarioRepository.save(usuario);
+    }
+
     private Usuario buscar(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
