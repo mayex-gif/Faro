@@ -131,4 +131,8 @@ public class Usuario {
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
+
+    public boolean tienePermiso(Permiso permiso) {
+        return rol != null && rol.tienePermiso(permiso);
+    }
 }

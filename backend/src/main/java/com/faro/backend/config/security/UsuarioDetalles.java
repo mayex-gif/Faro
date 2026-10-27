@@ -1,15 +1,18 @@
 package com.faro.backend.config.security;
 
+import com.faro.backend.models.Permiso;
 import com.faro.backend.models.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 /**
  * Adaptador entre el modelo Usuario de FARO y la interfaz UserDetails de Spring Security.
+ * Asigna tanto el rol (ROLE_*) como los permisos correspondientes al rol en el corralón (PERMISO_*).
  */
 public class UsuarioDetalles implements UserDetails {
 
@@ -25,7 +28,14 @@ public class UsuarioDetalles implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        if (usuario.getRol() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+            for (Permiso permiso : usuario.getRol().getPermisos()) {
+                authorities.add(new SimpleGrantedAuthority("PERMISO_" + permiso.name()));
+            }
+        }
+        return authorities;
     }
 
     @Override

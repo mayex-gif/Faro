@@ -34,6 +34,32 @@ class UsuarioTest {
     }
 
     @Test
+    void testConstructorParametrizadoYTienePermiso() {
+        Usuario usuario = new Usuario("Martín", "Gómez", "encargado@generalpaz.gob.ar", "pass123",
+                RolUsuario.ENCARGADO_CORRALON, null, true);
+
+        assertEquals("Martín", usuario.getNombre());
+        assertEquals("Gómez", usuario.getApellido());
+        assertEquals("encargado@generalpaz.gob.ar", usuario.getEmail());
+        assertEquals("pass123", usuario.getPassword());
+        assertEquals(RolUsuario.ENCARGADO_CORRALON, usuario.getRol());
+        assertNull(usuario.getCuadrillaId());
+        assertTrue(usuario.isActivo());
+        assertNotNull(usuario.getFechaCreacion());
+
+        assertTrue(usuario.tienePermiso(Permiso.GESTIONAR_USUARIOS));
+        assertTrue(usuario.tienePermiso(Permiso.GESTIONAR_ROLES));
+        assertTrue(usuario.tienePermiso(Permiso.CREAR_ORDEN));
+    }
+
+    @Test
+    void testTienePermisoSinRolRetornaFalse() {
+        Usuario usuario = new Usuario();
+        usuario.setRol(null);
+        assertFalse(usuario.tienePermiso(Permiso.GESTIONAR_USUARIOS));
+    }
+
+    @Test
     void testPrePersistAsignaFechaSiEsNull() {
         Usuario usuario = new Usuario();
         assertNull(usuario.getFechaCreacion());

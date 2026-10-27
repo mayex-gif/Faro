@@ -70,6 +70,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/perfil").authenticated()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/roles/**").authenticated()
+                        .requestMatchers("/api/usuarios/**").hasRole("ENCARGADO_CORRALON")
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(exceptions -> exceptions

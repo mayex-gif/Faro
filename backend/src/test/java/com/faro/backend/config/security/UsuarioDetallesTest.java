@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UsuarioDetallesTest {
 
     @Test
-    void mapeaCorrectamenteCamposDeUsuario() {
+    void mapeaCorrectamenteCamposDeUsuarioYAutoridades() {
         Usuario usuario = new Usuario("Martín", "Gómez", "encargado@generalpaz.gob.ar", "encodedPassword123",
                 RolUsuario.ENCARGADO_CORRALON, null, true);
 
@@ -24,8 +24,9 @@ class UsuarioDetallesTest {
 
         Collection<? extends GrantedAuthority> authorities = detalles.getAuthorities();
         assertNotNull(authorities);
-        assertEquals(1, authorities.size());
         assertTrue(authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_ENCARGADO_CORRALON")));
+        assertTrue(authorities.stream().anyMatch(a -> a.getAuthority().equals("PERMISO_GESTIONAR_USUARIOS")));
+        assertTrue(authorities.stream().anyMatch(a -> a.getAuthority().equals("PERMISO_ASIGNAR_CUADRILLA")));
 
         assertTrue(detalles.isAccountNonExpired());
         assertTrue(detalles.isAccountNonLocked());
@@ -41,5 +42,13 @@ class UsuarioDetallesTest {
         UsuarioDetalles detalles = new UsuarioDetalles(usuarioInactivo);
 
         assertFalse(detalles.isEnabled());
+    }
+
+    @Test
+    void usuarioConRolNullDevuelveListaVaciaDeAutoridades() {
+        Usuario usuarioSinRol = new Usuario("Sin", "Rol", "sinrol@generalpaz.gob.ar", "pass", null, null, true);
+        UsuarioDetalles detalles = new UsuarioDetalles(usuarioSinRol);
+
+        assertTrue(detalles.getAuthorities().isEmpty());
     }
 }
