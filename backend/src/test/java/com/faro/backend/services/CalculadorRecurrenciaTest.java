@@ -51,6 +51,9 @@ class CalculadorRecurrenciaTest {
         assertEquals(LocalDate.of(2026, 10, 9), primera); // Viernes 9
         assertEquals(DayOfWeek.FRIDAY, primera.getDayOfWeek());
 
+        LocalDate yaEsViernes = calculador.calcularPrimeraEjecucion(TipoFrecuencia.SEMANAL, 1, 5, null, primera);
+        assertEquals(primera, yaEsViernes);
+
         LocalDate siguienteViernes = calculador.calcularSiguiente(TipoFrecuencia.SEMANAL, 1, 5, null, primera);
         assertEquals(LocalDate.of(2026, 10, 16), siguienteViernes);
         assertEquals(DayOfWeek.FRIDAY, siguienteViernes.getDayOfWeek());

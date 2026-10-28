@@ -34,7 +34,7 @@ public class CalculadorRecurrencia {
             case SEMANAL:
                 if (diaSemana != null && diaSemana >= 1 && diaSemana <= 7) {
                     DayOfWeek deseado = DayOfWeek.of(diaSemana);
-                    if (fechaInicio.getDayOfWeek() == deseado) {
+                    if (fechaInicio.getDayOfWeek().equals(deseado)) {
                         return fechaInicio;
                     }
                     return fechaInicio.with(TemporalAdjusters.next(deseado));
