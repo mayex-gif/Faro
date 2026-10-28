@@ -79,6 +79,80 @@ class ReglaMantenimientoServiceTest {
         );
     }
 
+    private ReglaMantenimiento reglaBase(Long id) {
+        ReglaMantenimiento regla = new ReglaMantenimiento();
+        regla.setId(id);
+        regla.setTitulo("Regla existente");
+        regla.setDescripcion("Descripción existente");
+        regla.setTipoTrabajo(TipoTrabajo.CORTE_DE_PASTO);
+        regla.setPrioridad(PrioridadOrden.MEDIA);
+        regla.setLugar(plaza);
+        regla.setFrecuencia(TipoFrecuencia.DIARIA);
+        regla.setFechaInicio(LocalDate.of(2026, 1, 1));
+        regla.setProximaEjecucion(LocalDate.of(2026, 1, 10));
+        return regla;
+    }
+
+    @Test
+    @DisplayName("Listar devuelve las reglas aplicando los dos filtros solicitados")
+    void listarConFiltros() {
+        ReglaMantenimiento regla = reglaBase(3L);
+        when(reglaRepository.findByLugarIdAndActiva(10L, true)).thenReturn(java.util.List.of(regla));
+
+        var resultado = service.listar(true, 10L);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Regla existente", resultado.get(0).titulo());
+        verify(reglaRepository).findByLugarIdAndActiva(10L, true);
+    }
+
+    @Test
+    @DisplayName("Obtener una regla inexistente devuelve error de recurso no encontrado")
+    void obtenerReglaInexistente() {
+        when(reglaRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> service.obtener(404L));
+    }
+
+    @Test
+    @DisplayName("Modificar recalcula la próxima fecha si cambia el inicio y conserva activa si no se envía")
+    void modificarRecalculaFechaYConservaEstado() {
+        ReglaMantenimiento regla = reglaBase(4L);
+        regla.setActiva(false);
+        LocalDate nuevoInicio = LocalDate.of(2026, 11, 2);
+        ReglaMantenimientoRequestDTO request = new ReglaMantenimientoRequestDTO(
+                "  Corte semanal  ", "  Nueva descripción  ", TipoTrabajo.CORTE_DE_PASTO,
+                PrioridadOrden.ALTA, 10L, null, TipoFrecuencia.SEMANAL, null,
+                1, null, nuevoInicio, null, null);
+        when(reglaRepository.findById(4L)).thenReturn(Optional.of(regla));
+        when(lugarRepository.findById(10L)).thenReturn(Optional.of(plaza));
+        when(reglaRepository.save(any(ReglaMantenimiento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ReglaMantenimientoDTO modificada = service.modificar(4L, request);
+
+        assertEquals("Corte semanal", modificada.titulo());
+        assertEquals("Nueva descripción", modificada.descripcion());
+        assertEquals(1, modificada.intervalo());
+        assertEquals(nuevoInicio, modificada.proximaEjecucion());
+        assertFalse(modificada.activa());
+    }
+
+    @Test
+    @DisplayName("Activar conserva la próxima fecha si todavía no venció")
+    void activarReglaVigente() {
+        ReglaMantenimiento regla = reglaBase(6L);
+        regla.setFechaInicio(LocalDate.now());
+        regla.setProximaEjecucion(LocalDate.now().plusDays(2));
+        regla.setActiva(false);
+        when(reglaRepository.findById(6L)).thenReturn(Optional.of(regla));
+        when(reglaRepository.save(any(ReglaMantenimiento.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ReglaMantenimientoDTO resultado = service.activar(6L);
+
+        assertTrue(resultado.activa());
+        assertEquals(LocalDate.now().plusDays(2), resultado.proximaEjecucion());
+    }
+
     @Test
     @DisplayName("Crear regla válida guarda y calcula la próxima ejecución inicial")
     void crearReglaValida() {

@@ -214,4 +214,30 @@ class MotorMantenimientoServiceTest {
         assertEquals(1L, creada.reglaMantenimientoId());
         assertEquals(LocalDate.of(2026, 10, 15), reglaSemanal.getProximaEjecucion());
     }
+
+    @Test
+    @DisplayName("Ejecución manual salta una sola fecha si ya existe la OT de la próxima ejecución")
+    void ejecucionManualConOrdenExistenteAvanzaUnaSolaFecha() {
+        LocalDate fechaExistente = LocalDate.of(2026, 10, 8);
+        LocalDate fechaSiguiente = LocalDate.of(2026, 10, 15);
+        when(reglaRepository.findById(1L)).thenReturn(Optional.of(reglaSemanal));
+        when(ordenRepository.existsByReglaMantenimientoIdAndFechaPlanificada(1L, fechaExistente))
+                .thenReturn(true);
+        when(ordenRepository.existsByReglaMantenimientoIdAndFechaPlanificada(1L, fechaSiguiente))
+                .thenReturn(false);
+        when(estadoRepository.findFirstByInicialTrue()).thenReturn(Optional.of(pendiente));
+        when(estadoRepository.findByNombreIgnoreCase("Planificada")).thenReturn(Optional.of(planificada));
+        when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(inv -> {
+            OrdenTrabajo ot = inv.getArgument(0);
+            ot.setId(106L);
+            return ot;
+        });
+
+        OrdenTrabajoDTO creada = motorService.ejecutarReglaManualmente(1L, fechaExistente);
+
+        assertEquals(fechaSiguiente, creada.fechaPlanificada());
+        assertEquals(LocalDate.of(2026, 10, 22), reglaSemanal.getProximaEjecucion());
+        verify(ordenRepository).existsByReglaMantenimientoIdAndFechaPlanificada(1L, fechaExistente);
+        verify(ordenRepository).existsByReglaMantenimientoIdAndFechaPlanificada(1L, fechaSiguiente);
+    }
 }

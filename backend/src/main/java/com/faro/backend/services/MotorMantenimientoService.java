@@ -63,7 +63,7 @@ public class MotorMantenimientoService {
 
         for (ReglaMantenimiento regla : candidatas) {
             try {
-                OrdenTrabajoDTO ot = procesarRegla(regla, fechaReferencia);
+                OrdenTrabajoDTO ot = procesarRegla(regla);
                 if (ot != null) {
                     generadas.add(ot);
                 }
@@ -101,25 +101,16 @@ public class MotorMantenimientoService {
             throw new OperacionNoPermitidaException("La regla ha superado su fecha de vigencia (" + regla.getFechaFin() + ")");
         }
 
-        OrdenTrabajoDTO resultado = procesarRegla(regla, fechaReferencia);
+        OrdenTrabajoDTO resultado = procesarRegla(regla);
         if (resultado == null) {
-            // Ya existía una OT para la fecha planificada actual, intentamos avanzar y generar la siguiente
-            LocalDate proxima = calculadorRecurrencia.calcularSiguiente(
-                    regla.getFrecuencia(),
-                    regla.getIntervalo(),
-                    regla.getDiaSemana(),
-                    regla.getDiaMes(),
-                    regla.getProximaEjecucion()
-            );
-            regla.setProximaEjecucion(proxima);
-            reglaRepository.save(regla);
-            resultado = procesarRegla(regla, proxima);
+            // procesarRegla ya avanzó la fecha cuando encontró una OT duplicada.
+            resultado = procesarRegla(regla);
         }
 
         return resultado;
     }
 
-    private OrdenTrabajoDTO procesarRegla(ReglaMantenimiento regla, LocalDate fechaReferencia) {
+    private OrdenTrabajoDTO procesarRegla(ReglaMantenimiento regla) {
         LocalDate fechaPlanificada = regla.getProximaEjecucion();
 
         // Si la regla tiene fecha de fin y ya la superó, la desactivamos y salimos
