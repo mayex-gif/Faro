@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,16 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from OrdenTrabajo o where o.id = :id")
     Optional<OrdenTrabajo> buscarParaCambiar(@Param("id") Long id);
+
+    // Órdenes generadas por una regla de mantenimiento periódico
+    List<OrdenTrabajo> findByReglaMantenimientoIdOrderByFechaPlanificadaDesc(Long reglaId);
+
+    // Todas las órdenes de trabajo que pertenecen a planes de mantenimiento periódicos
+    List<OrdenTrabajo> findByReglaMantenimientoIsNotNullOrderByFechaPlanificadaDesc();
+
+    // Para evitar duplicación de OT para una misma regla y fecha planificada
+    boolean existsByReglaMantenimientoIdAndFechaPlanificada(Long reglaId, LocalDate fechaPlanificada);
+
+    // ¿Esta regla tiene alguna OT generada?
+    boolean existsByReglaMantenimientoId(Long reglaId);
 }

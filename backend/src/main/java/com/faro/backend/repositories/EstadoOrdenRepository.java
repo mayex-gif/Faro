@@ -15,4 +15,7 @@ public interface EstadoOrdenRepository extends JpaRepository<EstadoOrden, Long> 
 
     // El estado en el que arrancan las OT nuevas
     Optional<EstadoOrden> findFirstByInicialTrue();
+
+    // Buscar estado por nombre (ej: "Planificada", "En curso", "Finalizada")
+    Optional<EstadoOrden> findByNombreIgnoreCase(String nombre);
 }
