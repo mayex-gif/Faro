@@ -1,5 +1,6 @@
 package com.faro.backend.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -64,6 +65,16 @@ public class ManejadorDeErrores {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public RespuestaError formatoInvalido(HttpMessageNotReadableException e) {
         return new RespuestaError(400, "El pedido tiene un formato inválido o algún valor no permitido", Map.of());
+    }
+
+    // 400: un parámetro de consulta no cumple sus límites (por ejemplo, tamaño de página > 100)
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RespuestaError parametrosInvalidos(ConstraintViolationException e) {
+        Map<String, String> errores = new LinkedHashMap<>();
+        e.getConstraintViolations().forEach(violacion ->
+                errores.putIfAbsent(violacion.getPropertyPath().toString(), violacion.getMessage()));
+        return new RespuestaError(400, "Hay parámetros inválidos en el pedido", errores);
     }
 
     // 401: credenciales incorrectas o sesión no autenticada
