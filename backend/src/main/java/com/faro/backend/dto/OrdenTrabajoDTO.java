@@ -4,6 +4,7 @@ import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
 import com.faro.backend.models.TipoTrabajo;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /** Datos de una Orden de Trabajo que el backend le devuelve a la pantalla. */
@@ -20,7 +21,10 @@ public record OrdenTrabajoDTO(
         String estadoNombre,  // "En curso"
         String estadoColor,   // "#9A4A12", para pintarlo en la pantalla
         Long cuadrillaId,     // null mientras no tenga cuadrilla asignada
-        String cuadrillaNombre // null mientras no tenga cuadrilla asignada
+        String cuadrillaNombre, // null mientras no tenga cuadrilla asignada
+        LocalDate fechaPlanificada,
+        LocalDateTime fechaFinalizacion,
+        Long reglaMantenimientoId
 ) {
     /** Constructor de conveniencia para casos donde no hay cuadrilla asignada */
     public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
@@ -28,6 +32,15 @@ public record OrdenTrabajoDTO(
                            LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
                            String estadoColor) {
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
-                estadoId, estadoNombre, estadoColor, null, null);
+                estadoId, estadoNombre, estadoColor, null, null, null, null, null);
+    }
+
+    /** Constructor de compatibilidad con 13 parámetros (usado previamente) */
+    public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                           PrioridadOrden prioridad, Long lugarId, String lugarNombre,
+                           LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
+                           String estadoColor, Long cuadrillaId, String cuadrillaNombre) {
+        this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
+                estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre, null, null, null);
     }
 }

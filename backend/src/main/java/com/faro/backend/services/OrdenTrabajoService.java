@@ -24,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -128,6 +129,11 @@ public class OrdenTrabajoService {
         }
 
         orden.setEstado(nuevo);
+        if (nuevo.isCierre()) {
+            orden.setFechaFinalizacion(LocalDateTime.now());
+        } else if (actual != null && actual.isCierre()) {
+            orden.setFechaFinalizacion(null);
+        }
         OrdenTrabajo guardada = ordenRepository.save(orden);
         // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
         eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
@@ -310,7 +316,10 @@ public class OrdenTrabajoService {
                 estado != null ? estado.getNombre() : null,
                 estado != null ? estado.getColor() : null,
                 cuadrilla != null ? cuadrilla.getId() : null,
-                cuadrilla != null ? cuadrilla.getNombre() : null
+                cuadrilla != null ? cuadrilla.getNombre() : null,
+                orden.getFechaPlanificada(),
+                orden.getFechaFinalizacion(),
+                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null
         );
     }
 }
