@@ -69,7 +69,7 @@ class AuditoriaSnapshotSerializerTest {
 
     @Test
     void informaSiUnaRelacionNoExponeUnIdentificador() {
-        EntidadSinIdentificador relacionada = new EntidadSinIdentificador();
+        EntidadSinGetterIdentificador relacionada = new EntidadSinGetterIdentificador();
 
         assertThrows(IllegalStateException.class,
                 () -> serializer.serializar(new String[]{"relacion"}, new Object[]{relacionada}));
@@ -94,6 +94,8 @@ class AuditoriaSnapshotSerializerTest {
     }
 
     @jakarta.persistence.Entity
-    static class EntidadSinIdentificador {
+    static class EntidadSinGetterIdentificador {
+        @jakarta.persistence.Id
+        private Long id;
     }
 }
