@@ -1,8 +1,8 @@
 package com.faro.backend.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.faro.backend.dto.PaginaAuditoriaDTO;
 import com.faro.backend.dto.RegistroAuditoriaDTO;
 import com.faro.backend.models.AccionAuditoria;
@@ -66,7 +66,7 @@ public class AuditoriaConsultaService {
         }
         try {
             return objectMapper.readValue(valores, new TypeReference<>() { });
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return Map.of("captura", valores);
         }
     }

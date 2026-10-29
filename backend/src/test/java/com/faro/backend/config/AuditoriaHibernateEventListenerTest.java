@@ -20,8 +20,7 @@ class AuditoriaHibernateEventListenerTest {
     private final RegistroAuditoriaWriter writer = mock(RegistroAuditoriaWriter.class);
     private final AuditoriaActorProvider actor = mock(AuditoriaActorProvider.class);
     private final AuditoriaSnapshotSerializer serializer = new AuditoriaSnapshotSerializer(
-            new com.fasterxml.jackson.databind.ObjectMapper()
-                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule()));
+            tools.jackson.databind.json.JsonMapper.builder().build());
     private final AuditoriaHibernateEventListener listener =
             new AuditoriaHibernateEventListener(writer, actor, serializer);
 

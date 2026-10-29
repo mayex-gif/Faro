@@ -1,6 +1,6 @@
 package com.faro.backend.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.faro.backend.dto.PaginaAuditoriaDTO;
 import com.faro.backend.models.AccionAuditoria;
 import com.faro.backend.models.RegistroAuditoria;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class AuditoriaConsultaServiceTest {
 
     private final RegistroAuditoriaRepository repository = mock(RegistroAuditoriaRepository.class);
-    private final AuditoriaConsultaService service = new AuditoriaConsultaService(repository, new ObjectMapper());
+    private final AuditoriaConsultaService service = new AuditoriaConsultaService(repository, JsonMapper.builder().build());
 
     @Test
     void filtraNormalizaYDevuelveLosMetadatosDePaginacion() {
