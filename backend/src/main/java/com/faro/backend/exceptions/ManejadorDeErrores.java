@@ -1,5 +1,6 @@
 package com.faro.backend.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -34,6 +35,21 @@ public class ManejadorDeErrores {
         return new RespuestaError(409, e.getMessage(), Map.of());
     }
 
+    // 409: un cambio hecho sin señal que ya no vale (otra persona cambió la OT antes, se cerró, se reasignó...).
+    // "errores" dice el motivo, en qué estado está ahora y si todavía se puede "aplicar igual".
+    @ExceptionHandler(ConflictoSincronizacionException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public RespuestaError conflictoSinSenal(ConflictoSincronizacionException e) {
+        Map<String, String> detalle = new LinkedHashMap<>(); // LinkedHashMap (y no Map.of) porque algún dato puede faltar
+        detalle.put("motivo", e.getMotivo().name());
+        detalle.put("sePuedeAplicar", String.valueOf(e.isSePuedeAplicar()));
+        if (e.getEstadoActualId() != null) {
+            detalle.put("estadoActualId", String.valueOf(e.getEstadoActualId()));
+            detalle.put("estadoActual", e.getEstadoActual());
+        }
+        return new RespuestaError(409, e.getMessage(), detalle);
+    }
+
     // 400: no pasó las validaciones (@NotBlank, @NotNull...). Detalla cada campo con problema.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -49,5 +65,36 @@ public class ManejadorDeErrores {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public RespuestaError formatoInvalido(HttpMessageNotReadableException e) {
         return new RespuestaError(400, "El pedido tiene un formato inválido o algún valor no permitido", Map.of());
+    }
+
+    // 400: un parámetro de consulta no cumple sus límites (por ejemplo, tamaño de página > 100)
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RespuestaError parametrosInvalidos(ConstraintViolationException e) {
+        Map<String, String> errores = new LinkedHashMap<>();
+        e.getConstraintViolations().forEach(violacion ->
+                errores.putIfAbsent(violacion.getPropertyPath().toString(), violacion.getMessage()));
+        return new RespuestaError(400, "Hay parámetros inválidos en el pedido", errores);
+    }
+
+    // 401: credenciales incorrectas o sesión no autenticada
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public RespuestaError credencialesInvalidas(org.springframework.security.authentication.BadCredentialsException e) {
+        return new RespuestaError(401, e.getMessage(), Map.of());
+    }
+
+    // 403: tiene el rol, pero esta acción puntual no le toca (ej: una orden de otra cuadrilla). Explica el motivo.
+    @ExceptionHandler(SinPermisoException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public RespuestaError sinPermiso(SinPermisoException e) {
+        return new RespuestaError(403, e.getMessage(), Map.of());
+    }
+
+    // 403: acceso denegado por falta de permisos (el rol no alcanza, ej: @PreAuthorize)
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public RespuestaError accesoDenegado(org.springframework.security.access.AccessDeniedException e) {
+        return new RespuestaError(403, "No tiene permisos para realizar esta acción", Map.of());
     }
 }

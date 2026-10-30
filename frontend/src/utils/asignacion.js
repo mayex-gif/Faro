@@ -9,6 +9,13 @@ function porUrgencia(a, b) {
     || a.id - b.id
 }
 
+// ¿Esta OT espera que le asignen una cuadrilla? Está en el estado inicial y todavía no tiene cuadrilla.
+// Lo usa la ficha del lugar en el mapa para mostrar "Asignar cuadrilla" solo donde corresponde.
+export function esperaCuadrilla(orden, estados) {
+  const inicial = estados.some((estado) => estado.inicial && estado.id === orden.estadoId)
+  return inicial && orden.cuadrillaId == null
+}
+
 // Las OT pendientes son las que están en el estado inicial del flujo (se lo pregunta al backend,
 // no se escribe "Pendiente" a mano porque los estados son configurables).
 // Orden: primero las más urgentes y, a igual prioridad, las más antiguas.

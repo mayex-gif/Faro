@@ -9,6 +9,8 @@
 // Vite reemplaza VITE_API_URL al compilar (si se cambia, hay que volver a compilar).
 // El "?." es porque fuera de Vite (por ejemplo, en los tests con node) import.meta.env no existe.
 // Si la dirección termina con "/", se la sacamos para no pedir "/api//cuadrillas".
+import { leerToken, terminarSesion } from '../utils/sesion.js'
+
 export const API_BASE = (import.meta.env?.VITE_API_URL || '/api').replace(/\/+$/, '')
 
 // Error con más información que un Error común: el código HTTP y los errores por campo
@@ -21,10 +23,15 @@ export class ErrorApi extends Error {
 }
 
 // Hace el pedido, revisa si salió bien y devuelve los datos
-export async function pedir(ruta, opciones = {}) {
+export async function pedir(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
+  const token = autenticacion ? leerToken() : ''
   const respuesta = await fetch(`${API_BASE}${ruta}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...opciones,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   })
 
   if (!respuesta.ok) {
@@ -34,6 +41,7 @@ export async function pedir(ruta, opciones = {}) {
     } catch {
       // la respuesta de error no traía JSON: usamos un mensaje genérico
     }
+    if (respuesta.status === 401 && autenticacion) terminarSesion(token)
     throw new ErrorApi(respuesta.status, cuerpo?.mensaje ?? `Error ${respuesta.status}`, cuerpo?.errores ?? {})
   }
 

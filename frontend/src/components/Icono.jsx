@@ -14,6 +14,19 @@ const trazos = {
   iniciar: 'M8 5v14l11-7Z',
   mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14',
   historial: 'M12 7v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  abajo: 'm6 9 6 6 6-6',
+  mas: 'M4 7h16 M4 12h16 M4 17h16',
+  cerrar: 'M18 6 6 18 M6 6l12 12',
+  buscar: 'M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z M20 20l-3.5-3.5',
+  lista: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
+  // Usuarios (gestión del personal)
+  usuario: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  clave: 'M7.5 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z M10.5 12H21 M18 12v3 M15 12v2',
+  baja: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 11h5',
+  // Tipos de lugar (lista del mapa)
+  luminaria: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3Z',
+  espacioVerde: 'M12 22V12 M12 12c-4 0-6-3-6-6 3 0 6 2 6 6Z M12 12c4 0 6-3 6-6-3 0-6 2-6 6Z',
+  calle: 'M4 21 9 3 M20 21 15 3 M12 5v2 M12 11v2 M12 17v2',
 }
 
 function Icono({ nombre, className = '' }) {

@@ -60,9 +60,11 @@ Las tablas las crea Hibernate al arrancar. Los estados de OT y las 4 cuadrillas 
 | Root Directory | `backend` |
 | Language | **Docker** (usa `backend/Dockerfile`) |
 | Instance Type | **Free** |
-| Health Check Path | `/api/estados-orden` |
+| Health Check Path | `/swagger-ui/index.html` |
 
 Cargar las variables del punto 1 y **Deploy**. En los logs tiene que aparecer `Started BackendApplication`.
+
+> **Health Check Path:** Render da el deploy por bueno cuando esa dirección responde 200. Tiene que ser una dirección **abierta**: desde los permisos por rol, `/api/estados-orden` pide login y responde 401, y el deploy falla con "Timed out" aunque el backend haya arrancado bien (pasó el 26/10/2026). `/swagger-ui/index.html` siempre responde 200 y es liviana.
 
 ## 4. Frontend en Render (se hace una sola vez)
 
@@ -94,11 +96,14 @@ Cuando termina, Render muestra arriba la dirección del frontend (`https://faro-
 
 - **Con GitHub conectado:** cada merge a `develop` se despliega solo.
 - **Con "Public Git Repository":** en Render, en el servicio que corresponda → **Manual Deploy → Deploy latest commit**.
+- **Frontend:** al abrir FARO después de un deploy se ve la versión nueva; quien lo tenía abierto ve el cartel "Hay una versión nueva de FARO → Actualizar". La primera vez que se despliega ese cambio (tarjeta PWA, octubre 2026) todavía hay que cerrar todas las pestañas de FARO una vez.
 
 ## 6. Verificar
 
 1. Abrir `https://faro-backend-6cq7.onrender.com/swagger-ui.html` (si estaba dormido, tarda **2 a 3 minutos** en despertar).
-2. `GET /api/estados-orden` → 5 estados. `GET /api/cuadrillas` → 4 cuadrillas.
+2. Desde la tarjeta de permisos por rol, la API pide sesión: en Swagger, `POST /api/auth/login` (Try it out, email y
+   contraseña de una cuenta, Execute), copiar el `token` de la respuesta, tocar **Authorize**, pegarlo y **Authorize**.
+   Recién ahí: `GET /api/estados-orden` → 5 estados. `GET /api/cuadrillas` → 4 cuadrillas. Sin token responden **401**.
 3. Abrir la dirección del frontend (en la compu y en el celular) y recorrer el menú: Infraestructura, Órdenes de trabajo,
    Asignación a cuadrillas, Mapa, Ficha histórica y Mis tareas.
 4. Si una pantalla dice **"No se pudo completar la operación"** (con `Failed to fetch`): F12 → **Console**.

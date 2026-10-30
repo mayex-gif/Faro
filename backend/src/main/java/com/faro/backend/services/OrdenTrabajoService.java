@@ -5,12 +5,15 @@ import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
+import com.faro.backend.exceptions.SinPermisoException;
 import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.EventoOrden;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
+import com.faro.backend.models.RolUsuario;
 import com.faro.backend.models.TransicionEstado;
+import com.faro.backend.models.Usuario;
 import com.faro.backend.repositories.CuadrillaRepository;
 import com.faro.backend.repositories.EstadoOrdenRepository;
 import com.faro.backend.repositories.EventoOrdenRepository;
@@ -21,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,6 +36,9 @@ import java.util.Optional;
  */
 @Service
 public class OrdenTrabajoService {
+
+    // Estado en el que queda una OT cuando se le asigna una cuadrilla (ver buscarEstadoDestinoAsignacion).
+    private static final String ESTADO_AL_ASIGNAR = "Planificada";
 
     private final OrdenTrabajoRepository ordenRepository;
     private final PuntoInfraestructuraRepository lugarRepository;
@@ -107,8 +114,9 @@ public class OrdenTrabajoService {
 
     /** Pasa una OT a otro estado, SOLO si existe el camino en la tabla de transiciones. */
     @Transactional
-    public OrdenTrabajoDTO cambiarEstado(Long id, CambioEstadoRequestDTO request) {
+    public OrdenTrabajoDTO cambiarEstado(Long id, CambioEstadoRequestDTO request, Usuario quienLaCambia) {
         OrdenTrabajo orden = buscarOrden(id);
+        validarQuePuedeCambiarElEstado(orden, quienLaCambia);
         EstadoOrden nuevo = estadoRepository.findById(request.estadoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Estado no encontrado"));
         EstadoOrden actual = orden.getEstado();
@@ -121,10 +129,38 @@ public class OrdenTrabajoService {
         }
 
         orden.setEstado(nuevo);
+        if (nuevo.isCierre()) {
+            orden.setFechaFinalizacion(LocalDateTime.now());
+        } else if (actual != null && actual.isCierre()) {
+            orden.setFechaFinalizacion(null);
+        }
         OrdenTrabajo guardada = ordenRepository.save(orden);
         // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
         eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
         return convertirADto(guardada);
+    }
+
+    /**
+     * ¿Esta persona puede mover esta orden?
+     * - Encargado del corralón: cualquier orden.
+     * - Capataz: solo las órdenes asignadas a SU cuadrilla (si no tiene cuadrilla o es de otra → 403).
+     * - Cualquier otro rol: no (el controller ya lo frena; acá se repite por las dudas).
+     */
+    private void validarQuePuedeCambiarElEstado(OrdenTrabajo orden, Usuario usuario) {
+        if (usuario == null) {
+            throw new SinPermisoException("Hay que iniciar sesión para cambiar el estado de una orden");
+        }
+        if (usuario.getRol() == RolUsuario.ENCARGADO_CORRALON) {
+            return;
+        }
+        if (usuario.getRol() == RolUsuario.CAPATAZ_CUADRILLA) {
+            Cuadrilla cuadrilla = orden.getCuadrilla();
+            if (cuadrilla == null || !Objects.equals(cuadrilla.getId(), usuario.getCuadrillaId())) {
+                throw new SinPermisoException("Esta orden no es de tu cuadrilla");
+            }
+            return;
+        }
+        throw new SinPermisoException("Tu rol no puede cambiar el estado de las órdenes");
     }
 
     // ===================== ASIGNACIÓN A CUADRILLAS =====================
@@ -134,7 +170,8 @@ public class OrdenTrabajoService {
      * 1. Verifica que la orden esté pendiente (en estado inicial).
      * 2. Verifica que la cuadrilla exista y esté disponible (en servicio).
      * 3. Verifica que la cuadrilla cubra el tipo de trabajo de la OT.
-     * 4. Pasa la orden al estado siguiente del flujo (ej: "En curso").
+     * 4. Deja la orden "Planificada": ya tiene quién la haga, pero todavía no empezó.
+     *    El capataz la pasa a "En curso" cuando arranca (desde Mis tareas).
      */
     @Transactional
     public OrdenTrabajoDTO asignarCuadrilla(Long id, Long cuadrillaId) {
@@ -211,16 +248,19 @@ public class OrdenTrabajoService {
         }
     }
 
+    // Al asignar, la OT queda "Planificada" (aunque el flujo también permita ir directo a "En curso"):
+    // tener cuadrilla no es lo mismo que haber empezado. Si el flujo configurado no tiene el camino
+    // a "Planificada", se usa el primer estado permitido que no cierre la orden.
     private EstadoOrden buscarEstadoDestinoAsignacion(EstadoOrden estadoActual) {
         List<TransicionEstado> transiciones = transicionRepository.findByOrigenId(estadoActual.getId());
 
-        Optional<EstadoOrden> enCurso = transiciones.stream()
+        Optional<EstadoOrden> planificada = transiciones.stream()
                 .map(TransicionEstado::getDestino)
-                .filter(destino -> "En curso".equalsIgnoreCase(destino.getNombre()))
+                .filter(destino -> ESTADO_AL_ASIGNAR.equalsIgnoreCase(destino.getNombre()))
                 .findFirst();
 
-        if (enCurso.isPresent()) {
-            return enCurso.get();
+        if (planificada.isPresent()) {
+            return planificada.get();
         }
 
         return transiciones.stream()
@@ -276,7 +316,10 @@ public class OrdenTrabajoService {
                 estado != null ? estado.getNombre() : null,
                 estado != null ? estado.getColor() : null,
                 cuadrilla != null ? cuadrilla.getId() : null,
-                cuadrilla != null ? cuadrilla.getNombre() : null
+                cuadrilla != null ? cuadrilla.getNombre() : null,
+                orden.getFechaPlanificada(),
+                orden.getFechaFinalizacion(),
+                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null
         );
     }
 }

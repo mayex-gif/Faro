@@ -9,6 +9,7 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '
 // - estados: los estados posibles, cada uno con "siguientes" (ids de los estados a los que se puede pasar)
 // - onCambiarEstado: función a llamar al tocar "Pasar a ..." → onCambiarEstado(orden, estadoNuevo)
 // - idCambiandoEstado: id de la OT que está cambiando de estado (sus botones se deshabilitan)
+// Una OT cargada sin señal (sinEnviar) todavía no tiene número: se marca "Nueva · Sin enviar" y no tiene acciones.
 function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado, sinCoincidencias, onLimpiarFiltros }) {
   // "Diccionario" id → estado, para encontrar rápido el estado de cada OT
   const estadosPorId = new Map(estados.map((estado) => [estado.id, estado]))
@@ -60,10 +61,11 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                 .filter(Boolean)
               const cambiando = orden.id === idCambiandoEstado
               return (
-              <tr key={orden.id} className={orden.id === idEditando ? 'fila-editando' : ''}>
+              <tr key={orden.id ?? orden.claveLocal} className={orden.id === idEditando ? 'fila-editando' : ''}>
                 <th scope="row">
                   <span className="nombre-lugar">{orden.descripcion}</span>
-                  <span className="numero-orden">OT #{orden.id}</span>
+                  {orden.id != null ? <span className="numero-orden">OT #{orden.id}</span>
+                    : <span className="estado estado-sin-enviar">Nueva · Sin enviar</span>}
                   {orden.id === idEditando && <span className="marca-edicion">En edición</span>}
                 </th>
                 <td>{orden.lugarNombre}</td>
@@ -85,7 +87,10 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   ) : '—'}
                 </td>
                 <td className="fecha-tabla">{formatearFecha(orden.fechaCreacion)}</td>
-                {onEditar && (
+                {onEditar && orden.sinEnviar && orden.id == null && (
+                  <td><span className="orden-cerrada">Se registra cuando vuelva la señal</span></td>
+                )}
+                {onEditar && !(orden.sinEnviar && orden.id == null) && (
                   <td>
                     <div className="acciones acciones-orden">
                       {!cerrada && (

@@ -1,0 +1,54 @@
+/* Misma marca, paneles y controles que las pantallas del equipo. */
+.pantalla-sesion { display: flex; flex-direction: column; min-height: 100dvh; }
+.acceso-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 64px; width: min(1040px, calc(100% - 48px)); flex: 1; margin: 0 auto; padding: 48px 0; }
+.acceso-presentacion { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+.acceso-presentacion img { border-radius: 50%; }
+.acceso-presentacion h2 { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; letter-spacing: -0.5px; }
+.acceso-presentacion p { max-width: 430px; color: var(--texto-secundario); }
+.acceso-presentacion .sobre-titulo { color: var(--enlace); font-size: 0.75rem; }
+.acceso-ayuda { padding-top: 16px; border-top: 1px solid var(--borde); font-size: 0.875rem; }
+.acceso-panel { display: flex; flex-direction: column; gap: 16px; padding: 32px; }
+.pantalla-sesion .acceso-panel, .estado-sesion .acceso-panel { border-top: 4px solid var(--marca-cian); }
+.acceso-panel > p:not(.mensaje):not(.sobre-titulo) { color: var(--texto-secundario); }
+.acceso-panel form { display: grid; gap: 24px; margin-top: 8px; }
+.acceso-panel .campo input { min-height: 48px; width: 100%; min-width: 0; }
+.acceso-clave { display: flex; gap: 8px; align-items: stretch; }
+.acceso-clave input { flex: 1; }
+.acceso-clave button { min-height: 48px; padding-inline: 12px; }
+.acceso-ingresar { width: 100%; min-height: 48px; }
+.acceso-pie { padding: 20px 24px; color: var(--texto-secundario); text-align: center; font-size: 0.8125rem; }
+.estado-sesion { display: grid; place-items: center; min-height: 100dvh; padding: 24px; }
+.estado-sesion .acceso-panel { width: min(100%, 460px); }
+.barra-usuario { display: flex; align-items: center; gap: 12px; padding-left: 16px; border-left: 1px solid rgb(255 255 255 / 20%); }
+.usuario-datos { display: flex; flex-direction: column; max-width: 200px; }
+.usuario-nombre { color: var(--blanco); font-size: 0.875rem; font-weight: 650; overflow-wrap: anywhere; }
+.usuario-rol { color: #DCEFF4; font-size: 0.75rem; }
+.usuario-salir { border: 1px solid rgb(255 255 255 / 40%); white-space: nowrap; }
+.aplicacion .barra-inferior { grid-template-columns: repeat(var(--cantidad-secciones, 4), minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .acceso-layout { display: block; width: min(480px, calc(100% - 32px)); padding: 24px 0; }
+  .acceso-presentacion { gap: 12px; margin-bottom: 24px; }
+  .acceso-presentacion img, .acceso-presentacion h2, .acceso-presentacion > p:not(.sobre-titulo) { display: none; }
+  .acceso-panel { padding: 24px; }
+  .barra-usuario { margin-left: auto; padding-left: 0; border: 0; gap: 8px; }
+  .usuario-datos { max-width: 135px; }
+  .usuario-nombre { font-size: 0.75rem; }
+  .usuario-rol { font-size: 0.6875rem; }
+  .usuario-salir { min-height: 44px; padding: 8px; font-size: 0.75rem; }
+  .barra-superior .boton-nuevo { padding-inline: 10px; }
+}
+
+/* Contador del cuaderno (cambios hechos sin señal) en la barra de arriba: BarraUsuario.jsx */
+.contador-cola { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #E3F4F8; color: var(--lateral); font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
+.contador-cola .icono { width: 14px; height: 14px; }
+.contador-cola-revisar { background: #FFE7E4; color: var(--error); }
+@media (max-width: 760px) {
+  .contador-cola { padding: 4px 8px; }
+  .contador-cola-texto { display: none; } /* en el celular alcanza con el ícono y el número */
+}
+
+/* Aviso en el ingreso: cambios hechos sin señal que esperan en este celular (PaginaLogin.jsx) */
+.mensaje.aviso-cuaderno-ingreso { display: grid; gap: 8px; }
+.aviso-cuaderno-ingreso ul { display: grid; gap: 8px; margin: 0; padding-left: 18px; }
+.aviso-cuaderno-ingreso li { overflow-wrap: anywhere; }
+.aviso-cuaderno-ingreso .boton { display: flex; margin-top: 8px; }

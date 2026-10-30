@@ -10,7 +10,8 @@ export function listarCuadrillas() {
 }
 
 // PATCH: asignar una OT pendiente a una cuadrilla.
-// El backend es quien pasa la OT al estado siguiente (ej: Pendiente → En curso), según el flujo configurado.
+// El backend es quien pasa la OT al estado siguiente: "Planificada" (ya tiene cuadrilla, todavía no empezó).
+// El capataz la pasa a "En curso" cuando arranca, desde Mis tareas.
 // Responde la OT actualizada (con cuadrillaId, cuadrillaNombre y su nuevo estado).
 // Responde 409 si la cuadrilla no está disponible, no cubre ese tipo de trabajo o la OT ya no está pendiente.
 export function asignarCuadrilla(ordenId, cuadrillaId) {

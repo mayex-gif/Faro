@@ -2,6 +2,7 @@ package com.faro.backend.models;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -49,13 +50,28 @@ public class OrdenTrabajo {
     @JoinColumn(name = "cuadrilla_id")
     private Cuadrilla cuadrilla;
 
+    // Regla de mantenimiento periódico que originó esta OT (opcional: solo si origen == PLAN_MANTENIMIENTO)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "regla_mantenimiento_id")
+    private ReglaMantenimiento reglaMantenimiento;
+
+    // Fecha en la que estaba planificada la realización de esta OT
+    @Column(name = "fecha_planificada")
+    private LocalDate fechaPlanificada;
+
+    // Fecha y hora en la que se finalizó la OT (para el cálculo de desvíos planificado vs ejecutado)
+    @Column(name = "fecha_finalizacion")
+    private LocalDateTime fechaFinalizacion;
+
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
     // Se ejecuta solo, justo antes de guardar la OT por primera vez
     @PrePersist
     void alCrear() {
-        fechaCreacion = LocalDateTime.now();
+        if (fechaCreacion == null) {
+            fechaCreacion = LocalDateTime.now();
+        }
     }
 
     // Getters y Setters
@@ -82,6 +98,15 @@ public class OrdenTrabajo {
 
     public Cuadrilla getCuadrilla() { return cuadrilla; }
     public void setCuadrilla(Cuadrilla cuadrilla) { this.cuadrilla = cuadrilla; }
+
+    public ReglaMantenimiento getReglaMantenimiento() { return reglaMantenimiento; }
+    public void setReglaMantenimiento(ReglaMantenimiento reglaMantenimiento) { this.reglaMantenimiento = reglaMantenimiento; }
+
+    public LocalDate getFechaPlanificada() { return fechaPlanificada; }
+    public void setFechaPlanificada(LocalDate fechaPlanificada) { this.fechaPlanificada = fechaPlanificada; }
+
+    public LocalDateTime getFechaFinalizacion() { return fechaFinalizacion; }
+    public void setFechaFinalizacion(LocalDateTime fechaFinalizacion) { this.fechaFinalizacion = fechaFinalizacion; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
