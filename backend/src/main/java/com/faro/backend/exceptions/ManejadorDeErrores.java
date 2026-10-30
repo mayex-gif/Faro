@@ -77,6 +77,12 @@ public class ManejadorDeErrores {
         return new RespuestaError(400, "Hay parámetros inválidos en el pedido", errores);
     }
 
+    @ExceptionHandler(RangoReporteInvalidoException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RespuestaError rangoReporteInvalido(RangoReporteInvalidoException e) {
+        return new RespuestaError(400, e.getMessage(), Map.of("desde", "Debe ser anterior o igual a hasta"));
+    }
+
     // 401: credenciales incorrectas o sesión no autenticada
     @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
