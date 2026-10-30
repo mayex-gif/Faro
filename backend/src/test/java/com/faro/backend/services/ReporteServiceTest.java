@@ -1,6 +1,7 @@
 package com.faro.backend.services;
 
 import com.faro.backend.dto.reportes.*;
+import com.faro.backend.dto.DesvioOrdenDTO;
 import com.faro.backend.models.*;
 import com.faro.backend.repositories.ReporteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -146,18 +147,32 @@ class ReporteServiceTest {
     }
 
     @Test
+    void otsPorTipoTrabajoSeConstruyenCorrectamente() {
+        stubearRepositorioVacio();
+        when(reporteRepository.contarOtsPorTipoTrabajo(any(), any()))
+                .thenReturn(List.<Object[]>of(new Object[]{TipoTrabajo.PODA, 4L}));
+
+        DashboardGerencialDTO dto = service.construirDashboard(null, null, null);
+
+        assertThat(dto.otsPorTipoTrabajo()).containsExactly(new OtsPorTipoTrabajoDTO(TipoTrabajo.PODA, 4L));
+    }
+
+    @Test
     void otsPorCuadrillaConCuadrillaNullMuestraTextoSinAsignar() {
         stubearRepositorioVacio();
 
         List<Object[]> filas = new ArrayList<>();
         filas.add(new Object[]{null, null, 3L});
+        filas.add(new Object[]{8L, "Cuadrilla Roja", 2L});
         when(reporteRepository.contarOtsPorCuadrilla(any(), any())).thenReturn(filas);
 
         DashboardGerencialDTO dto = service.construirDashboard(null, null, null);
 
-        assertThat(dto.otsPorCuadrilla()).hasSize(1);
+        assertThat(dto.otsPorCuadrilla()).hasSize(2);
         assertThat(dto.otsPorCuadrilla().get(0).cuadrillaNombre()).isEqualTo("Sin asignar");
         assertThat(dto.otsPorCuadrilla().get(0).cuadrillaId()).isNull();
+        assertThat(dto.otsPorCuadrilla().get(1).cuadrillaNombre()).isEqualTo("Cuadrilla Roja");
+        assertThat(dto.otsPorCuadrilla().get(1).cuadrillaId()).isEqualTo(8L);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -173,6 +188,47 @@ class ReporteServiceTest {
 
         ResumenDesviosGlobalDTO resumen = dto.resumenDesvios();
         assertThat(resumen.totalConPlanificacion()).isZero();
+        assertThat(resumen.porcentajeCumplimiento()).isZero();
+        assertThat(resumen.desvioPromedioDias()).isZero();
+    }
+
+    @Test
+    void resumenDesviosCuentaTodasLasClasificacionesYCalculaPromedio() {
+        stubearRepositorioVacio();
+        List<OrdenTrabajo> ordenes = List.of(new OrdenTrabajo(), new OrdenTrabajo(), new OrdenTrabajo(),
+                new OrdenTrabajo(), new OrdenTrabajo(), new OrdenTrabajo());
+        when(reporteRepository.buscarOtsConPlanificacion(any(), any())).thenReturn(ordenes);
+        when(calculoDesvioService.evaluarOrden(any(), any())).thenReturn(
+                desvio(ClasificacionDesvio.A_TIEMPO, 0),
+                desvio(ClasificacionDesvio.ADELANTADA, -2),
+                desvio(ClasificacionDesvio.DEMORADA, 4),
+                desvio(ClasificacionDesvio.PENDIENTE_EN_PLAZO, -1),
+                desvio(ClasificacionDesvio.PENDIENTE_VENCIDA, 3),
+                desvio(ClasificacionDesvio.CANCELADA, 0));
+
+        ResumenDesviosGlobalDTO resumen = service.construirDashboard(null, null, null).resumenDesvios();
+
+        assertThat(resumen.totalConPlanificacion()).isEqualTo(6);
+        assertThat(resumen.aTiempo()).isEqualTo(1);
+        assertThat(resumen.adelantadas()).isEqualTo(1);
+        assertThat(resumen.demoradas()).isEqualTo(1);
+        assertThat(resumen.pendientesEnPlazo()).isEqualTo(1);
+        assertThat(resumen.pendientesVencidas()).isEqualTo(1);
+        assertThat(resumen.canceladas()).isEqualTo(1);
+        assertThat(resumen.porcentajeCumplimiento()).isEqualTo(66.67);
+        assertThat(resumen.desvioPromedioDias()).isEqualTo(0.67);
+    }
+
+    @Test
+    void resumenDesviosSinFinalizadasEvitaDividirPorCero() {
+        stubearRepositorioVacio();
+        when(reporteRepository.buscarOtsConPlanificacion(any(), any())).thenReturn(List.of(new OrdenTrabajo()));
+        when(calculoDesvioService.evaluarOrden(any(), any()))
+                .thenReturn(desvio(ClasificacionDesvio.PENDIENTE_EN_PLAZO, -1));
+
+        ResumenDesviosGlobalDTO resumen = service.construirDashboard(null, null, null).resumenDesvios();
+
+        assertThat(resumen.totalConPlanificacion()).isEqualTo(1);
         assertThat(resumen.porcentajeCumplimiento()).isZero();
         assertThat(resumen.desvioPromedioDias()).isZero();
     }
@@ -204,6 +260,21 @@ class ReporteServiceTest {
     }
 
     @Test
+    void serieTemporalConvierteConteosNumericosYValoresNoNumericos() {
+        stubearRepositorioVacio();
+        when(reporteRepository.serieOtsCreadasPorMes(any(), any())).thenReturn(List.<Object[]>of(
+                new Object[]{"2026-10", new java.math.BigInteger("7")},
+                new Object[]{"2026-11", "no numérico"}));
+
+        List<OtsPorPeriodoDTO> serie = service.construirDashboard(null, null, GranularidadPeriodo.MES)
+                .otsPorPeriodo();
+
+        assertThat(serie).containsExactly(
+                new OtsPorPeriodoDTO("2026-10", 7, 0),
+                new OtsPorPeriodoDTO("2026-11", 0, 0));
+    }
+
+    @Test
     void serieTemporalPorDiaSeleccionaConsultaCorrecta() {
         stubearRepositorioVacio();
 
@@ -217,6 +288,20 @@ class ReporteServiceTest {
 
         assertThat(dto.otsPorPeriodo()).hasSize(1);
         assertThat(dto.otsPorPeriodo().get(0).periodo()).isEqualTo("2026-10-28");
+    }
+
+    @Test
+    void serieTemporalPorSemanaSeleccionaConsultasSemanales() {
+        stubearRepositorioVacio();
+        when(reporteRepository.serieOtsCreadasPorSemana(any(), any()))
+                .thenReturn(List.<Object[]>of(new Object[]{"2026-W43", 4L}));
+        when(reporteRepository.serieOtsCerradasPorSemana(any(), any()))
+                .thenReturn(List.<Object[]>of(new Object[]{"2026-W43", 2L}));
+
+        OtsPorPeriodoDTO punto = service.construirDashboard(null, null, GranularidadPeriodo.SEMANA)
+                .otsPorPeriodo().getFirst();
+
+        assertThat(punto).isEqualTo(new OtsPorPeriodoDTO("2026-W43", 4L, 2L));
     }
 
     @Test
@@ -283,5 +368,10 @@ class ReporteServiceTest {
         lenient().when(reporteRepository.serieOtsCerradasPorSemana(any(), any())).thenReturn(new ArrayList<>());
         lenient().when(reporteRepository.serieOtsCerradasPorMes(any(), any())).thenReturn(new ArrayList<>());
         lenient().when(reporteRepository.buscarOtsConPlanificacion(any(), any())).thenReturn(List.of());
+    }
+
+    private DesvioOrdenDTO desvio(ClasificacionDesvio clasificacion, long diasDesvio) {
+        return new DesvioOrdenDTO(1L, null, null, "OT", TipoTrabajo.PODA, 1L, "Lugar",
+                null, null, "Estado", LocalDate.now(), null, diasDesvio, clasificacion);
     }
 }
