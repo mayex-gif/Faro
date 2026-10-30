@@ -20,6 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -270,17 +271,17 @@ class ReporteServiceTest {
 
     /** Stubea todas las consultas del repositorio para que devuelvan listas vacías (o 0). */
     private void stubearRepositorioVacio() {
-        when(reporteRepository.contarTotalOts(any(), any())).thenReturn(0L);
-        when(reporteRepository.contarOtsCerradas(any(), any())).thenReturn(0L);
-        when(reporteRepository.contarOtsPorEstado(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.contarOtsPorTipoTrabajo(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.contarOtsPorCuadrilla(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCreadasPorDia(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCreadasPorSemana(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCreadasPorMes(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCerradasPorDia(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCerradasPorSemana(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.serieOtsCerradasPorMes(any(), any())).thenReturn(new ArrayList<>());
-        when(reporteRepository.buscarOtsConPlanificacion(any(), any())).thenReturn(List.of());
+        lenient().when(reporteRepository.contarTotalOts(any(), any())).thenReturn(0L);
+        lenient().when(reporteRepository.contarOtsCerradas(any(), any())).thenReturn(0L);
+        lenient().when(reporteRepository.contarOtsPorEstado(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.contarOtsPorTipoTrabajo(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.contarOtsPorCuadrilla(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCreadasPorDia(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCreadasPorSemana(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCreadasPorMes(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCerradasPorDia(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCerradasPorSemana(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.serieOtsCerradasPorMes(any(), any())).thenReturn(new ArrayList<>());
+        lenient().when(reporteRepository.buscarOtsConPlanificacion(any(), any())).thenReturn(List.of());
     }
 }
