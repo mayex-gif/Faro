@@ -14,6 +14,8 @@ import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
 import PaginaUsuarios from './pages/PaginaUsuarios'
+import PaginaMantenimiento from './pages/PaginaMantenimiento'
+import PaginaAuditoria from './pages/PaginaAuditoria'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
 import { iniciarSincronizacion } from './offline/sincronizar'
 import './App.css'
@@ -29,6 +31,8 @@ const PAGINAS = {
   ficha: PaginaFichaLugar,
   tareas: PaginaMisTareas,
   usuarios: PaginaUsuarios,
+  mantenimiento: PaginaMantenimiento,
+  auditoria: PaginaAuditoria,
 }
 
 function Aplicacion() {

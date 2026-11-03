@@ -1,0 +1,37 @@
+/* Pantalla "Mantenimiento periódico". Reutiliza paneles, formularios, filtros y tablas de App.css. */
+.campos-regla { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.acciones-encabezado-reglas { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.filtros-reglas { grid-template-columns: 2fr 1fr; }
+.acceso-programaciones { margin-top: 16px; }
+.seccion-recurrencia { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--borde); }
+.seccion-recurrencia .campo-check { margin-top: 0; }
+.seccion-recurrencia .campos { margin-top: 18px; }
+.seccion-recurrencia .mensaje { margin-top: 18px; }
+.marca-periodica { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 8px; color: var(--enlace); font-size: 0.75rem; font-weight: 600; }
+.marca-periodica .icono { width: 16px; height: 16px; }
+
+/* Tabla de reglas */
+.tabla-reglas { min-width: 1080px; }
+.tabla-reglas tbody th { min-width: 190px; }
+.nombre-regla { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.acciones-regla { flex-direction: column; align-items: stretch; min-width: 150px; }
+
+/* Panel de desvíos */
+.panel-desvios { margin-top: 24px; scroll-margin-top: 24px; }
+.resumen-desvios { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 24px 28px 0; list-style: none; }
+.resumen-desvios li { flex: 1 1 160px; padding: 14px 16px; border: 1px solid var(--borde); border-radius: 8px; background: #F8FAFB; color: var(--texto-secundario); font-size: 0.8125rem; }
+.resumen-desvios strong { display: block; color: var(--texto); font-size: 1.5rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.chips-desvios { display: flex; flex-wrap: wrap; gap: 8px; padding: 18px 28px 24px; }
+.chip-desvio { gap: 7px; }
+.chip-desvio strong { font-variant-numeric: tabular-nums; }
+.tabla-desvios { min-width: 820px; }
+
+@media (max-width: 1050px) {
+  .filtros-reglas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .resumen-desvios, .chips-desvios { padding-inline: 20px; }
+}
+@media (max-width: 540px) {
+  .campos-regla, .filtros-reglas { grid-template-columns: minmax(0, 1fr); }
+}

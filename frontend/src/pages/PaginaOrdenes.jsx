@@ -9,7 +9,7 @@ import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 import { useSesion } from '../context/useSesion'
-import { puedeAsignar } from '../utils/permisos'
+import { puedeAsignar, puedeGestionarMantenimiento } from '../utils/permisos'
 import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import { REINTENTAR, aplicarPendientes, clasificarError } from '../offline/datosCola'
 
@@ -151,10 +151,10 @@ function PaginaOrdenes({ params, onNavegar }) {
   }
 
   // Cuando el formulario guardó bien. Si quedó guardada sin señal, no se pide la lista (no hay red): ya se ve arriba.
-  function alGuardar(texto, { sinSenal: quedoEnElCelular = false } = {}) {
+  function alGuardar(texto, { sinSenal: quedoEnElCelular = false, programacion = false } = {}) {
     setOrdenEditando(null)
     setMensaje(texto)
-    if (!quedoEnElCelular) recargarOrdenes()
+    if (!quedoEnElCelular && !programacion) recargarOrdenes()
   }
 
   return (
@@ -163,6 +163,8 @@ function PaginaOrdenes({ params, onNavegar }) {
         <p className="sobre-titulo">TRABAJOS DEL CORRALÓN</p>
         <h1>Órdenes de trabajo</h1>
         <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son, qué tan urgentes y en qué estado están.</p>
+        {puedeGestionarMantenimiento(usuario) && <button type="button" className="boton boton-secundario acceso-programaciones"
+          onClick={() => onNavegar('mantenimiento')}><Icono nombre="mantenimiento" />Ver programaciones</button>}
       </div>
 
       {params?.desde === 'mapa' && (
@@ -186,6 +188,8 @@ function PaginaOrdenes({ params, onNavegar }) {
         onGuardado={alGuardar}
         onCancelar={() => setOrdenEditando(null)}
         lugarInicial={lugarInicial}
+        programarInicial={params?.programar}
+        onVerProgramaciones={() => onNavegar('mantenimiento')}
       />
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">
