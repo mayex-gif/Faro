@@ -1,0 +1,30 @@
+/* Pantalla "Auditoría". Reutiliza paneles, filtros y tablas de App.css. */
+.filtros-auditoria { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.botones-filtro-auditoria { display: flex; align-items: flex-end; gap: 10px; }
+.filtros-auditoria .mensaje { grid-column: 1 / -1; }
+
+/* Tabla de movimientos */
+.tabla-auditoria { min-width: 880px; }
+.nombre-registro-auditoria { display: block; font-weight: 600; }
+.id-registro-auditoria { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
+.actor-auditoria { color: var(--texto-secundario); overflow-wrap: anywhere; }
+.estado-modificacion { color: #9A4A12; background: #FDF0E7; }
+
+/* Detalle desplegado de una fila: antes / después */
+.fila-detalle-auditoria td { padding: 0 20px 20px; background: #FAFCFC; }
+.tabla-diferencias-auditoria { min-width: 0; margin-top: 4px; font-size: 0.8125rem; }
+.tabla-diferencias-auditoria th, .tabla-diferencias-auditoria td { padding: 10px 14px; }
+.tabla-diferencias-auditoria thead th { background: transparent; }
+.fila-campo-cambiado { background: #EAF6F8; }
+.fila-campo-cambiado th { color: var(--enlace); }
+
+/* Paginación */
+.paginacion { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 20px 28px; border-top: 1px solid var(--borde); font-size: 0.875rem; }
+
+@media (max-width: 1050px) {
+  .filtros-auditoria { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .botones-filtro-auditoria { align-items: center; }
+}
+@media (max-width: 540px) {
+  .filtros-auditoria { grid-template-columns: minmax(0, 1fr); }
+}

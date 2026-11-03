@@ -15,10 +15,12 @@ test('FARO arranca en el mapa, que es una de las secciones de la barra', () => {
   assert.ok(SECCIONES.some((s) => s.clave === INICIO))
 })
 
-test('ninguna pantalla se pierde: están las siete y ninguna aparece dos veces', () => {
+test('ninguna pantalla se pierde: están las nueve y ninguna aparece dos veces', () => {
   const claves = todas.map((s) => s.clave)
   assert.equal(new Set(claves).size, claves.length)
-  assert.deepEqual([...claves].sort(), ['asignacion', 'ficha', 'infraestructura', 'mapa', 'ordenes', 'tareas', 'usuarios'])
+  assert.deepEqual([...claves].sort(), [
+    'asignacion', 'auditoria', 'ficha', 'infraestructura', 'mantenimiento', 'mapa', 'ordenes', 'tareas', 'usuarios',
+  ])
 })
 
 test('Usuarios está en el menú "Más"', () => {
@@ -51,7 +53,7 @@ test('solo el mapa ocupa la pantalla completa', () => {
   assert.equal(esPantallaCompleta('ordenes'), false)
 })
 
-test('"Más" tiene Infraestructura, Mis tareas y Usuarios; la Ficha histórica se abre desde la ficha del lugar', () => {
-  assert.deepEqual(MAS.map((s) => s.titulo), ['Infraestructura', 'Mis tareas', 'Usuarios'])
+test('"Más" tiene Infraestructura, Mis tareas, Usuarios, Mantenimiento periódico y Auditoría; la Ficha histórica se abre desde la ficha del lugar', () => {
+  assert.deepEqual(MAS.map((s) => s.titulo), ['Infraestructura', 'Mis tareas', 'Usuarios', 'Mantenimiento periódico', 'Auditoría'])
   assert.deepEqual(FUERA_DEL_MENU.map((s) => s.clave), ['ficha'])
 })
