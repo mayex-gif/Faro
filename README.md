@@ -87,6 +87,10 @@ La pantalla de acceso ya utiliza la API de autenticación. La protección por ro
 - [Consulta local de tareas](./frontend/PWA_CONSULTA_LOCAL.md): el capataz guarda una copia de sus tareas y la abre sin señal.
 - [Sincronización sin señal](./frontend/PWA_SINCRONIZACION.md): lo que se hace sin señal (iniciar/finalizar tareas, crear OT) se guarda en el celular, se manda solo cuando vuelve la red y el backend resuelve los conflictos (`/api/sincronizacion`). Incluye el aviso "Hay una versión nueva de FARO" después de cada deploy.
 
+## Mantenimiento periódico y consulta de auditoría
+
+Ver [recorrido de mantenimiento, integración de Auditoría y pendientes de coordinación](./frontend/MANTENIMIENTO_PERIODICO.md). Incluye creación de programaciones desde Trabajos, gestión de reglas, pruebas realizadas y el error de backend que todavía bloquea la verificación completa de Auditoría.
+
 ## Tests del backend
 
 Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.
