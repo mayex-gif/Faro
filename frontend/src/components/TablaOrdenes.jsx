@@ -1,5 +1,6 @@
 import Icono from './Icono'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '../utils/ordenesTrabajo'
+import { fechaProgramada } from '../utils/recurrencia'
 
 // Props:
 // - ordenes: la lista a mostrar
@@ -67,6 +68,10 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   {orden.id != null ? <span className="numero-orden">OT #{orden.id}</span>
                     : <span className="estado estado-sin-enviar">Nueva · Sin enviar</span>}
                   {orden.id === idEditando && <span className="marca-edicion">En edición</span>}
+                  {orden.reglaMantenimientoId != null && <span className="marca-periodica">
+                    <Icono nombre="mantenimiento" />Periódica
+                    {orden.fechaPlanificada && <span className="fecha-prevista">Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
+                  </span>}
                 </th>
                 <td>{orden.lugarNombre}</td>
                 <td><span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span></td>

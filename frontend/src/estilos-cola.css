@@ -1,7 +1,7 @@
 /* Cartel del cuaderno (cambios hechos sin señal): AvisoCambiosPendientes.jsx.
    Reutiliza las variables de index.css y las clases .panel, .boton y .mensaje. */
 
-.panel.aviso-cola { display: grid; gap: 20px; padding: 20px 24px; margin-bottom: 24px; border-left: 6px solid var(--marca-cian); }
+.panel.aviso-cola { display: grid; gap: 20px; padding: 20px 24px; margin-bottom: 24px; border-color: var(--marca-cian); }
 .aviso-cola-bloque { display: grid; gap: 8px; }
 .aviso-cola-bloque h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
 .aviso-cola-bloque h3 .icono { width: 20px; height: 20px; color: var(--enlace); }
