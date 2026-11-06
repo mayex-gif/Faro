@@ -30,6 +30,10 @@ const trazos = {
   // Mantenimiento periódico y Auditoría (Sprint 4)
   mantenimiento: 'M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-3 3-2-2Z',
   auditoria: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 10h6 M9 14l1.5 1.5L14 12',
+  // Reportes e indicadores (Sprint 4)
+  reportes: 'M3 3v18h18 M7 16v-4 M12 16V8 M17 16v-7',
+  descargar: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
+  pausar: 'M9 5v14 M15 5v14',
 }
 
 function Icono({ nombre, className = '' }) {

@@ -16,6 +16,7 @@ import PaginaMisTareas from './pages/PaginaMisTareas'
 import PaginaUsuarios from './pages/PaginaUsuarios'
 import PaginaMantenimiento from './pages/PaginaMantenimiento'
 import PaginaAuditoria from './pages/PaginaAuditoria'
+import PaginaReportes from './pages/PaginaReportes'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
 import { iniciarSincronizacion } from './offline/sincronizar'
 import './App.css'
@@ -33,6 +34,7 @@ const PAGINAS = {
   usuarios: PaginaUsuarios,
   mantenimiento: PaginaMantenimiento,
   auditoria: PaginaAuditoria,
+  reportes: PaginaReportes,
 }
 
 function Aplicacion() {

@@ -31,7 +31,7 @@ function FiltrosAuditoria({ filtros, onCambiar, onBuscar, onLimpiar, buscando })
         <div className="campo">
           <label htmlFor="filtro-auditoria-tipo">Tipo de registro</label>
           <input id="filtro-auditoria-tipo" list="tipos-registro-conocidos" value={filtros.tipoRegistro}
-            placeholder="Ej.: OrdenTrabajo" onChange={(e) => cambiar('tipoRegistro', e.target.value)} />
+            placeholder="Elegí de la lista o escribí uno" onChange={(e) => cambiar('tipoRegistro', e.target.value)} />
           <datalist id="tipos-registro-conocidos">
             {TIPOS_REGISTRO_CONOCIDOS.map((tipo) => <option key={tipo.valor} value={tipo.valor}>{tipo.etiqueta}</option>)}
           </datalist>

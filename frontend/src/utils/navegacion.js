@@ -20,6 +20,7 @@ export const MAS = [
   { clave: 'usuarios', titulo: 'Usuarios', icono: 'usuario' },
   { clave: 'mantenimiento', titulo: 'Mantenimiento periódico', icono: 'mantenimiento' },
   { clave: 'auditoria', titulo: 'Auditoría', icono: 'auditoria' },
+  { clave: 'reportes', titulo: 'Reportes', icono: 'reportes' },
 ]
 
 // Pantallas que existen pero no están en el menú: se llega desde otra pantalla.

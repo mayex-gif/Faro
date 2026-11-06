@@ -9,7 +9,7 @@ export const NOMBRES_ROL = {
 }
 
 const VISTAS_POR_ROL = {
-  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria'],
+  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
   [MESA]: ['mapa', 'ordenes', 'ficha', 'usuarios'],
   [CAPATAZ]: ['tareas', 'mapa', 'ficha'],
 }
@@ -62,5 +62,11 @@ export function puedeGestionarMantenimiento(usuario) {
 // Auditoría (Sprint 4, RF10): consulta de trazabilidad de los registros clave del sistema.
 // Solo el encargado del corralón (ver AuditoriaController.java, 403 para otros roles).
 export function puedeVerAuditoria(usuario) {
+  return tieneRol(usuario, ENCARGADO)
+}
+
+// Reportes e indicadores (Sprint 4, RF10): tablero de gestión y exportación CSV.
+// Solo el encargado del corralón (ver ReporteController.java, 403 para otros roles).
+export function puedeVerReportes(usuario) {
   return tieneRol(usuario, ENCARGADO)
 }

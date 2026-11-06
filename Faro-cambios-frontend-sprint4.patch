@@ -1,0 +1,1383 @@
+diff --git a/frontend/REPORTES_INDICADORES.md b/frontend/REPORTES_INDICADORES.md
+new file mode 100644
+index 0000000..e1ed3ab
+--- /dev/null
++++ b/frontend/REPORTES_INDICADORES.md
+@@ -0,0 +1,58 @@
++# Reportes e indicadores: recorrido del frontend
++
++Implementación del 6 de noviembre de 2026 (Sprint 4, ítem 14 del Product Backlog, RF10).
++Consume el backend ya integrado en `develop` (`ReporteController.java`). No modifica código Java.
++
++## Dónde está y quién la ve
++
++**Más → Reportes**, solo para el encargado del corralón (`puedeVerReportes` en `utils/permisos.js`).
++El backend valida lo mismo y responde 403 para cualquier otro rol.
++
++## Qué muestra
++
++1. **Qué período mirar**: Hoy, Esta semana, Este mes, Este año u Otras fechas (desde/hasta).
++   Con un período rápido se manda solo `atajo` y el backend calcula las fechas con su reloj.
++   Al pasar a "Otras fechas" se completan con el rango que se estaba viendo, para no mostrar un error antes de tiempo.
++   "Agrupar la evolución" elige `granularidad` (día, semana o mes); se sugiere una según el período.
++2. **Totales**: órdenes creadas, resueltas (con su %), las que siguen abiertas y el % del plan de
++   mantenimiento cumplido a tiempo (`porcentajeCumplimiento` del backend).
++3. **Evolución**: barras agrupadas de creadas y cerradas por período, en un solo eje. Al pasar el mouse
++   aparece el detalle; "Ver los datos en una tabla" tiene los mismos números para teclado y lector de pantalla.
++4. **Por estado, por tipo de trabajo y por cuadrilla**: rankings de barras horizontales (lista HTML: cantidad
++   y % siempre escritos). Los estados llevan el color que informa el backend.
++5. **Mantenimiento programado**: cuántas órdenes del plan terminaron a tiempo, adelantadas, demoradas,
++   pendientes o canceladas, y el desvío promedio en días.
++6. **Descargas CSV**: "Trabajos finalizados" (`/reportes/ots-resueltas/csv`) y "Desvíos del plan"
++   (`/reportes/desvios/csv`) para el mismo período. Se piden con el token (un enlace común no lo manda)
++   y se guardan con el nombre que propone el backend.
++
++Estados: cargando, error con "Volver a cargar", período sin datos y fechas inválidas (desde > hasta).
++
++## Archivos
++
++| Archivo | Qué hace |
++| --- | --- |
++| `src/api/reportes.js` | `obtenerTablero`, `descargarOrdenesResueltas`, `descargarDesvios` |
++| `src/api/cliente.js` | Nuevo `pedirArchivo` (descargas con sesión) y `nombreDeArchivo` (Content-Disposition) |
++| `src/utils/reportes.js` | Lógica pura: parámetros, validación, etiquetas de períodos, barras y eje |
++| `src/pages/PaginaReportes.jsx` | La pantalla |
++| `src/components/SelectorPeriodo.jsx` | Período y agrupación |
++| `src/components/GraficoEvolucion.jsx` | Gráfico de evolución + tabla de datos |
++| `src/components/BarrasHorizontales.jsx` | Rankings |
++| `src/estilos-reportes.css` | Estilos de la pantalla |
++| `tests/reportes.test.js` | 16 pruebas (API, período, textos y cálculos) |
++
++Sin dependencias nuevas: el gráfico es HTML y CSS. Colores de las series: cian y naranja de marca,
++validados para daltonismo (ΔE 18,5 protanopia) y con contraste ≥ 3:1 sobre blanco.
++
++## Validación realizada
++
++- `npm test` (272 pruebas), `npm run lint` y `npm run build` sin errores.
++- Prueba en navegador contra un backend simulado en localhost (en la compu no había PostGIS ni Docker):
++  período, "Otras fechas", agrupación, globo del gráfico, descarga de CSV, a 1366 px y 390 px de ancho sin
++  desborde horizontal.
++
++## Pendiente
++
++- Verificar con el backend real y datos reales (formatos de período `YYYY-MM-DD`, `YYYY-"W"IW`, `YYYY-MM`).
++- El atajo `AÑO` lleva Ñ: viaja codificado (`A%C3%91O`); confirmar que Spring lo convierte bien en el servidor desplegado.
+diff --git a/frontend/src/App.css b/frontend/src/App.css
+index 85d466f..a2f3196 100644
+--- a/frontend/src/App.css
++++ b/frontend/src/App.css
+@@ -4,7 +4,7 @@
+ .pagina:focus { outline: none; }
+ .encabezado-pagina { margin-bottom: 28px; }
+ .sobre-titulo { margin-bottom: 9px; color: var(--enlace); font-size: 0.6875rem; font-weight: 700; letter-spacing: 1.5px; }
+-.encabezado-pagina > p:last-child { margin-top: 12px; font-size: 0.9375rem; color: var(--texto-secundario); }
++.encabezado-pagina > p:last-child { max-width: 75ch; margin-top: 12px; font-size: 0.9375rem; color: var(--texto-secundario); text-wrap: pretty; }
+ .panel { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 2px 5px rgb(20 61 72 / 3%); }
+ .panel-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--borde); }
+ .panel-encabezado p { margin-top: 4px; font-size: 0.8125rem; color: var(--texto-secundario); overflow-wrap: anywhere; }
+@@ -119,10 +119,6 @@
+   .formulario-pie .botones { flex-direction: column-reverse; }
+ }
+ 
+-.error {
+-  color: #b91c1c;
+-  margin-bottom: 16px;
+-}
+ /* Filtros compartidos: reutilizan los controles .campo del formulario. */
+ .bloque-filtros { padding: 24px 28px; border-bottom: 1px solid var(--borde); background: #FAFCFC; }
+ .filtros-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+@@ -138,9 +134,14 @@
+   .filtros-puntos, .filtros-ordenes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+   .filtro-busqueda { grid-column: 1 / -1; }
+ }
++/* Botón "Más filtros": solo en el celular (ver FiltrosOrdenes.jsx) */
++.boton-mas-filtros { display: none; }
++.icono-girado { transform: rotate(180deg); }
+ @media (max-width: 760px) {
+   .bloque-filtros { padding: 20px; }
+   .filtros-encabezado { flex-wrap: wrap; }
++  .boton-mas-filtros { display: inline-flex; width: 100%; margin-top: 14px; }
++  .filtros-plegados .filtros > .campo:not(.filtro-busqueda), .filtros-plegados > .ayuda-campo { display: none; }
+ }
+ @media (max-width: 540px) {
+   .filtros-puntos, .filtros-ordenes { grid-template-columns: minmax(0, 1fr); }
+diff --git a/frontend/src/App.jsx b/frontend/src/App.jsx
+index 72b6b6c..7fc7131 100644
+--- a/frontend/src/App.jsx
++++ b/frontend/src/App.jsx
+@@ -16,6 +16,7 @@ import PaginaMisTareas from './pages/PaginaMisTareas'
+ import PaginaUsuarios from './pages/PaginaUsuarios'
+ import PaginaMantenimiento from './pages/PaginaMantenimiento'
+ import PaginaAuditoria from './pages/PaginaAuditoria'
++import PaginaReportes from './pages/PaginaReportes'
+ import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
+ import { iniciarSincronizacion } from './offline/sincronizar'
+ import './App.css'
+@@ -33,6 +34,7 @@ const PAGINAS = {
+   usuarios: PaginaUsuarios,
+   mantenimiento: PaginaMantenimiento,
+   auditoria: PaginaAuditoria,
++  reportes: PaginaReportes,
+ }
+ 
+ function Aplicacion() {
+diff --git a/frontend/src/api/cliente.js b/frontend/src/api/cliente.js
+index 68bf294..17d9193 100644
+--- a/frontend/src/api/cliente.js
++++ b/frontend/src/api/cliente.js
+@@ -22,8 +22,8 @@ export class ErrorApi extends Error {
+   }
+ }
+ 
+-// Hace el pedido, revisa si salió bien y devuelve los datos
+-export async function pedir(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
++// Manda el pedido con el token de la sesión y, si el backend responde con error, lo convierte en ErrorApi.
++async function enviarPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
+   const token = autenticacion ? leerToken() : ''
+   const respuesta = await fetch(`${API_BASE}${ruta}`, {
+     ...opciones,
+@@ -44,8 +44,29 @@ export async function pedir(ruta, { autenticacion = true, headers = {}, ...opcio
+     if (respuesta.status === 401 && autenticacion) terminarSesion(token)
+     throw new ErrorApi(respuesta.status, cuerpo?.mensaje ?? `Error ${respuesta.status}`, cuerpo?.errores ?? {})
+   }
++  return respuesta
++}
+ 
++// Hace el pedido, revisa si salió bien y devuelve los datos
++export async function pedir(ruta, opciones = {}) {
++  const respuesta = await enviarPedido(ruta, opciones)
+   // 204 = "sin contenido" (por ejemplo, al borrar): no hay datos para leer
+   if (respuesta.status === 204) return null
+   return respuesta.json()
+ }
++
++// Nombre del archivo que propone el backend: Content-Disposition: attachment; filename="desvios-2026-11-06.csv"
++export function nombreDeArchivo(contentDisposition, porDefecto) {
++  const encontrado = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(contentDisposition ?? '')
++  return encontrado ? decodeURIComponent(encontrado[1].trim()) : porDefecto
++}
++
++// Pide un archivo (por ejemplo, un CSV de Reportes) con la sesión iniciada y devuelve { contenido, nombre }.
++// Un enlace común no sirve: no puede mandar el token en el encabezado Authorization.
++export async function pedirArchivo(ruta, nombrePorDefecto) {
++  const respuesta = await enviarPedido(ruta, { headers: { Accept: 'text/csv' } })
++  return {
++    contenido: await respuesta.blob(),
++    nombre: nombreDeArchivo(respuesta.headers.get('Content-Disposition'), nombrePorDefecto),
++  }
++}
+diff --git a/frontend/src/api/reportes.js b/frontend/src/api/reportes.js
+new file mode 100644
+index 0000000..4ad9fba
+--- /dev/null
++++ b/frontend/src/api/reportes.js
+@@ -0,0 +1,21 @@
++// Funciones para hablar con el backend del Panel de Reportes e Indicadores (Sprint 4, RF10).
++// Solo lo consulta el encargado del corralón: con otro rol el backend responde 403
++// (ver ReporteController.java y utils/permisos.js → puedeVerReportes).
++import { pedir, pedirArchivo } from './cliente.js'
++
++// GET: indicadores del período. parametros: el URLSearchParams que arma parametrosReporte() en utils/reportes.js
++// Responde { desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado, otsPorTipoTrabajo,
++//            otsPorCuadrilla, otsPorPeriodo, resumenDesvios }.
++export function obtenerTablero(parametros) {
++  return pedir(`/reportes/dashboard?${parametros.toString()}`)
++}
++
++// GET: CSV con las OT finalizadas del período. Devuelve { contenido (Blob), nombre }.
++export function descargarOrdenesResueltas(parametros) {
++  return pedirArchivo(`/reportes/ots-resueltas/csv?${parametros.toString()}`, 'ots-resueltas.csv')
++}
++
++// GET: CSV con los desvíos del plan de mantenimiento (planificado vs. ejecutado). Devuelve { contenido (Blob), nombre }.
++export function descargarDesvios(parametros) {
++  return pedirArchivo(`/reportes/desvios/csv?${parametros.toString()}`, 'desvios.csv')
++}
+diff --git a/frontend/src/components/BarrasHorizontales.jsx b/frontend/src/components/BarrasHorizontales.jsx
+new file mode 100644
+index 0000000..ed5c29d
+--- /dev/null
++++ b/frontend/src/components/BarrasHorizontales.jsx
+@@ -0,0 +1,30 @@
++// Ranking de barras horizontales: nombre, barra proporcional al mayor y cantidad escrita.
++// Es una lista común (no un dibujo): un lector de pantalla lee "Corte de pasto, 15 órdenes, 31 % del total".
++// filas: las arma filasBarras() en utils/reportes.js. Si una fila trae color (ej. el del estado), se muestra
++// un punto de ese color al lado del nombre; la barra siempre es del mismo tono, porque mide cantidad.
++function BarrasHorizontales({ filas, unidad = ['orden', 'órdenes'], mensajeVacio }) {
++  if (filas.length === 0) return <p className="barras-vacio">{mensajeVacio}</p>
++
++  return (
++    <ul className="barras">
++      {filas.map((fila) => (
++        <li key={fila.nombre} className="barra-fila">
++          <span className="barra-nombre">
++            {fila.color && <span className="barra-punto" style={{ background: fila.color }} aria-hidden="true" />}
++            {fila.nombre}
++          </span>
++          <span className="barra-pista" aria-hidden="true">
++            <span className="barra-relleno" style={{ width: `${Math.max(fila.ancho, fila.valor > 0 ? 1.5 : 0)}%` }} />
++          </span>
++          <span className="barra-valor">
++            <strong>{fila.valor}</strong>
++            <span className="solo-lectores"> {fila.valor === 1 ? unidad[0] : unidad[1]},</span>
++            <span className="barra-parte"> {fila.parte}%<span className="solo-lectores"> del total</span></span>
++          </span>
++        </li>
++      ))}
++    </ul>
++  )
++}
++
++export default BarrasHorizontales
+diff --git a/frontend/src/components/FiltrosAuditoria.jsx b/frontend/src/components/FiltrosAuditoria.jsx
+index 21aa057..cbe3615 100644
+--- a/frontend/src/components/FiltrosAuditoria.jsx
++++ b/frontend/src/components/FiltrosAuditoria.jsx
+@@ -31,7 +31,7 @@ function FiltrosAuditoria({ filtros, onCambiar, onBuscar, onLimpiar, buscando })
+         <div className="campo">
+           <label htmlFor="filtro-auditoria-tipo">Tipo de registro</label>
+           <input id="filtro-auditoria-tipo" list="tipos-registro-conocidos" value={filtros.tipoRegistro}
+-            placeholder="Ej.: OrdenTrabajo" onChange={(e) => cambiar('tipoRegistro', e.target.value)} />
++            placeholder="Elegí de la lista o escribí uno" onChange={(e) => cambiar('tipoRegistro', e.target.value)} />
+           <datalist id="tipos-registro-conocidos">
+             {TIPOS_REGISTRO_CONOCIDOS.map((tipo) => <option key={tipo.valor} value={tipo.valor}>{tipo.etiqueta}</option>)}
+           </datalist>
+diff --git a/frontend/src/components/FiltrosOrdenes.jsx b/frontend/src/components/FiltrosOrdenes.jsx
+index 8a383c0..c015e85 100644
+--- a/frontend/src/components/FiltrosOrdenes.jsx
++++ b/frontend/src/components/FiltrosOrdenes.jsx
+@@ -1,3 +1,5 @@
++import { useState } from 'react'
++import Icono from './Icono'
+ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO } from '../utils/ordenesTrabajo'
+ import { rangoFechasValido } from '../utils/filtrosOrdenes'
+ 
+@@ -5,6 +7,10 @@ import { rangoFechasValido } from '../utils/filtrosOrdenes'
+ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }) {
+   const hayFiltros = Object.values(filtros).some((valor) => valor !== '')
+   const rangoValido = rangoFechasValido(filtros)
++  // En el celular (≤ 760 px) queda a la vista solo el buscador: los otros siete filtros se abren con un botón,
++  // así la lista no queda dos pantallas más abajo. En la compu el botón no se muestra y los filtros están siempre.
++  const [abiertos, setAbiertos] = useState(false)
++  const otrosActivos = Object.entries(filtros).filter(([clave, valor]) => clave !== 'texto' && valor !== '').length
+ 
+   function cambiar(evento) {
+     const { name, value } = evento.target
+@@ -12,7 +18,7 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
+   }
+ 
+   return (
+-    <section className="bloque-filtros" aria-labelledby="titulo-filtros-ordenes">
++    <section className={abiertos ? 'bloque-filtros' : 'bloque-filtros filtros-plegados'} aria-labelledby="titulo-filtros-ordenes">
+       <div className="filtros-encabezado">
+         <div>
+           <h3 id="titulo-filtros-ordenes">Buscar y filtrar órdenes</h3>
+@@ -25,7 +31,7 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
+         )}
+       </div>
+ 
+-      <div className="filtros filtros-ordenes">
++      <div className="filtros filtros-ordenes" id="filtros-ordenes-campos">
+         <div className="campo filtro-busqueda">
+           <label htmlFor="filtro-orden-texto">Buscar una orden</label>
+           <input id="filtro-orden-texto" name="texto" type="search"
+@@ -94,6 +100,11 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
+           </select>
+         </div>
+       </div>
++      <button type="button" className="boton boton-secundario boton-mas-filtros" aria-expanded={abiertos}
++        aria-controls="filtros-ordenes-campos" onClick={() => setAbiertos((anterior) => !anterior)}>
++        <Icono nombre="abajo" className={abiertos ? 'icono-girado' : ''} />
++        {abiertos ? 'Menos filtros' : `Más filtros${otrosActivos > 0 ? ` (${otrosActivos} en uso)` : ''}`}
++      </button>
+       <p className="ayuda-campo" id="ayuda-fechas-ordenes">
+         El rango usa la fecha de creación e incluye ambos días. Podés completar una sola fecha.
+       </p>
+diff --git a/frontend/src/components/GraficoEvolucion.jsx b/frontend/src/components/GraficoEvolucion.jsx
+new file mode 100644
+index 0000000..006de46
+--- /dev/null
++++ b/frontend/src/components/GraficoEvolucion.jsx
+@@ -0,0 +1,98 @@
++import { useState } from 'react'
++import { etiquetaPeriodo, marcasEje } from '../utils/reportes'
++
++const SERIES = [
++  { clave: 'otsCreadas', nombre: 'Creadas', clase: 'serie-creadas' },
++  { clave: 'otsCerradas', nombre: 'Cerradas', clase: 'serie-cerradas' },
++]
++
++// Órdenes creadas y cerradas en cada día, semana o mes del período: barras agrupadas sobre un único eje.
++// Al pasar el mouse por un período aparece el detalle. Con teclado o lector de pantalla, los mismos datos
++// están escritos en la tabla "Ver los datos en una tabla" que acompaña al gráfico.
++function GraficoEvolucion({ serie }) {
++  const [activo, setActivo] = useState(null)
++
++  if (serie.length === 0) {
++    return <p className="barras-vacio">No se crearon ni cerraron órdenes en este período.</p>
++  }
++
++  const maximo = Math.max(...serie.flatMap((punto) => SERIES.map((s) => punto[s.clave])))
++  const marcas = marcasEje(maximo)
++  const tope = marcas[marcas.length - 1]
++  // Con muchos períodos (ej. 31 días) no entran todas las etiquetas: se escribe una cada tantas.
++  const cadaCuantas = Math.ceil(serie.length / 12)
++  const totalCreadas = serie.reduce((suma, punto) => suma + punto.otsCreadas, 0)
++  const totalCerradas = serie.reduce((suma, punto) => suma + punto.otsCerradas, 0)
++  const resumen = `Evolución en ${serie.length} períodos: ${totalCreadas} órdenes creadas y ${totalCerradas} cerradas.`
++
++  return (
++    <div className="grafico-evolucion">
++      <ul className="leyenda-grafico" aria-label="Referencias">
++        {SERIES.map((s) => (
++          <li key={s.clave}><span className={`muestra-serie ${s.clase}`} aria-hidden="true" />{s.nombre}</li>
++        ))}
++      </ul>
++
++      <div className="grafico-desplazable" tabIndex={0} aria-label="Gráfico de evolución (se puede deslizar)">
++        <div className="grafico-area" role="img" aria-label={resumen}
++          style={{ '--cantidad-periodos': serie.length }} onMouseLeave={() => setActivo(null)}>
++          <div className="grafico-eje" aria-hidden="true">
++            {marcas.map((marca) => (
++              <span key={marca} className="grafico-linea" style={{ bottom: `${(marca / tope) * 100}%` }}>
++                <span className="grafico-marca">{marca}</span>
++              </span>
++            ))}
++          </div>
++
++          <ol className="grafico-columnas" aria-hidden="true">
++            {serie.map((punto, indice) => (
++              <li key={punto.periodo} className={activo === indice ? 'grafico-grupo grafico-grupo-activo' : 'grafico-grupo'}
++                onMouseEnter={() => setActivo(indice)}>
++                <span className="grafico-barras">
++                  {SERIES.map((s) => (
++                    <span key={s.clave} className={`grafico-barra ${s.clase}`}
++                      style={{ height: `${(punto[s.clave] / tope) * 100}%` }} />
++                  ))}
++                </span>
++                <span className="grafico-periodo">
++                  {indice % cadaCuantas === 0 ? etiquetaPeriodo(punto.periodo) : ''}
++                </span>
++                {activo === indice && (
++                  <span className={indice > serie.length / 2 ? 'grafico-globo grafico-globo-izquierda' : 'grafico-globo'}>
++                    <strong>{etiquetaPeriodo(punto.periodo, { larga: true })}</strong>
++                    {SERIES.map((s) => (
++                      <span key={s.clave}><span className={`muestra-serie ${s.clase}`} />{s.nombre}: {punto[s.clave]}</span>
++                    ))}
++                  </span>
++                )}
++              </li>
++            ))}
++          </ol>
++        </div>
++      </div>
++
++      <details className="datos-grafico">
++        <summary>Ver los datos en una tabla</summary>
++        <div className="tabla-contenedor" tabIndex={0}>
++          <table className="tabla tabla-evolucion">
++            <caption className="solo-lectores">Órdenes creadas y cerradas por período</caption>
++            <thead>
++              <tr><th scope="col">Período</th><th scope="col">Creadas</th><th scope="col">Cerradas</th></tr>
++            </thead>
++            <tbody>
++              {serie.map((punto) => (
++                <tr key={punto.periodo}>
++                  <th scope="row">{etiquetaPeriodo(punto.periodo, { larga: true })}</th>
++                  <td>{punto.otsCreadas}</td>
++                  <td>{punto.otsCerradas}</td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      </details>
++    </div>
++  )
++}
++
++export default GraficoEvolucion
+diff --git a/frontend/src/components/Icono.jsx b/frontend/src/components/Icono.jsx
+index 7ceadb2..3b5aaa4 100644
+--- a/frontend/src/components/Icono.jsx
++++ b/frontend/src/components/Icono.jsx
+@@ -30,6 +30,10 @@ const trazos = {
+   // Mantenimiento periódico y Auditoría (Sprint 4)
+   mantenimiento: 'M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-3 3-2-2Z',
+   auditoria: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 10h6 M9 14l1.5 1.5L14 12',
++  // Reportes e indicadores (Sprint 4)
++  reportes: 'M3 3v18h18 M7 16v-4 M12 16V8 M17 16v-7',
++  descargar: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
++  pausar: 'M9 5v14 M15 5v14',
+ }
+ 
+ function Icono({ nombre, className = '' }) {
+diff --git a/frontend/src/components/MenuDesplegable.jsx b/frontend/src/components/MenuDesplegable.jsx
+index 18cb4c5..9c03860 100644
+--- a/frontend/src/components/MenuDesplegable.jsx
++++ b/frontend/src/components/MenuDesplegable.jsx
+@@ -1,9 +1,11 @@
+ import { useEffect, useId, useRef, useState } from 'react'
++import { flushSync } from 'react-dom'
+ import Icono from './Icono'
+ 
+ // Un botón que abre una lista corta de opciones: lo usan "+ Nuevo" y "Más".
+ // Se cierra al elegir una opción, con Escape, al tocar afuera o al salir con Tab.
+-// Es un "desplegable" simple (botón con aria-expanded + lista de botones): se recorre con Tab como el resto.
++// Es un "desplegable" simple (botón con aria-expanded + lista de botones): se recorre con Tab como el resto,
++// y también con las flechas, Inicio y Fin (la flecha abajo desde el botón abre la lista y va a la primera opción).
+ // Props:
+ // - contenidoBoton: lo que se ve en el botón (texto y, si hace falta, un icono)
+ // - claseBoton: clases CSS del botón
+@@ -42,13 +44,30 @@ function MenuDesplegable({ contenidoBoton, claseBoton, opciones, claveActual, on
+     if (!caja.current?.contains(evento.relatedTarget)) setAbierto(false)
+   }
+ 
++  // Flechas, Inicio y Fin mueven el foco entre las opciones (con la lista abierta).
++  function alMoverConTeclado(evento) {
++    const teclas = ['ArrowDown', 'ArrowUp', 'Home', 'End']
++    if (!teclas.includes(evento.key)) return
++    const lista = [...(caja.current?.querySelectorAll('.menu-opcion') ?? [])]
++    if (lista.length === 0) return
++    evento.preventDefault()
++    // Si la lista estaba cerrada, se muestra ya mismo: un botón oculto no puede recibir el foco.
++    if (!abierto) flushSync(() => setAbierto(true))
++    const actual = lista.indexOf(document.activeElement)
++    let siguiente = 0
++    if (evento.key === 'End') siguiente = lista.length - 1
++    else if (evento.key === 'ArrowDown') siguiente = actual < 0 ? 0 : (actual + 1) % lista.length
++    else if (evento.key === 'ArrowUp') siguiente = actual < 0 ? lista.length - 1 : (actual - 1 + lista.length) % lista.length
++    lista[siguiente].focus()
++  }
++
+   function elegir(clave) {
+     setAbierto(false)
+     onElegir(clave)
+   }
+ 
+   return (
+-    <div ref={caja} className={haciaArriba ? 'menu-desplegable menu-hacia-arriba' : 'menu-desplegable'} onBlur={alSalirDelMenu}>
++    <div ref={caja} className={haciaArriba ? 'menu-desplegable menu-hacia-arriba' : 'menu-desplegable'} onBlur={alSalirDelMenu} onKeyDown={alMoverConTeclado}>
+       <button ref={boton} type="button" className={claseBoton}
+         aria-expanded={abierto} aria-controls={idLista} onClick={() => setAbierto((anterior) => !anterior)}>
+         {contenidoBoton}
+diff --git a/frontend/src/components/PanelDesvios.jsx b/frontend/src/components/PanelDesvios.jsx
+index 389b30b..48e6e08 100644
+--- a/frontend/src/components/PanelDesvios.jsx
++++ b/frontend/src/components/PanelDesvios.jsx
+@@ -1,5 +1,6 @@
+ import Icono from './Icono'
+ import { CLASIFICACIONES_DESVIO, claseClasificacion, etiqueta } from '../utils/mantenimiento'
++import { fechaProgramada } from '../utils/recurrencia'
+ 
+ // Resumen de cumplimiento de una regla (o del consolidado municipal, si no se pasa "regla"): cuántas OT se
+ // generaron, cuántas terminaron a tiempo/adelantadas/demoradas, cuántas siguen pendientes y el % de cumplimiento.
+@@ -80,8 +81,8 @@ function PanelDesvios({ resumen, cargando, error, onCerrar, onReintentar, titulo
+                         <th scope="row">#{orden.ordenId}<span className="id-registro-auditoria">{orden.estadoNombre}</span></th>
+                         <td className="datos-tabla">{orden.lugarNombre ?? '—'}</td>
+                         <td className="datos-tabla">{orden.cuadrillaNombre ?? '—'}</td>
+-                        <td className="fecha-tabla">{orden.fechaPlanificada ?? '—'}</td>
+-                        <td className="fecha-tabla">{orden.fechaEjecucion ?? '—'}</td>
++                        <td className="fecha-tabla">{orden.fechaPlanificada ? fechaProgramada(orden.fechaPlanificada) : '—'}</td>
++                        <td className="fecha-tabla">{orden.fechaEjecucion ? fechaProgramada(orden.fechaEjecucion) : '—'}</td>
+                         <td className="fecha-tabla">{formatearDesvio(orden.diasDesvio)}</td>
+                         <td>
+                           <span className={`estado ${claseClasificacion(orden.clasificacionDesvio)}`}>
+diff --git a/frontend/src/components/SelectorPeriodo.jsx b/frontend/src/components/SelectorPeriodo.jsx
+new file mode 100644
+index 0000000..93acf6c
+--- /dev/null
++++ b/frontend/src/components/SelectorPeriodo.jsx
+@@ -0,0 +1,62 @@
++import { ATAJOS, GRANULARIDADES, esPersonalizado, granularidadSugerida } from '../utils/reportes'
++
++// Período del Panel de Reportes: un período rápido (Hoy, Esta semana…) u "Otras fechas" con desde/hasta,
++// y cómo agrupar el gráfico de evolución. Cada cambio vuelve a pedir los datos (lo decide PaginaReportes).
++// rangoActual: { desde, hasta } que se está mostrando. Al pasar a "Otras fechas" las fechas arrancan con ese
++// rango (así no aparece un error antes de que el usuario haga algo) y se ajustan desde ahí.
++function SelectorPeriodo({ periodo, error, rangoActual, onCambiar }) {
++  const personalizado = esPersonalizado(periodo)
++
++  function elegirAtajo(atajo) {
++    const fechas = atajo === 'PERSONALIZADO' && !periodo.desde && !periodo.hasta && rangoActual
++      ? { desde: rangoActual.desde, hasta: rangoActual.hasta }
++      : {}
++    onCambiar({ ...periodo, ...fechas, atajo, granularidad: granularidadSugerida(atajo) })
++  }
++
++  return (
++    <div className="selector-periodo">
++      <fieldset className="segmentos">
++        <legend>Período</legend>
++        <div className="segmentos-opciones">
++          {ATAJOS.map((opcion) => (
++            <label key={opcion.valor} className="segmento">
++              <input type="radio" name="periodo-reporte" value={opcion.valor}
++                checked={periodo.atajo === opcion.valor} onChange={() => elegirAtajo(opcion.valor)} />
++              <span>{opcion.etiqueta}</span>
++            </label>
++          ))}
++        </div>
++      </fieldset>
++
++      <div className="campos campos-periodo">
++        {personalizado && (
++          <>
++            <div className="campo">
++              <label htmlFor="reporte-desde">Desde</label>
++              <input id="reporte-desde" type="date" value={periodo.desde} max={periodo.hasta || undefined}
++                aria-invalid={error ? true : undefined} aria-describedby={error ? 'error-periodo' : undefined}
++                onChange={(evento) => onCambiar({ ...periodo, desde: evento.target.value })} />
++            </div>
++            <div className="campo">
++              <label htmlFor="reporte-hasta">Hasta</label>
++              <input id="reporte-hasta" type="date" value={periodo.hasta} min={periodo.desde || undefined}
++                aria-invalid={error ? true : undefined} aria-describedby={error ? 'error-periodo' : undefined}
++                onChange={(evento) => onCambiar({ ...periodo, hasta: evento.target.value })} />
++            </div>
++          </>
++        )}
++        <div className="campo">
++          <label htmlFor="reporte-granularidad">Agrupar la evolución</label>
++          <select id="reporte-granularidad" value={periodo.granularidad}
++            onChange={(evento) => onCambiar({ ...periodo, granularidad: evento.target.value })}>
++            {GRANULARIDADES.map((opcion) => <option key={opcion.valor} value={opcion.valor}>{opcion.etiqueta}</option>)}
++          </select>
++        </div>
++      </div>
++      {error && <p className="error-campo" id="error-periodo" role="alert">{error}</p>}
++    </div>
++  )
++}
++
++export default SelectorPeriodo
+diff --git a/frontend/src/components/TablaOrdenes.jsx b/frontend/src/components/TablaOrdenes.jsx
+index 0263062..026369d 100644
+--- a/frontend/src/components/TablaOrdenes.jsx
++++ b/frontend/src/components/TablaOrdenes.jsx
+@@ -70,7 +70,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
+                   {orden.id === idEditando && <span className="marca-edicion">En edición</span>}
+                   {orden.reglaMantenimientoId != null && <span className="marca-periodica">
+                     <Icono nombre="mantenimiento" />Periódica
+-                    {orden.fechaPlanificada && <span> · Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
++                    {orden.fechaPlanificada && <span className="fecha-prevista">Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
+                   </span>}
+                 </th>
+                 <td>{orden.lugarNombre}</td>
+diff --git a/frontend/src/components/TablaReglas.jsx b/frontend/src/components/TablaReglas.jsx
+index 9133559..3ecd3e4 100644
+--- a/frontend/src/components/TablaReglas.jsx
++++ b/frontend/src/components/TablaReglas.jsx
+@@ -1,5 +1,6 @@
+ import Icono from './Icono'
+ import { etiqueta, resumenRecurrencia, PRIORIDADES, TIPOS_TRABAJO } from '../utils/mantenimiento'
++import { fechaProgramada } from '../utils/recurrencia'
+ 
+ // Listado de reglas de mantenimiento periódico, con sus acciones: editar, ejecutar ya, pausar/activar,
+ // ver desvíos y borrar (solo si todavía no generó ninguna OT: si no, hay que pausarla).
+@@ -43,12 +44,12 @@ function TablaReglas({ reglas, idEditando, ocupado, mensajeVacio, onEditar, onEj
+                   <td className="datos-tabla">{regla.lugarNombre ?? '—'}</td>
+                   <td>
+                     <span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, regla.tipoTrabajo)}</span>
+-                    <span className={`prioridad-${regla.prioridad?.toLowerCase()}`} style={{ display: 'block', marginTop: 6 }}>
++                    <span className={`estado prioridad-regla prioridad-${regla.prioridad?.toLowerCase()}`}>
+                       {etiqueta(PRIORIDADES, regla.prioridad)}
+                     </span>
+                   </td>
+                   <td className="datos-tabla">{resumenRecurrencia(regla)}</td>
+-                  <td className="fecha-tabla">{regla.activa ? (regla.proximaEjecucion ?? '—') : 'Pausada'}</td>
++                  <td className="fecha-tabla">{regla.activa ? (regla.proximaEjecucion ? fechaProgramada(regla.proximaEjecucion) : '—') : 'Pausada'}</td>
+                   <td>
+                     <span className={regla.activa ? 'estado estado-ok' : 'estado estado-baja'}>
+                       <span className="estado-punto" aria-hidden="true" />
+@@ -69,17 +70,17 @@ function TablaReglas({ reglas, idEditando, ocupado, mensajeVacio, onEditar, onEj
+                         <>
+                           <button type="button" className="boton boton-tabla" onClick={() => onEjecutar(regla)} disabled={ocupado}
+                             aria-label={`Generar ya la próxima OT de ${regla.titulo}`}>
+-                            <Icono nombre="iniciar" />Generar ya
++                            <Icono nombre="agregar" />Generar ya
+                           </button>
+                           <button type="button" className="boton boton-tabla" onClick={() => onPausar(regla)} disabled={ocupado}
+                             aria-label={`Pausar ${regla.titulo}`}>
+-                            <Icono nombre="baja" />Pausar
++                            <Icono nombre="pausar" />Pausar
+                           </button>
+                         </>
+                       ) : (
+                         <button type="button" className="boton boton-tabla" onClick={() => onActivar(regla)} disabled={ocupado}
+                           aria-label={`Reactivar ${regla.titulo}`}>
+-                          <Icono nombre="guardar" />Reactivar
++                          <Icono nombre="iniciar" />Reactivar
+                         </button>
+                       )}
+                       <button type="button" className="boton boton-tabla boton-borrar" onClick={() => onBorrar(regla)} disabled={ocupado}
+diff --git a/frontend/src/estilos-cola.css b/frontend/src/estilos-cola.css
+index 4daebcf..df0081f 100644
+--- a/frontend/src/estilos-cola.css
++++ b/frontend/src/estilos-cola.css
+@@ -1,7 +1,7 @@
+ /* Cartel del cuaderno (cambios hechos sin señal): AvisoCambiosPendientes.jsx.
+    Reutiliza las variables de index.css y las clases .panel, .boton y .mensaje. */
+ 
+-.panel.aviso-cola { display: grid; gap: 20px; padding: 20px 24px; margin-bottom: 24px; border-left: 6px solid var(--marca-cian); }
++.panel.aviso-cola { display: grid; gap: 20px; padding: 20px 24px; margin-bottom: 24px; border-color: var(--marca-cian); }
+ .aviso-cola-bloque { display: grid; gap: 8px; }
+ .aviso-cola-bloque h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+ .aviso-cola-bloque h3 .icono { width: 20px; height: 20px; color: var(--enlace); }
+diff --git a/frontend/src/estilos-mantenimiento.css b/frontend/src/estilos-mantenimiento.css
+index b4111b3..c8fceba 100644
+--- a/frontend/src/estilos-mantenimiento.css
++++ b/frontend/src/estilos-mantenimiento.css
+@@ -9,10 +9,13 @@
+ .seccion-recurrencia .mensaje { margin-top: 18px; }
+ .marca-periodica { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 8px; color: var(--enlace); font-size: 0.75rem; font-weight: 600; }
+ .marca-periodica .icono { width: 16px; height: 16px; }
++/* "Prevista" va en su propia línea cuando no entra, sin dejar un separador colgado */
++.marca-periodica .fecha-prevista { flex-basis: 100%; color: var(--texto-secundario); font-weight: 400; }
+ 
+ /* Tabla de reglas */
+ .tabla-reglas { min-width: 1080px; }
+ .tabla-reglas tbody th { min-width: 190px; }
++.estado.prioridad-regla { display: flex; width: fit-content; margin-top: 6px; }
+ .nombre-regla { display: block; font-weight: 600; overflow-wrap: anywhere; }
+ .acciones-regla { flex-direction: column; align-items: stretch; min-width: 150px; }
+ 
+diff --git a/frontend/src/estilos-reportes.css b/frontend/src/estilos-reportes.css
+new file mode 100644
+index 0000000..7e3b4f2
+--- /dev/null
++++ b/frontend/src/estilos-reportes.css
+@@ -0,0 +1,103 @@
++/* Pantalla "Reportes". Reutiliza paneles, campos, mensajes y tablas de App.css.
++   Colores del gráfico: cian y naranja de marca (validados para daltonismo y contraste sobre blanco). */
++.panel-periodo { margin-bottom: 24px; }
++.panel-cuerpo { padding: 24px 28px; }
++.panel-cuerpo > .mensaje { margin-top: 18px; }
++.botones-descarga { justify-content: flex-end; }
++
++/* Período: botones segmentados (son radios: se recorren con flechas y se anuncian como grupo) */
++.selector-periodo { display: grid; gap: 18px; justify-items: start; }
++.segmentos { min-width: 0; margin: 0; padding: 0; border: 0; }
++.segmentos legend { margin-bottom: 7px; padding: 0; font-size: 0.8125rem; font-weight: 600; }
++.segmentos-opciones { display: inline-flex; flex-wrap: wrap; padding: 3px; border: 1px solid var(--borde-campo); border-radius: 9px; background: var(--fondo); }
++.segmento { position: relative; display: inline-flex; }
++.segmento input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
++.segmento span { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border-radius: 6px; color: var(--texto-secundario); font-size: 0.875rem; font-weight: 600; transition: background-color 160ms cubic-bezier(0.22, 1, 0.36, 1), color 160ms cubic-bezier(0.22, 1, 0.36, 1); }
++.segmento:hover span { color: var(--texto); }
++.segmento input:checked + span { background: var(--blanco); color: var(--texto); box-shadow: 0 1px 3px rgb(20 61 72 / 16%); }
++.segmento input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 1px; }
++.selector-periodo .campos-periodo { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; }
++.campos-periodo .campo { width: 180px; }
++.selector-periodo .error-campo { margin-top: -8px; }
++
++/* Totales del período */
++.indicadores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 24px; padding: 0; list-style: none; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--blanco); }
++.indicadores li { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 20px 24px; }
++.indicadores li + li { border-left: 1px solid var(--borde); }
++.indicador-nombre { color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 600; }
++.indicador-valor { color: var(--texto); font-size: 2rem; font-weight: 650; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
++.indicador-detalle { color: var(--texto-secundario); font-size: 0.75rem; }
++
++.panel-reporte { margin-bottom: 24px; }
++.reportes-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
++.tablero > .mensaje-tablero { justify-content: space-between; flex-wrap: wrap; margin-bottom: 24px; }
++.tablero > .estado-listado { margin-bottom: 24px; }
++
++/* Barras horizontales (ranking) */
++.barras { display: grid; gap: 14px; margin: 0; padding: 22px 28px 26px; list-style: none; }
++.barra-fila { display: grid; grid-template-columns: minmax(110px, 0.9fr) minmax(0, 2fr) 72px; align-items: center; gap: 14px; font-size: 0.875rem; }
++.barra-nombre { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
++.barra-punto { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; }
++.barra-pista { height: 10px; border-radius: 4px; background: #EEF3F4; overflow: hidden; }
++.barra-relleno { display: block; height: 100%; border-radius: 4px; background: var(--marca-cian); }
++.barra-valor { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
++.barra-valor strong { font-weight: 650; }
++.barra-parte { display: inline-block; min-width: 3.2em; color: var(--texto-secundario); font-size: 0.75rem; }
++.barras-vacio { padding: 28px; color: var(--texto-secundario); font-size: 0.875rem; }
++.nota-plan { margin: -8px 28px 24px; padding-top: 14px; border-top: 1px solid var(--borde); color: var(--texto-secundario); font-size: 0.8125rem; }
++.nota-plan strong { color: var(--texto); }
++
++/* Gráfico de evolución: columnas agrupadas sobre un solo eje */
++.grafico-evolucion { padding: 18px 28px 22px; }
++.leyenda-grafico { display: flex; gap: 18px; margin: 0 0 14px; padding: 0; list-style: none; font-size: 0.8125rem; }
++.leyenda-grafico li { display: inline-flex; align-items: center; gap: 7px; }
++.muestra-serie { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
++.serie-creadas { background: var(--marca-cian); }
++.serie-cerradas { background: var(--marca-naranja); }
++.grafico-desplazable { overflow-x: auto; padding-top: 8px; }
++.grafico-desplazable:focus-visible { outline-offset: 2px; }
++.grafico-area { position: relative; min-width: calc(var(--cantidad-periodos) * 26px + 40px); height: 240px; margin: 0 0 30px 34px; }
++.grafico-eje { position: absolute; inset: 0; }
++.grafico-linea { position: absolute; left: 0; right: 0; border-top: 1px solid #E6ECEE; }
++.grafico-linea:first-child { border-top-color: var(--borde-campo); }
++.grafico-marca { position: absolute; right: calc(100% + 8px); top: -0.6em; color: var(--texto-secundario); font-size: 0.6875rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
++.grafico-columnas { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--cantidad-periodos), minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
++.grafico-grupo { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
++.grafico-grupo-activo { background: rgb(20 61 72 / 4%); border-radius: 4px 4px 0 0; }
++.grafico-barras { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 100%; padding: 0 12%; }
++.grafico-barra { flex: 1 1 0; max-width: 22px; min-height: 0; border-radius: 4px 4px 0 0; }
++.grafico-periodo { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); color: var(--texto-secundario); font-size: 0.6875rem; white-space: nowrap; }
++.grafico-globo { position: absolute; z-index: 2; top: 4px; left: 60%; display: grid; gap: 4px; min-width: 150px; padding: 10px 12px; border-radius: 8px; background: var(--lateral); color: var(--blanco); font-size: 0.75rem; white-space: nowrap; box-shadow: 0 6px 16px rgb(20 61 72 / 22%); pointer-events: none; }
++.grafico-globo-izquierda { left: auto; right: 60%; }
++.grafico-globo strong { font-size: 0.8125rem; }
++.grafico-globo span { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
++.grafico-globo .muestra-serie { width: 9px; height: 9px; }
++.datos-grafico summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
++.datos-grafico .tabla-contenedor { margin-top: 6px; border: 1px solid var(--borde); border-radius: 8px; }
++.tabla.tabla-evolucion { min-width: 360px; }
++.tabla.tabla-evolucion th, .tabla.tabla-evolucion td { padding: 10px 16px; }
++.tabla-evolucion td { font-variant-numeric: tabular-nums; }
++
++@media (max-width: 1050px) {
++  .reportes-columnas { grid-template-columns: minmax(0, 1fr); }
++  .indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++  .indicadores li:nth-child(3) { border-left: 0; }
++  .indicadores li:nth-child(n + 3) { border-top: 1px solid var(--borde); }
++}
++@media (max-width: 760px) {
++  .panel-cuerpo, .grafico-evolucion { padding-inline: 20px; }
++  .barras { padding-inline: 20px; }
++  .nota-plan { margin-inline: 20px; }
++  .botones-descarga { width: 100%; }
++  .botones.botones-descarga .boton { flex: 1 1 100%; }
++  .campos-periodo .campo { width: auto; flex: 1 1 140px; }
++}
++@media (max-width: 540px) {
++  .indicadores li { padding: 16px; }
++  .indicador-valor { font-size: 1.625rem; }
++  .barra-fila { grid-template-columns: minmax(0, 1fr) 64px; row-gap: 6px; }
++  .barra-pista { grid-column: 1 / -1; grid-row: 2; }
++  .segmentos, .segmentos-opciones { width: 100%; }
++  .segmentos-opciones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
++  .segmento span { justify-content: center; width: 100%; padding: 0 6px; text-align: center; }
++}
+diff --git a/frontend/src/index.css b/frontend/src/index.css
+index f7736e5..ebf8ec8 100644
+--- a/frontend/src/index.css
++++ b/frontend/src/index.css
+@@ -36,7 +36,7 @@ body { margin: 0; }
+ button, input, select, textarea { font: inherit; }
+ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+ button { cursor: pointer; }
+-button:disabled { cursor: wait; opacity: 0.65; }
++button:disabled { cursor: not-allowed; opacity: 0.65; }
+ a { color: var(--enlace); }
+ h1, h2, h3, p { margin: 0; }
+ h1, h2, h3 { color: var(--texto); }
+diff --git a/frontend/src/pages/PaginaReportes.jsx b/frontend/src/pages/PaginaReportes.jsx
+new file mode 100644
+index 0000000..0011a49
+--- /dev/null
++++ b/frontend/src/pages/PaginaReportes.jsx
+@@ -0,0 +1,244 @@
++import { useEffect, useState } from 'react'
++import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../api/reportes'
++import SelectorPeriodo from '../components/SelectorPeriodo'
++import GraficoEvolucion from '../components/GraficoEvolucion'
++import BarrasHorizontales from '../components/BarrasHorizontales'
++import Icono from '../components/Icono'
++import {
++  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, nombreTipoTrabajo, parametrosReporte, porcentaje, tableroVacio,
++} from '../utils/reportes'
++import '../estilos-reportes.css'
++
++// Panel de Reportes e Indicadores (Sprint 4, RF10): cuántas órdenes se crearon y cerraron en un período,
++// por estado, tipo de trabajo y cuadrilla, y cómo viene el plan de mantenimiento (planificado vs. ejecutado).
++// Lo ve solamente el encargado del corralón (utils/permisos.js → puedeVerReportes); el backend valida lo mismo
++// y responde 403 para cualquier otro rol (ver ReporteController.java).
++// Los números los calcula el backend; esta pantalla solo los ordena y los dibuja.
++function PaginaReportes() {
++  const [periodo, setPeriodo] = useState(PERIODO_INICIAL)
++  const [tablero, setTablero] = useState(null)
++  const [cargando, setCargando] = useState(true)
++  const [error, setError] = useState(null)
++  const [vez, setVez] = useState(0) // "Volver a cargar" la suma para repetir el mismo pedido
++  const [descargando, setDescargando] = useState(null) // 'ordenes' | 'desvios' mientras baja el archivo
++  const [errorDescarga, setErrorDescarga] = useState(null)
++
++  const problemaPeriodo = errorPeriodo(periodo)
++  const consulta = problemaPeriodo ? null : parametrosReporte(periodo).toString()
++
++  useEffect(() => {
++    if (consulta === null) return
++    let vigente = true
++    obtenerTablero(new URLSearchParams(consulta))
++      .then((datos) => {
++        if (!vigente) return
++        setTablero(datos)
++        setError(null)
++      })
++      .catch((e) => {
++        if (!vigente) return
++        console.error(e)
++        setError(e.estado === 400 ? e.message : 'No pudimos cargar los indicadores. Revisá la conexión e intentá nuevamente.')
++      })
++      .finally(() => { if (vigente) setCargando(false) })
++    return () => { vigente = false } // si se cambia el período antes de que llegue la respuesta, se ignora
++  }, [consulta, vez])
++
++  function cambiarPeriodo(nuevo) {
++    setPeriodo(nuevo)
++    if (!errorPeriodo(nuevo)) setCargando(true)
++  }
++
++  function reintentar() {
++    setCargando(true)
++    setError(null)
++    setVez((v) => v + 1)
++  }
++
++  async function descargar(cual) {
++    setDescargando(cual)
++    setErrorDescarga(null)
++    try {
++      const parametros = parametrosReporte(periodo, { conGranularidad: false })
++      const { contenido, nombre } = cual === 'ordenes' ? await descargarOrdenesResueltas(parametros) : await descargarDesvios(parametros)
++      const direccion = URL.createObjectURL(contenido)
++      const enlace = document.createElement('a')
++      enlace.href = direccion
++      enlace.download = nombre
++      document.body.append(enlace)
++      enlace.click()
++      enlace.remove()
++      setTimeout(() => URL.revokeObjectURL(direccion), 1000)
++    } catch (e) {
++      console.error(e)
++      setErrorDescarga('No se pudo descargar el archivo. Revisá la conexión e intentá nuevamente.')
++    } finally {
++      setDescargando(null)
++    }
++  }
++
++  const desvios = tablero?.resumenDesvios
++  const finalizadasPlan = desvios ? desvios.aTiempo + desvios.adelantadas + desvios.demoradas : 0
++
++  return (
++    <>
++      <div className="encabezado-pagina">
++        <p className="sobre-titulo">INDICADORES</p>
++        <h1>Reportes</h1>
++        <p>Cuántos trabajos entraron y cuántos se resolvieron, quién los hizo y si el mantenimiento programado se cumple a tiempo.</p>
++      </div>
++
++      <section className="panel panel-periodo" aria-labelledby="titulo-periodo">
++        <div className="panel-encabezado">
++          <div>
++            <h2 id="titulo-periodo">Qué período mirar</h2>
++            <p>{tablero && !cargando && !error ? `Mostrando del ${describirRango(tablero.desde, tablero.hasta)}.` : 'Elegí un período para ver sus números.'}</p>
++          </div>
++          <div className="botones botones-descarga">
++            <button type="button" className="boton boton-secundario" disabled={descargando !== null || problemaPeriodo !== null}
++              onClick={() => descargar('ordenes')}>
++              <Icono nombre="descargar" />{descargando === 'ordenes' ? 'Descargando…' : 'Trabajos finalizados (CSV)'}
++            </button>
++            <button type="button" className="boton boton-secundario" disabled={descargando !== null || problemaPeriodo !== null}
++              onClick={() => descargar('desvios')}>
++              <Icono nombre="descargar" />{descargando === 'desvios' ? 'Descargando…' : 'Desvíos del plan (CSV)'}
++            </button>
++          </div>
++        </div>
++        <div className="panel-cuerpo">
++          <SelectorPeriodo periodo={periodo} error={problemaPeriodo} onCambiar={cambiarPeriodo}
++            rangoActual={tablero ? { desde: tablero.desde, hasta: tablero.hasta } : null} />
++          {errorDescarga && (
++            <div className="mensaje mensaje-error" role="alert">
++              <div><strong>No se pudo descargar</strong><p>{errorDescarga}</p></div>
++            </div>
++          )}
++        </div>
++      </section>
++
++      <div className="tablero" aria-busy={cargando}>
++        {error && !problemaPeriodo && (
++          <div className="mensaje mensaje-error mensaje-tablero" role="alert">
++            <div><strong>No se pudo completar la operación</strong><p>{error}</p></div>
++            <button type="button" className="boton boton-secundario" onClick={reintentar}>Volver a cargar</button>
++          </div>
++        )}
++
++        {cargando && !problemaPeriodo && (
++          <div className="panel estado-listado" role="status">
++            <span className="indicador-carga" aria-hidden="true" />
++            <p>Calculando indicadores…</p>
++          </div>
++        )}
++
++        {!cargando && !error && !problemaPeriodo && tablero && (tableroVacio(tablero) ? (
++          <div className="panel estado-listado estado-vacio">
++            <span className="icono-vacio"><Icono nombre="reportes" /></span>
++            <h3>No hubo trabajos en este período.</h3>
++            <p>Probá con un período más largo, por ejemplo “Este año”.</p>
++          </div>
++        ) : (
++          <>
++            <section aria-labelledby="titulo-totales">
++              <h2 id="titulo-totales" className="solo-lectores">Totales del período</h2>
++              <ul className="indicadores">
++                <li>
++                  <span className="indicador-nombre">Órdenes creadas</span>
++                  <strong className="indicador-valor">{tablero.totalOts}</strong>
++                </li>
++                <li>
++                  <span className="indicador-nombre">Resueltas</span>
++                  <strong className="indicador-valor">{tablero.otsCerradas}</strong>
++                  <span className="indicador-detalle">{porcentaje(tablero.otsCerradas, tablero.totalOts)}% de las creadas</span>
++                </li>
++                <li>
++                  <span className="indicador-nombre">Siguen abiertas</span>
++                  <strong className="indicador-valor">{tablero.otsPendientes}</strong>
++                  <span className="indicador-detalle">pendientes, asignadas o en curso</span>
++                </li>
++                <li>
++                  <span className="indicador-nombre">Plan cumplido a tiempo</span>
++                  <strong className="indicador-valor">{finalizadasPlan > 0 ? `${Math.round(desvios.porcentajeCumplimiento)}%` : '—'}</strong>
++                  <span className="indicador-detalle">
++                    {finalizadasPlan > 0 ? `de ${finalizadasPlan} programadas finalizadas` : 'sin programadas finalizadas'}
++                  </span>
++                </li>
++              </ul>
++            </section>
++
++            <section className="panel panel-reporte" aria-labelledby="titulo-evolucion">
++              <div className="panel-encabezado">
++                <div>
++                  <h2 id="titulo-evolucion">Evolución</h2>
++                  <p>Órdenes creadas y cerradas en cada {({ DIA: 'día', SEMANA: 'semana', MES: 'mes' })[tablero.granularidad] ?? 'período'}.</p>
++                </div>
++              </div>
++              <GraficoEvolucion serie={tablero.otsPorPeriodo ?? []} />
++            </section>
++
++            <div className="reportes-columnas">
++              <section className="panel panel-reporte" aria-labelledby="titulo-por-estado">
++                <div className="panel-encabezado">
++                  <div><h2 id="titulo-por-estado">Por estado</h2><p>Dónde están hoy las órdenes creadas en el período.</p></div>
++                </div>
++                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
++                  filas={filasBarras(tablero.otsPorEstado, { nombre: (f) => f.estadoNombre, valor: (f) => f.cantidad, color: (f) => f.estadoColor })} />
++              </section>
++
++              <section className="panel panel-reporte" aria-labelledby="titulo-por-tipo">
++                <div className="panel-encabezado">
++                  <div><h2 id="titulo-por-tipo">Por tipo de trabajo</h2><p>Qué se pidió más.</p></div>
++                </div>
++                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
++                  filas={filasBarras(tablero.otsPorTipoTrabajo, { nombre: (f) => nombreTipoTrabajo(f.tipoTrabajo), valor: (f) => f.cantidad })} />
++              </section>
++
++              <section className="panel panel-reporte" aria-labelledby="titulo-por-cuadrilla">
++                <div className="panel-encabezado">
++                  <div><h2 id="titulo-por-cuadrilla">Por cuadrilla</h2><p>Carga de trabajo de cada cuadrilla.</p></div>
++                </div>
++                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
++                  filas={filasBarras(tablero.otsPorCuadrilla, { nombre: (f) => f.cuadrillaNombre ?? 'Sin asignar', valor: (f) => f.cantidad })} />
++              </section>
++
++              <section className="panel panel-reporte" aria-labelledby="titulo-plan">
++                <div className="panel-encabezado">
++                  <div><h2 id="titulo-plan">Mantenimiento programado</h2><p>Órdenes del plan con fecha prevista en el período.</p></div>
++                </div>
++                {desvios.totalConPlanificacion === 0 ? (
++                  <p className="barras-vacio">No hubo trabajos programados con fecha en este período.</p>
++                ) : (
++                  <>
++                    <BarrasHorizontales unidad={['orden', 'órdenes']} mensajeVacio=""
++                      filas={filasBarras([
++                        { nombre: 'A tiempo', cantidad: desvios.aTiempo, color: 'var(--exito)' },
++                        { nombre: 'Adelantadas', cantidad: desvios.adelantadas, color: 'var(--exito)' },
++                        { nombre: 'Demoradas', cantidad: desvios.demoradas, color: 'var(--error)' },
++                        { nombre: 'Pendientes en plazo', cantidad: desvios.pendientesEnPlazo, color: 'var(--texto-secundario)' },
++                        { nombre: 'Pendientes vencidas', cantidad: desvios.pendientesVencidas, color: 'var(--error)' },
++                        { nombre: 'Canceladas', cantidad: desvios.canceladas, color: 'var(--borde-campo)' },
++                      ].filter((f) => f.cantidad > 0), { nombre: (f) => f.nombre, valor: (f) => f.cantidad, color: (f) => f.color })} />
++                    {finalizadasPlan > 0 && (
++                      <p className="nota-plan">
++                        Desvío promedio: <strong>{formatearDesvioPromedio(desvios.desvioPromedioDias)}</strong>
++                      </p>
++                    )}
++                  </>
++                )}
++              </section>
++            </div>
++          </>
++        ))}
++      </div>
++    </>
++  )
++}
++
++// 1.3 → "1,3 días de demora"; -0.5 → "0,5 días de adelanto"; 0 → "sin desvío"
++function formatearDesvioPromedio(dias) {
++  if (!dias) return 'sin desvío'
++  const valor = Math.abs(dias).toLocaleString('es-AR', { maximumFractionDigits: 1 })
++  return `${valor} ${Math.abs(dias) === 1 ? 'día' : 'días'} de ${dias > 0 ? 'demora' : 'adelanto'}`
++}
++
++export default PaginaReportes
+diff --git a/frontend/src/utils/navegacion.js b/frontend/src/utils/navegacion.js
+index 5483d68..18d7f9d 100644
+--- a/frontend/src/utils/navegacion.js
++++ b/frontend/src/utils/navegacion.js
+@@ -20,6 +20,7 @@ export const MAS = [
+   { clave: 'usuarios', titulo: 'Usuarios', icono: 'usuario' },
+   { clave: 'mantenimiento', titulo: 'Mantenimiento periódico', icono: 'mantenimiento' },
+   { clave: 'auditoria', titulo: 'Auditoría', icono: 'auditoria' },
++  { clave: 'reportes', titulo: 'Reportes', icono: 'reportes' },
+ ]
+ 
+ // Pantallas que existen pero no están en el menú: se llega desde otra pantalla.
+diff --git a/frontend/src/utils/permisos.js b/frontend/src/utils/permisos.js
+index aa91254..6b8278e 100644
+--- a/frontend/src/utils/permisos.js
++++ b/frontend/src/utils/permisos.js
+@@ -9,7 +9,7 @@ export const NOMBRES_ROL = {
+ }
+ 
+ const VISTAS_POR_ROL = {
+-  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria'],
++  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
+   [MESA]: ['mapa', 'ordenes', 'ficha', 'usuarios'],
+   [CAPATAZ]: ['tareas', 'mapa', 'ficha'],
+ }
+@@ -64,3 +64,9 @@ export function puedeGestionarMantenimiento(usuario) {
+ export function puedeVerAuditoria(usuario) {
+   return tieneRol(usuario, ENCARGADO)
+ }
++
++// Reportes e indicadores (Sprint 4, RF10): tablero de gestión y exportación CSV.
++// Solo el encargado del corralón (ver ReporteController.java, 403 para otros roles).
++export function puedeVerReportes(usuario) {
++  return tieneRol(usuario, ENCARGADO)
++}
+diff --git a/frontend/src/utils/reportes.js b/frontend/src/utils/reportes.js
+new file mode 100644
+index 0000000..d54add6
+--- /dev/null
++++ b/frontend/src/utils/reportes.js
+@@ -0,0 +1,128 @@
++// Lógica del Panel de Reportes e Indicadores (sin React), para poder probarla con "npm test".
++// Los nombres de los parámetros y sus valores son los de ReporteController.java.
++import { TIPOS_TRABAJO, etiqueta } from './ordenesTrabajo.js'
++
++// Períodos rápidos. El backend acepta HOY, SEMANA, MES o AÑO; "Otras fechas" manda desde/hasta.
++export const ATAJOS = [
++  { valor: 'HOY', etiqueta: 'Hoy' },
++  { valor: 'SEMANA', etiqueta: 'Esta semana' },
++  { valor: 'MES', etiqueta: 'Este mes' },
++  { valor: 'AÑO', etiqueta: 'Este año' },
++  { valor: 'PERSONALIZADO', etiqueta: 'Otras fechas' },
++]
++
++export const GRANULARIDADES = [
++  { valor: 'DIA', etiqueta: 'Por día' },
++  { valor: 'SEMANA', etiqueta: 'Por semana' },
++  { valor: 'MES', etiqueta: 'Por mes' },
++]
++
++// Al entrar: el mes en curso, agrupado por día (en un mes, "por mes" daría una sola barra).
++export const PERIODO_INICIAL = { atajo: 'MES', desde: '', hasta: '', granularidad: 'DIA' }
++
++// La agrupación que mejor se lee para cada período rápido (se puede cambiar a mano después).
++export function granularidadSugerida(atajo) {
++  return atajo === 'AÑO' ? 'MES' : atajo === 'PERSONALIZADO' ? 'SEMANA' : 'DIA'
++}
++
++export function esPersonalizado(periodo) {
++  return periodo.atajo === 'PERSONALIZADO'
++}
++
++// Con "Otras fechas", ¿están las dos y en orden? (el backend responde 400 si desde > hasta)
++export function errorPeriodo(periodo) {
++  if (!esPersonalizado(periodo)) return null
++  if (!periodo.desde || !periodo.hasta) return 'Elegí las dos fechas: desde y hasta.'
++  if (periodo.desde > periodo.hasta) return 'La fecha "desde" tiene que ser anterior o igual a "hasta".'
++  return null
++}
++
++// Parámetros para el backend. Con un período rápido se manda solo el atajo: el backend calcula las fechas
++// con su propio reloj (así "Hoy" es el mismo día para el servidor y para la pantalla).
++export function parametrosReporte(periodo, { conGranularidad = true } = {}) {
++  const parametros = new URLSearchParams()
++  if (esPersonalizado(periodo)) {
++    parametros.set('desde', periodo.desde)
++    parametros.set('hasta', periodo.hasta)
++  } else {
++    parametros.set('atajo', periodo.atajo)
++  }
++  if (conGranularidad && periodo.granularidad) parametros.set('granularidad', periodo.granularidad)
++  return parametros
++}
++
++const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
++
++// "2026-11-06" → "6/11/2026" (sin pasar por Date: así no se corre un día por la zona horaria)
++export function formatearDia(fechaIso) {
++  if (!fechaIso) return '—'
++  const [anio, mes, dia] = fechaIso.split('-').map(Number)
++  return `${dia}/${mes}/${anio}`
++}
++
++// Texto del período que efectivamente usó el backend: "1/11/2026 al 6/11/2026" o "6/11/2026"
++export function describirRango(desde, hasta) {
++  if (!desde) return ''
++  return desde === hasta ? formatearDia(desde) : `${formatearDia(desde)} al ${formatearDia(hasta)}`
++}
++
++// Etiquetas de la serie temporal. El backend manda "2026-11-06" (día), "2026-W45" (semana ISO) o "2026-11" (mes).
++// corta: para el eje del gráfico. larga: para la tabla y el globo al pasar el mouse.
++export function etiquetaPeriodo(periodo, { larga = false } = {}) {
++  const semana = /^(\d{4})-W(\d{1,2})$/.exec(periodo)
++  if (semana) return larga ? `Semana ${Number(semana[2])} de ${semana[1]}` : `Sem. ${Number(semana[2])}`
++  const dia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(periodo)
++  if (dia) {
++    const [, anio, mes, d] = dia
++    return larga ? `${Number(d)} de ${MESES[Number(mes) - 1]} de ${anio}` : `${Number(d)}/${Number(mes)}`
++  }
++  const mes = /^(\d{4})-(\d{2})$/.exec(periodo)
++  if (mes) {
++    const nombre = MESES[Number(mes[2]) - 1]
++    return larga ? `${nombre[0].toUpperCase()}${nombre.slice(1)} de ${mes[1]}` : `${nombre.slice(0, 3)} ${mes[1].slice(2)}`
++  }
++  return periodo
++}
++
++// Porcentaje entero de una parte sobre un total (0 si no hay total)
++export function porcentaje(parte, total) {
++  if (!total) return 0
++  return Math.round((parte / total) * 100)
++}
++
++// Filas para las barras horizontales, de mayor a menor, con el ancho relativo a la más grande.
++// items: lo que manda el backend; nombre(item) y valor(item) dicen qué mostrar.
++export function filasBarras(items = [], { nombre, valor, color = () => null }) {
++  const total = items.reduce((suma, item) => suma + valor(item), 0)
++  const maximo = Math.max(0, ...items.map(valor))
++  return items
++    .map((item) => ({
++      nombre: nombre(item),
++      valor: valor(item),
++      color: color(item),
++      ancho: maximo ? (valor(item) / maximo) * 100 : 0,
++      parte: porcentaje(valor(item), total),
++    }))
++    .sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es'))
++}
++
++export function nombreTipoTrabajo(tipo) {
++  return etiqueta(TIPOS_TRABAJO, tipo)
++}
++
++// Marcas del eje vertical: 0 y 3 o 4 valores "redondos" hasta cubrir el máximo (ej. 0, 5, 10, 15)
++export function marcasEje(maximo) {
++  if (maximo <= 0) return [0, 1]
++  const pasoCrudo = maximo / 4
++  const potencia = 10 ** Math.floor(Math.log10(pasoCrudo))
++  const paso = [1, 2, 5, 10].map((m) => m * potencia).find((p) => p >= pasoCrudo)
++  const pasoEntero = Math.max(1, Math.round(paso))
++  const marcas = []
++  for (let valor = 0; valor < maximo + pasoEntero; valor += pasoEntero) marcas.push(valor)
++  return marcas
++}
++
++// ¿Hay algo para mostrar en el período? (para el estado vacío)
++export function tableroVacio(tablero) {
++  return !tablero || (tablero.totalOts === 0 && (tablero.resumenDesvios?.totalConPlanificacion ?? 0) === 0)
++}
+diff --git a/frontend/tests/navegacion.test.js b/frontend/tests/navegacion.test.js
+index 63e5545..75cb038 100644
+--- a/frontend/tests/navegacion.test.js
++++ b/frontend/tests/navegacion.test.js
+@@ -15,11 +15,11 @@ test('FARO arranca en el mapa, que es una de las secciones de la barra', () => {
+   assert.ok(SECCIONES.some((s) => s.clave === INICIO))
+ })
+ 
+-test('ninguna pantalla se pierde: están las nueve y ninguna aparece dos veces', () => {
++test('ninguna pantalla se pierde: están las diez y ninguna aparece dos veces', () => {
+   const claves = todas.map((s) => s.clave)
+   assert.equal(new Set(claves).size, claves.length)
+   assert.deepEqual([...claves].sort(), [
+-    'asignacion', 'auditoria', 'ficha', 'infraestructura', 'mantenimiento', 'mapa', 'ordenes', 'tareas', 'usuarios',
++    'asignacion', 'auditoria', 'ficha', 'infraestructura', 'mantenimiento', 'mapa', 'ordenes', 'reportes', 'tareas', 'usuarios',
+   ])
+ })
+ 
+@@ -53,7 +53,7 @@ test('solo el mapa ocupa la pantalla completa', () => {
+   assert.equal(esPantallaCompleta('ordenes'), false)
+ })
+ 
+-test('"Más" tiene Infraestructura, Mis tareas, Usuarios, Mantenimiento periódico y Auditoría; la Ficha histórica se abre desde la ficha del lugar', () => {
+-  assert.deepEqual(MAS.map((s) => s.titulo), ['Infraestructura', 'Mis tareas', 'Usuarios', 'Mantenimiento periódico', 'Auditoría'])
++test('"Más" tiene Infraestructura, Mis tareas, Usuarios, Mantenimiento periódico, Auditoría y Reportes; la Ficha histórica se abre desde la ficha del lugar', () => {
++  assert.deepEqual(MAS.map((s) => s.titulo), ['Infraestructura', 'Mis tareas', 'Usuarios', 'Mantenimiento periódico', 'Auditoría', 'Reportes'])
+   assert.deepEqual(FUERA_DEL_MENU.map((s) => s.clave), ['ficha'])
+ })
+diff --git a/frontend/tests/permisos.test.js b/frontend/tests/permisos.test.js
+index c8d276d..8d9556e 100644
+--- a/frontend/tests/permisos.test.js
++++ b/frontend/tests/permisos.test.js
+@@ -2,7 +2,7 @@ import test from 'node:test'
+ import assert from 'node:assert/strict'
+ import {
+   inicioDe, puedeAsignar, puedeCrearOrden, puedeGestionarMantenimiento, puedeGestionarUsuarios, puedeVer,
+-  puedeVerAuditoria, rolConocido, tieneRol,
++  puedeVerAuditoria, puedeVerReportes, rolConocido, tieneRol,
+ } from '../src/utils/permisos.js'
+ 
+ const encargado = { activo: true, rol: 'ENCARGADO_CORRALON' }
+@@ -61,3 +61,12 @@ test('mantenimiento periódico y auditoría son solo del encargado del corralón
+   assert.equal(puedeVer(mesa, 'mantenimiento'), false)
+   assert.equal(puedeVer(mesa, 'auditoria'), false)
+ })
++
++test('reportes e indicadores son solo del encargado del corralón', () => {
++  assert.equal(puedeVerReportes(encargado), true)
++  assert.equal(puedeVerReportes(mesa), false)
++  assert.equal(puedeVerReportes(capataz), false)
++  assert.equal(puedeVer(encargado, 'reportes'), true)
++  assert.equal(puedeVer(mesa, 'reportes'), false)
++  assert.equal(puedeVer(capataz, 'reportes'), false)
++})
+diff --git a/frontend/tests/reportes.test.js b/frontend/tests/reportes.test.js
+new file mode 100644
+index 0000000..3f78b84
+--- /dev/null
++++ b/frontend/tests/reportes.test.js
+@@ -0,0 +1,138 @@
++import test from 'node:test'
++import assert from 'node:assert/strict'
++import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../src/api/reportes.js'
++import { nombreDeArchivo } from '../src/api/cliente.js'
++import {
++  PERIODO_INICIAL, describirRango, errorPeriodo, etiquetaPeriodo, filasBarras, formatearDia, granularidadSugerida,
++  marcasEje, nombreTipoTrabajo, parametrosReporte, porcentaje, tableroVacio,
++} from '../src/utils/reportes.js'
++
++// ---------- API ----------
++
++function fetchFalso(t, { status = 200, cuerpo = {}, encabezados = {} } = {}) {
++  const pedidos = []
++  t.mock.method(globalThis, 'fetch', async (url, opciones) => {
++    pedidos.push({ url, metodo: opciones.method ?? 'GET', headers: opciones.headers })
++    return {
++      ok: status >= 200 && status < 300,
++      status,
++      json: async () => cuerpo,
++      blob: async () => new Blob(['ID OT\n1\n'], { type: 'text/csv' }),
++      headers: { get: (nombre) => encabezados[nombre] ?? null },
++    }
++  })
++  return pedidos
++}
++
++test('obtenerTablero pide GET /api/reportes/dashboard con el atajo y la agrupación', async (t) => {
++  const pedidos = fetchFalso(t, { cuerpo: { totalOts: 3 } })
++  const datos = await obtenerTablero(parametrosReporte(PERIODO_INICIAL))
++  assert.equal(pedidos[0].metodo, 'GET')
++  assert.equal(pedidos[0].url, '/api/reportes/dashboard?atajo=MES&granularidad=DIA')
++  assert.equal(datos.totalOts, 3)
++})
++
++test('el atajo AÑO viaja codificado (la Ñ del enum del backend)', () => {
++  assert.equal(parametrosReporte({ atajo: 'AÑO', granularidad: 'MES' }).toString(), 'atajo=A%C3%91O&granularidad=MES')
++})
++
++test('los CSV se piden con la sesión y devuelven el archivo con el nombre que propone el backend', async (t) => {
++  const pedidos = fetchFalso(t, { encabezados: { 'Content-Disposition': 'attachment; filename="desvios-2026-11-06.csv"' } })
++  const archivo = await descargarDesvios(parametrosReporte({ atajo: 'SEMANA' }, { conGranularidad: false }))
++  assert.equal(pedidos[0].url, '/api/reportes/desvios/csv?atajo=SEMANA')
++  assert.equal(archivo.nombre, 'desvios-2026-11-06.csv')
++  assert.ok(archivo.contenido instanceof Blob)
++})
++
++test('si el backend no informa el nombre del CSV se usa uno por defecto', async (t) => {
++  const pedidos = fetchFalso(t)
++  const archivo = await descargarOrdenesResueltas(parametrosReporte({ atajo: 'PERSONALIZADO', desde: '2026-10-01', hasta: '2026-10-31' }, { conGranularidad: false }))
++  assert.equal(pedidos[0].url, '/api/reportes/ots-resueltas/csv?desde=2026-10-01&hasta=2026-10-31')
++  assert.equal(archivo.nombre, 'ots-resueltas.csv')
++})
++
++test('un error del backend en la descarga llega como ErrorApi con su mensaje', async (t) => {
++  fetchFalso(t, { status: 400, cuerpo: { mensaje: "La fecha 'desde' no puede ser posterior a 'hasta'" } })
++  await assert.rejects(descargarDesvios(new URLSearchParams()), { estado: 400, message: "La fecha 'desde' no puede ser posterior a 'hasta'" })
++})
++
++test('nombreDeArchivo entiende filename y filename*', () => {
++  assert.equal(nombreDeArchivo('attachment; filename="a.csv"', 'x.csv'), 'a.csv')
++  assert.equal(nombreDeArchivo("attachment; filename*=UTF-8''desv%C3%ADos.csv", 'x.csv'), 'desvíos.csv')
++  assert.equal(nombreDeArchivo(null, 'x.csv'), 'x.csv')
++})
++
++// ---------- Período ----------
++
++test('con "Otras fechas" se mandan desde y hasta, y no el atajo', () => {
++  const p = parametrosReporte({ atajo: 'PERSONALIZADO', desde: '2026-10-01', hasta: '2026-10-31', granularidad: 'SEMANA' })
++  assert.equal(p.toString(), 'desde=2026-10-01&hasta=2026-10-31&granularidad=SEMANA')
++})
++
++test('errorPeriodo pide las dos fechas y en orden; los atajos nunca tienen error', () => {
++  assert.equal(errorPeriodo({ atajo: 'HOY' }), null)
++  assert.match(errorPeriodo({ atajo: 'PERSONALIZADO', desde: '2026-10-01', hasta: '' }), /dos fechas/)
++  assert.match(errorPeriodo({ atajo: 'PERSONALIZADO', desde: '2026-11-02', hasta: '2026-11-01' }), /anterior o igual/)
++  assert.equal(errorPeriodo({ atajo: 'PERSONALIZADO', desde: '2026-11-01', hasta: '2026-11-01' }), null)
++})
++
++test('la agrupación sugerida: por mes para el año, por día para períodos cortos', () => {
++  assert.equal(granularidadSugerida('AÑO'), 'MES')
++  assert.equal(granularidadSugerida('MES'), 'DIA')
++  assert.equal(granularidadSugerida('PERSONALIZADO'), 'SEMANA')
++})
++
++// ---------- Textos ----------
++
++test('formatearDia y describirRango no se corren un día por la zona horaria', () => {
++  assert.equal(formatearDia('2026-11-01'), '1/11/2026')
++  assert.equal(describirRango('2026-11-01', '2026-11-06'), '1/11/2026 al 6/11/2026')
++  assert.equal(describirRango('2026-11-06', '2026-11-06'), '6/11/2026')
++})
++
++test('etiquetaPeriodo entiende día, semana ISO y mes', () => {
++  assert.equal(etiquetaPeriodo('2026-11-06'), '6/11')
++  assert.equal(etiquetaPeriodo('2026-11-06', { larga: true }), '6 de noviembre de 2026')
++  assert.equal(etiquetaPeriodo('2026-W45'), 'Sem. 45')
++  assert.equal(etiquetaPeriodo('2026-W05', { larga: true }), 'Semana 5 de 2026')
++  assert.equal(etiquetaPeriodo('2026-09'), 'sep 26')
++  assert.equal(etiquetaPeriodo('2026-09', { larga: true }), 'Septiembre de 2026')
++  assert.equal(etiquetaPeriodo('otro'), 'otro')
++})
++
++test('nombreTipoTrabajo usa las mismas etiquetas que las órdenes', () => {
++  assert.equal(nombreTipoTrabajo('CORTE_DE_PASTO'), 'Corte de pasto')
++})
++
++// ---------- Cálculos ----------
++
++test('porcentaje redondea y no divide por cero', () => {
++  assert.equal(porcentaje(31, 48), 65)
++  assert.equal(porcentaje(0, 0), 0)
++})
++
++test('filasBarras ordena de mayor a menor y mide cada barra contra la más grande', () => {
++  const filas = filasBarras(
++    [{ n: 'Poda', c: 5 }, { n: 'Bacheo', c: 10 }, { n: 'Alumbrado', c: 5 }],
++    { nombre: (f) => f.n, valor: (f) => f.c },
++  )
++  assert.deepEqual(filas.map((f) => f.nombre), ['Bacheo', 'Alumbrado', 'Poda'])
++  assert.deepEqual(filas.map((f) => f.ancho), [100, 50, 50])
++  assert.deepEqual(filas.map((f) => f.parte), [50, 25, 25])
++  assert.deepEqual(filasBarras([], { nombre: () => '', valor: () => 0 }), [])
++})
++
++test('marcasEje arma valores redondos que cubren el máximo', () => {
++  assert.deepEqual(marcasEje(12), [0, 5, 10, 15])
++  assert.deepEqual(marcasEje(4), [0, 1, 2, 3, 4])
++  assert.deepEqual(marcasEje(0), [0, 1])
++  const grandes = marcasEje(230)
++  assert.ok(grandes.at(-1) >= 230)
++  assert.ok(grandes.length <= 6)
++})
++
++test('tableroVacio solo cuando no hubo órdenes ni programadas', () => {
++  assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 0 } }), true)
++  assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 2 } }), false)
++  assert.equal(tableroVacio({ totalOts: 4, resumenDesvios: null }), false)
++})

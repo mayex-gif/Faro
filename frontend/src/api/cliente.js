@@ -22,8 +22,8 @@ export class ErrorApi extends Error {
   }
 }
 
-// Hace el pedido, revisa si salió bien y devuelve los datos
-export async function pedir(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
+// Manda el pedido con el token de la sesión y, si el backend responde con error, lo convierte en ErrorApi.
+async function enviarPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
   const token = autenticacion ? leerToken() : ''
   const respuesta = await fetch(`${API_BASE}${ruta}`, {
     ...opciones,
@@ -44,8 +44,29 @@ export async function pedir(ruta, { autenticacion = true, headers = {}, ...opcio
     if (respuesta.status === 401 && autenticacion) terminarSesion(token)
     throw new ErrorApi(respuesta.status, cuerpo?.mensaje ?? `Error ${respuesta.status}`, cuerpo?.errores ?? {})
   }
+  return respuesta
+}
 
+// Hace el pedido, revisa si salió bien y devuelve los datos
+export async function pedir(ruta, opciones = {}) {
+  const respuesta = await enviarPedido(ruta, opciones)
   // 204 = "sin contenido" (por ejemplo, al borrar): no hay datos para leer
   if (respuesta.status === 204) return null
   return respuesta.json()
+}
+
+// Nombre del archivo que propone el backend: Content-Disposition: attachment; filename="desvios-2026-11-06.csv"
+export function nombreDeArchivo(contentDisposition, porDefecto) {
+  const encontrado = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(contentDisposition ?? '')
+  return encontrado ? decodeURIComponent(encontrado[1].trim()) : porDefecto
+}
+
+// Pide un archivo (por ejemplo, un CSV de Reportes) con la sesión iniciada y devuelve { contenido, nombre }.
+// Un enlace común no sirve: no puede mandar el token en el encabezado Authorization.
+export async function pedirArchivo(ruta, nombrePorDefecto) {
+  const respuesta = await enviarPedido(ruta, { headers: { Accept: 'text/csv' } })
+  return {
+    contenido: await respuesta.blob(),
+    nombre: nombreDeArchivo(respuesta.headers.get('Content-Disposition'), nombrePorDefecto),
+  }
 }
