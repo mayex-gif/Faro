@@ -22,13 +22,16 @@ export class ErrorApi extends Error {
   }
 }
 
-// Hace el pedido, revisa si salió bien y devuelve los datos
-export async function pedir(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
+// Hace el pedido y revisa si salió bien. Si no, lanza ErrorApi con el motivo que mandó el backend.
+// Si el cuerpo es un formulario con archivos (FormData, ej: un comentario con fotos), NO se pone
+// "Content-Type": el navegador lo arma solo, con el "separador" entre las partes del formulario.
+async function hacerPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
   const token = autenticacion ? leerToken() : ''
+  const esFormulario = typeof FormData !== 'undefined' && opciones.body instanceof FormData
   const respuesta = await fetch(`${API_BASE}${ruta}`, {
     ...opciones,
     headers: {
-      'Content-Type': 'application/json',
+      ...(esFormulario ? {} : { 'Content-Type': 'application/json' }),
       ...headers,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -44,8 +47,21 @@ export async function pedir(ruta, { autenticacion = true, headers = {}, ...opcio
     if (respuesta.status === 401 && autenticacion) terminarSesion(token)
     throw new ErrorApi(respuesta.status, cuerpo?.mensaje ?? `Error ${respuesta.status}`, cuerpo?.errores ?? {})
   }
+  return respuesta
+}
+
+// Hace el pedido, revisa si salió bien y devuelve los datos
+export async function pedir(ruta, opciones) {
+  const respuesta = await hacerPedido(ruta, opciones)
 
   // 204 = "sin contenido" (por ejemplo, al borrar): no hay datos para leer
   if (respuesta.status === 204) return null
   return respuesta.json()
+}
+
+// Igual que pedir, pero para bajar un archivo (ej: una foto): devuelve un Blob (los bytes) en vez de JSON.
+// Hace falta para las fotos porque piden sesión: un <img src="..."> no manda el header Authorization.
+export async function pedirArchivo(ruta, opciones) {
+  const respuesta = await hacerPedido(ruta, opciones)
+  return respuesta.blob()
 }
