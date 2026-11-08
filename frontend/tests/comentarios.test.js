@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { bajarFoto, borrarComentario, formularioDeComentario, listarComentarios, publicarComentario } from '../src/api/comentarios.js'
 import { ErrorApi } from '../src/api/cliente.js'
 import {
-  MAX_FOTOS, MAX_TEXTO, contadorTexto, fechaComentario, fotosQueQuedan, mensajeDeError, puedeComentar,
-  textoCantidad, validarComentario,
+  MAX_FOTOS, MAX_TEXTO, contadorTexto, descripcionFoto, fechaComentario, fotosQueQuedan, mensajeDeError, puedeComentar,
+  sacarDelMuro, sumarAlMuro, textoCantidad, validarComentario,
 } from '../src/utils/comentarios.js'
 
 // fetch falso: anota qué se pidió y contesta lo que le digamos (no sale a internet)
@@ -164,4 +164,21 @@ test('mensajeDeError explica qué pasó', () => {
   assert.equal(mensajeDeError(new Error('No se pudo abrir esa foto. Probá con otra (JPG o PNG).')), 'No se pudo abrir esa foto. Probá con otra (JPG o PNG).')
   assert.equal(mensajeDeError(new ErrorApi(500, '')), 'No se pudo completar. Probá de nuevo.')
   assert.equal(mensajeDeError(null), '')
+})
+
+test('sumarAlMuro pone el nuevo primero y no lo repite si ya estaba (reintento)', () => {
+  const muro = [{ id: 2 }, { id: 1 }]
+  assert.deepEqual(sumarAlMuro(muro, { id: 3 }).map((c) => c.id), [3, 2, 1])
+  assert.deepEqual(sumarAlMuro(muro, { id: 2, texto: 'otra vez' }).map((c) => c.id), [2, 1])
+  assert.deepEqual(muro.map((c) => c.id), [2, 1]) // no cambia el muro original
+})
+
+test('sacarDelMuro quita el comentario borrado', () => {
+  assert.deepEqual(sacarDelMuro([{ id: 2 }, { id: 1 }], 2), [{ id: 1 }])
+  assert.deepEqual(sacarDelMuro([{ id: 1 }], 9), [{ id: 1 }])
+})
+
+test('descripcionFoto arma el texto para lectores de pantalla', () => {
+  const comentario = { autorNombre: 'Carlos Rodríguez', fotos: [{}, {}, {}] }
+  assert.equal(descripcionFoto(comentario, 1), 'Foto 2 de 3 del comentario de Carlos Rodríguez')
 })

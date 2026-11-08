@@ -67,3 +67,18 @@ export function mensajeDeError(error) {
   if (error.estado === 413) return 'Las fotos pesan demasiado. Probá con menos fotos.'
   return error.message || 'No se pudo completar. Probá de nuevo.'
 }
+
+// El muro después de publicar: el comentario nuevo va primero (si ya estaba, por un reintento, no se repite)
+export function sumarAlMuro(muro, comentario) {
+  return [comentario, ...muro.filter((otro) => otro.id !== comentario.id)]
+}
+
+// El muro después de borrar
+export function sacarDelMuro(muro, id) {
+  return muro.filter((comentario) => comentario.id !== id)
+}
+
+// Texto para lectores de pantalla de cada foto. Ej: "Foto 2 de 3 del comentario de Carlos Rodríguez"
+export function descripcionFoto(comentario, indice) {
+  return `Foto ${indice + 1} de ${comentario.fotos.length} del comentario de ${comentario.autorNombre}`
+}

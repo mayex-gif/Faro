@@ -1,0 +1,67 @@
+/* Comentarios y fotos de las OT (tarjetas 16 + 21). Reutiliza las variables de index.css y .boton/.campo de App.css.
+   Este archivo se carga ANTES que App.css: las reglas van con el prefijo .panel-comentarios (más específicas). */
+
+.panel-comentarios { display: grid; gap: 14px; min-width: 0; container-type: inline-size; }
+.panel-comentarios .comentarios-titulo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.panel-comentarios .comentarios-titulo h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.panel-comentarios .comentarios-titulo .icono { width: 20px; height: 20px; color: var(--enlace); }
+.panel-comentarios .comentarios-formulario { display: grid; gap: 10px; }
+.panel-comentarios textarea { width: 100%; min-height: 84px; resize: vertical; font: inherit; }
+.panel-comentarios .ayuda-campo { margin: 0; color: var(--texto-secundario); font-size: 0.8125rem; }
+.panel-comentarios .comentarios-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.panel-comentarios .comentarios-acciones .boton { min-height: 48px; flex: 1 1 120px; padding-inline: 10px; white-space: nowrap; }
+/* En una caja angosta (la tarjeta del celular), "Publicar" va solo abajo, con todo el ancho */
+@container (max-width: 420px) { .panel-comentarios .comentarios-acciones .boton-primario { flex-basis: 100%; } }
+.panel-comentarios .comentarios-estado { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--texto-secundario); }
+
+/* Fotos elegidas (antes de publicar) */
+.panel-comentarios .comentarios-elegidas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.panel-comentarios .comentarios-elegidas li { position: relative; }
+.panel-comentarios .comentarios-elegidas img { display: block; width: 76px; height: 76px; border-radius: 8px; object-fit: cover; border: 1px solid var(--borde); }
+.panel-comentarios .boton-quitar-foto { position: absolute; top: -8px; right: -8px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--borde-campo); border-radius: 50%; background: var(--blanco); color: var(--texto); cursor: pointer; }
+.panel-comentarios .boton-quitar-foto .icono { width: 16px; height: 16px; }
+
+/* El muro */
+.panel-comentarios .comentarios-lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.panel-comentarios .comentario { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 10px; background: var(--fondo); }
+.panel-comentarios .comentario-autor { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0; font-size: 0.875rem; }
+.panel-comentarios .comentario-rol, .panel-comentarios .comentario-autor time { color: var(--texto-secundario); font-size: 0.8125rem; }
+.panel-comentarios .comentario-texto { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.panel-comentarios .comentario-fotos { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.panel-comentarios .boton-foto { display: block; padding: 0; border: 0; border-radius: 8px; background: none; cursor: zoom-in; }
+.panel-comentarios .boton-foto .foto-protegida { width: 88px; height: 88px; }
+.panel-comentarios .boton-texto { display: inline-flex; align-items: center; gap: 6px; justify-self: start; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--error); font: inherit; font-size: 0.875rem; font-weight: 650; cursor: pointer; }
+.panel-comentarios .boton-texto .icono { width: 16px; height: 16px; }
+.panel-comentarios .comentario-confirmar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.875rem; }
+
+/* Una foto que se baja con la sesión (FotoProtegida) */
+.foto-protegida { display: block; border-radius: 8px; object-fit: cover; background: var(--borde); }
+.foto-cargando { animation: foto-latido 1.2s ease-in-out infinite; }
+.foto-sin-cargar { display: grid; place-items: center; padding: 4px; color: var(--texto-secundario); font-size: 0.75rem; text-align: center; }
+@keyframes foto-latido { 50% { opacity: 0.5; } }
+
+/* Visor de fotos en grande */
+.visor-fotos { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: auto 1fr auto; gap: 12px; padding: 16px; background: rgba(10, 25, 31, 0.92); color: var(--blanco); }
+.visor-fotos .visor-barra, .visor-fotos .visor-flechas { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.visor-fotos .visor-imagen { width: 100%; height: 100%; max-height: calc(100vh - 160px); object-fit: contain; background: none; }
+.visor-fotos .boton { min-height: 48px; }
+
+/* Hoja de comentarios (Trabajos) */
+.hoja-comentarios { position: fixed; inset: 0; z-index: 1500; display: flex; justify-content: flex-end; background: rgba(10, 25, 31, 0.45); }
+.hoja-comentarios .hoja-contenido { display: grid; align-content: start; gap: 16px; width: min(100%, 560px); height: 100%; overflow-y: auto; padding: 20px; background: var(--blanco); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15); }
+.hoja-comentarios .hoja-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.hoja-comentarios .hoja-encabezado h2 { font-size: 1.125rem; overflow-wrap: anywhere; }
+
+/* Dentro de la tarjeta de tarea (Mis tareas) y el aviso después de Finalizar */
+.tarea-comentarios summary { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
+.tarea-comentarios summary .icono { width: 18px; height: 18px; }
+.tarea-comentarios[open] summary { margin-bottom: 8px; }
+.aviso-evidencia { display: grid; gap: 12px; padding: 20px; }
+.aviso-evidencia .acciones { justify-content: flex-end; }
+
+@media (prefers-reduced-motion: reduce) {
+  .foto-cargando { animation: none; }
+}
+@media (max-width: 760px) {
+  .hoja-comentarios .hoja-contenido { width: 100%; padding: 16px; }
+}

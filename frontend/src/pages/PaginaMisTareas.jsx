@@ -3,6 +3,7 @@ import { cambiarEstadoOrden, listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarCuadrillas } from '../api/cuadrillas'
 import TarjetaTarea from '../components/TarjetaTarea'
+import PanelComentarios from '../components/PanelComentarios'
 import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
 import Icono from '../components/Icono'
 import { cerradasSinEnviar, tareasDeCuadrilla } from '../utils/tareas'
@@ -58,6 +59,8 @@ function PaginaMisTareas({ onNavegar }) {
   const [error, setError] = useState(null)
   // true si el último intento de traer las tareas falló por falta de señal (se muestran las que ya estaban)
   const [sinSenal, setSinSenal] = useState(false)
+  // La tarea que se acaba de finalizar/cancelar: deja de figurar en la lista, así que se ofrece sumarle fotos acá
+  const [recienCerrada, setRecienCerrada] = useState(null)
   const [cuadrillas, setCuadrillas] = useState(() => recordada?.cuadrillas ?? [])
   const [cargandoCuadrillas, setCargandoCuadrillas] = useState(() => !recordada?.cuadrillas)
   const [errorCuadrillas, setErrorCuadrillas] = useState(null)
@@ -194,6 +197,7 @@ function PaginaMisTareas({ onNavegar }) {
     try {
       await guardarOperacion(crearCambioEstado(usuario, orden, estadoNuevo))
       setMensaje(`No hay señal: la OT #${orden.id} quedó en "${estadoNuevo.nombre}" en este celular. Se envía sola cuando vuelva la señal.`)
+      if (estadoNuevo.cierre) setRecienCerrada(orden)
     } catch {
       setErrorAccion('No hay señal y este navegador no permite guardar el cambio. Intentá de nuevo cuando tengas conexión.')
     }
@@ -212,6 +216,7 @@ function PaginaMisTareas({ onNavegar }) {
     }
     setMensaje('')
     setErrorAccion('')
+    setRecienCerrada(null)
     if (esCapataz && navigator.onLine === false) {
       guardarSinSenal(orden, estadoNuevo)
       return
@@ -222,6 +227,7 @@ function PaginaMisTareas({ onNavegar }) {
         // reemplazamos solo esa OT: si quedó cerrada, deja de figurar entre las tareas
         setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
         setMensaje(`La OT #${actualizada.id} pasó a "${actualizada.estadoNombre}".`)
+        if (estadoNuevo.cierre) setRecienCerrada(actualizada)
       })
       .catch((e) => {
         // Se cortó la señal en el camino (o el servidor falló): no se pierde, va al cuaderno.
@@ -247,6 +253,18 @@ function PaginaMisTareas({ onNavegar }) {
         {mensaje && <p className="mensaje mensaje-exito"><Icono nombre="guardar" />{mensaje}</p>}
         {errorAccion && <p className="mensaje mensaje-error" role="alert">{errorAccion}</p>}
       </div>
+
+      {recienCerrada && (
+        <section className="panel aviso-evidencia" aria-label={`Fotos del trabajo de la OT #${recienCerrada.id}`}>
+          <PanelComentarios orden={recienCerrada}
+            titulo={`¿Sumás fotos del trabajo terminado? · OT #${recienCerrada.id}`} />
+          <div className="acciones">
+            <button type="button" className="boton boton-secundario" onClick={() => setRecienCerrada(null)}>
+              Listo, cerrar
+            </button>
+          </div>
+        </section>
+      )}
 
       {esCapataz && <AvisoCambiosPendientes cola={cola} />}
 

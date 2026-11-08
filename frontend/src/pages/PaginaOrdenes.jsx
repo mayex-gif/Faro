@@ -6,6 +6,7 @@ import FormularioOrden from '../components/FormularioOrden'
 import TablaOrdenes from '../components/TablaOrdenes'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
+import HojaComentarios from '../components/HojaComentarios'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 import { useSesion } from '../context/useSesion'
@@ -26,6 +27,7 @@ function horaDe(fecha) {
 function PaginaOrdenes({ params, onNavegar }) {
   const { usuario } = useSesion()
   const puedeGestionar = puedeAsignar(usuario)
+  const [ordenComentarios, setOrdenComentarios] = useState(null) // la OT cuya hoja de comentarios está abierta
   const lugarInicial = params?.lugarId
   // Fijo mientras la pantalla está abierta (App la vuelve a armar si entra otra persona)
   const idUsuario = useRef(usuario.id)
@@ -246,9 +248,12 @@ function PaginaOrdenes({ params, onNavegar }) {
             estados={estados} 
             onCambiarEstado={puedeGestionar ? cambiarEstado : undefined}
             idCambiandoEstado={idCambiandoEstado} 
+            onVerComentarios={setOrdenComentarios}
           />
         )}
       </section>
+
+      {ordenComentarios && <HojaComentarios orden={ordenComentarios} onCerrar={() => setOrdenComentarios(null)} />}
     </>
   )
 }
