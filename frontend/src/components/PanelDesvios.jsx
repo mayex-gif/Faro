@@ -1,5 +1,6 @@
 import Icono from './Icono'
 import { CLASIFICACIONES_DESVIO, claseClasificacion, etiqueta } from '../utils/mantenimiento'
+import { fechaProgramada } from '../utils/recurrencia'
 
 // Resumen de cumplimiento de una regla (o del consolidado municipal, si no se pasa "regla"): cuántas OT se
 // generaron, cuántas terminaron a tiempo/adelantadas/demoradas, cuántas siguen pendientes y el % de cumplimiento.
@@ -80,8 +81,8 @@ function PanelDesvios({ resumen, cargando, error, onCerrar, onReintentar, titulo
                         <th scope="row">#{orden.ordenId}<span className="id-registro-auditoria">{orden.estadoNombre}</span></th>
                         <td className="datos-tabla">{orden.lugarNombre ?? '—'}</td>
                         <td className="datos-tabla">{orden.cuadrillaNombre ?? '—'}</td>
-                        <td className="fecha-tabla">{orden.fechaPlanificada ?? '—'}</td>
-                        <td className="fecha-tabla">{orden.fechaEjecucion ?? '—'}</td>
+                        <td className="fecha-tabla">{orden.fechaPlanificada ? fechaProgramada(orden.fechaPlanificada) : '—'}</td>
+                        <td className="fecha-tabla">{orden.fechaEjecucion ? fechaProgramada(orden.fechaEjecucion) : '—'}</td>
                         <td className="fecha-tabla">{formatearDesvio(orden.diasDesvio)}</td>
                         <td>
                           <span className={`estado ${claseClasificacion(orden.clasificacionDesvio)}`}>

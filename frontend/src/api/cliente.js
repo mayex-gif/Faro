@@ -22,10 +22,10 @@ export class ErrorApi extends Error {
   }
 }
 
-// Hace el pedido y revisa si salió bien. Si no, lanza ErrorApi con el motivo que mandó el backend.
+// Manda el pedido con el token de la sesión y, si el backend responde con error, lo convierte en ErrorApi.
 // Si el cuerpo es un formulario con archivos (FormData, ej: un comentario con fotos), NO se pone
 // "Content-Type": el navegador lo arma solo, con el "separador" entre las partes del formulario.
-async function hacerPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
+async function enviarPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
   const token = autenticacion ? leerToken() : ''
   const esFormulario = typeof FormData !== 'undefined' && opciones.body instanceof FormData
   const respuesta = await fetch(`${API_BASE}${ruta}`, {
@@ -51,17 +51,32 @@ async function hacerPedido(ruta, { autenticacion = true, headers = {}, ...opcion
 }
 
 // Hace el pedido, revisa si salió bien y devuelve los datos
-export async function pedir(ruta, opciones) {
-  const respuesta = await hacerPedido(ruta, opciones)
-
+export async function pedir(ruta, opciones = {}) {
+  const respuesta = await enviarPedido(ruta, opciones)
   // 204 = "sin contenido" (por ejemplo, al borrar): no hay datos para leer
   if (respuesta.status === 204) return null
   return respuesta.json()
 }
 
-// Igual que pedir, pero para bajar un archivo (ej: una foto): devuelve un Blob (los bytes) en vez de JSON.
-// Hace falta para las fotos porque piden sesión: un <img src="..."> no manda el header Authorization.
-export async function pedirArchivo(ruta, opciones) {
-  const respuesta = await hacerPedido(ruta, opciones)
+// Nombre del archivo que propone el backend: Content-Disposition: attachment; filename="desvios-2026-11-06.csv"
+export function nombreDeArchivo(contentDisposition, porDefecto) {
+  const encontrado = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(contentDisposition ?? '')
+  return encontrado ? decodeURIComponent(encontrado[1].trim()) : porDefecto
+}
+
+// Pide un archivo (por ejemplo, un CSV de Reportes) con la sesión iniciada y devuelve { contenido, nombre }.
+// Un enlace común no sirve: no puede mandar el token en el encabezado Authorization.
+export async function pedirArchivo(ruta, nombrePorDefecto) {
+  const respuesta = await enviarPedido(ruta, { headers: { Accept: 'text/csv' } })
+  return {
+    contenido: await respuesta.blob(),
+    nombre: nombreDeArchivo(respuesta.headers.get('Content-Disposition'), nombrePorDefecto),
+  }
+}
+
+// Pide una imagen (ej: una foto de un comentario) con la sesión iniciada y devuelve sus bytes (un Blob).
+// Hace falta porque las fotos son privadas: un <img src="..."> no manda el encabezado Authorization.
+export async function pedirImagen(ruta) {
+  const respuesta = await enviarPedido(ruta) // sin "Accept: image/*": así los errores (403, 404) llegan en JSON
   return respuesta.blob()
 }

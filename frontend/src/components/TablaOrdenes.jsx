@@ -72,7 +72,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   {orden.id === idEditando && <span className="marca-edicion">En edición</span>}
                   {orden.reglaMantenimientoId != null && <span className="marca-periodica">
                     <Icono nombre="mantenimiento" />Periódica
-                    {orden.fechaPlanificada && <span> · Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
+                    {orden.fechaPlanificada && <span className="fecha-prevista">Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
                   </span>}
                 </th>
                 <td>{orden.lugarNombre}</td>

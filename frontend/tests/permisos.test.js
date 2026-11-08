@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   inicioDe, puedeAsignar, puedeCrearOrden, puedeGestionarMantenimiento, puedeGestionarUsuarios, puedeVer,
-  puedeVerAuditoria, rolConocido, tieneRol,
+  puedeVerAuditoria, puedeVerReportes, rolConocido, tieneRol,
 } from '../src/utils/permisos.js'
 
 const encargado = { activo: true, rol: 'ENCARGADO_CORRALON' }
@@ -60,4 +60,13 @@ test('mantenimiento periódico y auditoría son solo del encargado del corralón
   assert.equal(puedeVer(encargado, 'auditoria'), true)
   assert.equal(puedeVer(mesa, 'mantenimiento'), false)
   assert.equal(puedeVer(mesa, 'auditoria'), false)
+})
+
+test('reportes e indicadores son solo del encargado del corralón', () => {
+  assert.equal(puedeVerReportes(encargado), true)
+  assert.equal(puedeVerReportes(mesa), false)
+  assert.equal(puedeVerReportes(capataz), false)
+  assert.equal(puedeVer(encargado, 'reportes'), true)
+  assert.equal(puedeVer(mesa, 'reportes'), false)
+  assert.equal(puedeVer(capataz, 'reportes'), false)
 })

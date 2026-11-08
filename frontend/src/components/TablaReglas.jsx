@@ -1,5 +1,6 @@
 import Icono from './Icono'
 import { etiqueta, resumenRecurrencia, PRIORIDADES, TIPOS_TRABAJO } from '../utils/mantenimiento'
+import { fechaProgramada } from '../utils/recurrencia'
 
 // Listado de reglas de mantenimiento periódico, con sus acciones: editar, ejecutar ya, pausar/activar,
 // ver desvíos y borrar (solo si todavía no generó ninguna OT: si no, hay que pausarla).
@@ -43,12 +44,12 @@ function TablaReglas({ reglas, idEditando, ocupado, mensajeVacio, onEditar, onEj
                   <td className="datos-tabla">{regla.lugarNombre ?? '—'}</td>
                   <td>
                     <span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, regla.tipoTrabajo)}</span>
-                    <span className={`prioridad-${regla.prioridad?.toLowerCase()}`} style={{ display: 'block', marginTop: 6 }}>
+                    <span className={`estado prioridad-regla prioridad-${regla.prioridad?.toLowerCase()}`}>
                       {etiqueta(PRIORIDADES, regla.prioridad)}
                     </span>
                   </td>
                   <td className="datos-tabla">{resumenRecurrencia(regla)}</td>
-                  <td className="fecha-tabla">{regla.activa ? (regla.proximaEjecucion ?? '—') : 'Pausada'}</td>
+                  <td className="fecha-tabla">{regla.activa ? (regla.proximaEjecucion ? fechaProgramada(regla.proximaEjecucion) : '—') : 'Pausada'}</td>
                   <td>
                     <span className={regla.activa ? 'estado estado-ok' : 'estado estado-baja'}>
                       <span className="estado-punto" aria-hidden="true" />
@@ -69,17 +70,17 @@ function TablaReglas({ reglas, idEditando, ocupado, mensajeVacio, onEditar, onEj
                         <>
                           <button type="button" className="boton boton-tabla" onClick={() => onEjecutar(regla)} disabled={ocupado}
                             aria-label={`Generar ya la próxima OT de ${regla.titulo}`}>
-                            <Icono nombre="iniciar" />Generar ya
+                            <Icono nombre="agregar" />Generar ya
                           </button>
                           <button type="button" className="boton boton-tabla" onClick={() => onPausar(regla)} disabled={ocupado}
                             aria-label={`Pausar ${regla.titulo}`}>
-                            <Icono nombre="baja" />Pausar
+                            <Icono nombre="pausar" />Pausar
                           </button>
                         </>
                       ) : (
                         <button type="button" className="boton boton-tabla" onClick={() => onActivar(regla)} disabled={ocupado}
                           aria-label={`Reactivar ${regla.titulo}`}>
-                          <Icono nombre="guardar" />Reactivar
+                          <Icono nombre="iniciar" />Reactivar
                         </button>
                       )}
                       <button type="button" className="boton boton-tabla boton-borrar" onClick={() => onBorrar(regla)} disabled={ocupado}

@@ -2,7 +2,7 @@
 // Pueden usarlo los tres roles; el capataz, solo en las OT de su cuadrilla (si no: 403, o 409 al escribir).
 // Un comentario llega como { id, operacionId, ordenId, autorId, autorNombre, autorRol, texto, hechoEn,
 // recibidoEn, fotos: [{ id, tipoContenido, tamanio, posicion, url }], puedeBorrar }.
-import { pedir, pedirArchivo } from './cliente.js'
+import { pedir, pedirImagen } from './cliente.js'
 import { formularioDeComentario } from '../offline/datosCola.js'
 
 // GET: el muro de una OT, del más nuevo al más viejo.
@@ -27,7 +27,7 @@ export { formularioDeComentario }
 
 // GET: los bytes de una foto (un Blob). La pantalla lo muestra con URL.createObjectURL (ver FotoProtegida).
 export function bajarFoto(fotoId) {
-  return pedirArchivo(`/comentarios/fotos/${fotoId}`)
+  return pedirImagen(`/comentarios/fotos/${fotoId}`)
 }
 
 // DELETE: borra el comentario con sus fotos. Solo quien lo escribió o el encargado (si no: 403). Responde 204.

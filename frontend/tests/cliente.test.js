@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { API_BASE, ErrorApi, pedir, pedirArchivo } from '../src/api/cliente.js'
+import { API_BASE, ErrorApi, pedir, pedirImagen } from '../src/api/cliente.js'
 
 // fetch falso: anota a qué dirección se pidió y contesta lo que le digamos (no sale a internet)
 function fetchFalso(t, { status = 200, cuerpo = null } = {}) {
@@ -83,15 +83,15 @@ test('si el cuerpo es un formulario (FormData), pedir NO pone Content-Type: lo a
   assert.equal(pedidos[0].opciones.body, formulario)
 })
 
-test('pedirArchivo devuelve los bytes (Blob) en vez de JSON', async (t) => {
+test('pedirImagen devuelve los bytes de la foto (Blob) en vez de JSON', async (t) => {
   const bytes = new Blob(['foto'], { type: 'image/png' })
   t.mock.method(globalThis, 'fetch', async () => ({ ok: true, status: 200, blob: async () => bytes }))
 
-  assert.equal(await pedirArchivo('/comentarios/fotos/12'), bytes)
+  assert.equal(await pedirImagen('/comentarios/fotos/12'), bytes)
 })
 
-test('pedirArchivo con error lanza ErrorApi igual que pedir', async (t) => {
+test('pedirImagen con error lanza ErrorApi igual que pedir', async (t) => {
   fetchFalso(t, { status: 404, cuerpo: { estado: 404, mensaje: 'Foto no encontrada con id: 12', errores: {} } })
 
-  await assert.rejects(pedirArchivo('/comentarios/fotos/12'), (error) => error instanceof ErrorApi && error.estado === 404)
+  await assert.rejects(pedirImagen('/comentarios/fotos/12'), (error) => error instanceof ErrorApi && error.estado === 404)
 })

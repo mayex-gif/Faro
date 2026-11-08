@@ -9,10 +9,13 @@
 .seccion-recurrencia .mensaje { margin-top: 18px; }
 .marca-periodica { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 8px; color: var(--enlace); font-size: 0.75rem; font-weight: 600; }
 .marca-periodica .icono { width: 16px; height: 16px; }
+/* "Prevista" va en su propia línea cuando no entra, sin dejar un separador colgado */
+.marca-periodica .fecha-prevista { flex-basis: 100%; color: var(--texto-secundario); font-weight: 400; }
 
 /* Tabla de reglas */
 .tabla-reglas { min-width: 1080px; }
 .tabla-reglas tbody th { min-width: 190px; }
+.estado.prioridad-regla { display: flex; width: fit-content; margin-top: 6px; }
 .nombre-regla { display: block; font-weight: 600; overflow-wrap: anywhere; }
 .acciones-regla { flex-direction: column; align-items: stretch; min-width: 150px; }
 
