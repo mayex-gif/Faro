@@ -3,6 +3,7 @@
 // Un comentario llega como { id, operacionId, ordenId, autorId, autorNombre, autorRol, texto, hechoEn,
 // recibidoEn, fotos: [{ id, tipoContenido, tamanio, posicion, url }], puedeBorrar }.
 import { pedir, pedirArchivo } from './cliente.js'
+import { formularioDeComentario } from '../offline/datosCola.js'
 
 // GET: el muro de una OT, del más nuevo al más viejo.
 export function listarComentarios(ordenId) {
@@ -21,14 +22,8 @@ export function publicarComentario(ordenId, operacionId, { texto = '', fotos = [
   })
 }
 
-// Arma el formulario. Está aparte para poder probarlo y para reusarlo al mandar lo anotado sin señal.
-export function formularioDeComentario({ texto = '', fotos = [], hechoEn = new Date() }) {
-  const formulario = new FormData()
-  if (texto.trim()) formulario.append('texto', texto.trim())
-  formulario.append('hechoEn', new Date(hechoEn).toISOString())
-  fotos.forEach((foto, indice) => formulario.append('fotos', foto, `foto-${indice + 1}.jpg`))
-  return formulario
-}
+// El formulario se arma en offline/datosCola.js (lo comparten este envío, el del cuaderno y el service worker)
+export { formularioDeComentario }
 
 // GET: los bytes de una foto (un Blob). La pantalla lo muestra con URL.createObjectURL (ver FotoProtegida).
 export function bajarFoto(fotoId) {

@@ -1,8 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  ALTA_ORDEN, CAMBIO_ESTADO, CONFLICTO, PENDIENTE, REINTENTAR, SESION,
-  aplicarIgual, aplicarPendientes, clasificarError, conflictoDesdeError, crearAltaOrden, crearCambioEstado, cuantosSeEnviaron,
+  ALTA_ORDEN, CAMBIO_ESTADO, COMENTARIO, CONFLICTO, PENDIENTE, REINTENTAR, SESION,
+  aplicarIgual, aplicarPendientes, clasificarError, comentariosSinEnviar, conflictoDesdeError, crearAltaOrden, crearCambioEstado,
+  crearComentario, cuantosSeEnviaron, pedidoDeEnvio,
   cuadernoPorPersona, cuerpoDeEnvio, estaEsperando, marcarConflicto, nuevoNumero, operacionValida, resumenCola, siguienteParaEnviar, sumarIntento,
 } from '../src/offline/datosCola.js'
 
@@ -160,4 +161,77 @@ test('en el ingreso se muestra de quién son los cambios que esperan en el celul
     { usuarioId: 6, usuarioNombre: 'Juan López', usuarioEmail: 'capataz.alumbrado@generalpaz.gob.ar', cantidad: 1 },
   ])
   assert.deepEqual(cuadernoPorPersona([]), [])
+})
+
+// ===================== Comentarios sin señal (tarjetas 16 + 21) =====================
+
+function comentario(orden, minuto, numero, { texto = 'Se podó', fotos = [] } = {}) {
+  return crearComentario(capataz, orden, { texto, fotos }, { ahora: new Date(Date.UTC(2026, 10, 8, 13, minuto)), numero })
+}
+
+test('un comentario sin señal guarda el texto, las fotos (Blobs) y lo necesario para mostrarlo', () => {
+  const foto = new Blob(['jpeg'], { type: 'image/jpeg' })
+  const operacion = crearComentario(capataz, ot7, { texto: '  Listo  ', fotos: [foto] },
+    { ahora: new Date('2026-11-08T13:15:00Z'), numero: 'c1' })
+
+  assert.equal(operacion.tipo, COMENTARIO)
+  assert.equal(operacion.operacionId, 'c1')
+  assert.equal(operacion.ordenId, 7)
+  assert.equal(operacion.texto, 'Listo')
+  assert.deepEqual(operacion.fotos, [foto])
+  assert.equal(operacion.descripcion, 'Podar el fresno')
+  assert.equal(operacion.lugarNombre, 'Plaza San Martín')
+  assert.equal(operacion.estado, PENDIENTE)
+  assert.equal(operacion.usuarioNombre, 'Carlos Rodríguez')
+  assert.equal(operacion.creadaEn, '2026-11-08T13:15:00.000Z')
+  assert.equal(operacionValida(operacion), true)
+})
+
+test('un comentario del cuaderno es válido solo si tiene OT y texto o fotos', () => {
+  const base = comentario(ot7, 0, 'c1')
+  assert.equal(operacionValida({ ...base, texto: '', fotos: [new Blob(['x'])] }), true)
+  assert.equal(operacionValida({ ...base, texto: '', fotos: [] }), false)
+  assert.equal(operacionValida({ ...base, fotos: undefined }), false)
+  assert.equal(operacionValida({ ...base, texto: undefined }), false)
+  assert.equal(operacionValida({ ...base, ordenId: null }), false)
+})
+
+test('cada renglón sabe adónde y cómo se manda: los comentarios como formulario, el resto como JSON', () => {
+  const foto = new Blob(['jpeg'], { type: 'image/jpeg' })
+  const deComentario = pedidoDeEnvio(comentario(ot7, 15, 'c1', { texto: 'Hola', fotos: [foto, foto] }))
+  assert.equal(deComentario.ruta, '/ordenes-trabajo/7/comentarios/c1')
+  assert.equal(deComentario.esJson, false)
+  assert.ok(deComentario.body instanceof FormData)
+  assert.equal(deComentario.body.get('texto'), 'Hola')
+  assert.equal(deComentario.body.get('hechoEn'), '2026-11-08T13:15:00.000Z') // la hora real en que se escribió
+  assert.deepEqual(deComentario.body.getAll('fotos').map((f) => f.name), ['foto-1.jpg', 'foto-2.jpg'])
+
+  const deCambio = pedidoDeEnvio(cambio(ot7, enCurso, 30, 'a'))
+  assert.equal(deCambio.ruta, '/sincronizacion/cambios-estado/a')
+  assert.equal(deCambio.esJson, true)
+  assert.deepEqual(JSON.parse(deCambio.body), cuerpoDeEnvio(cambio(ot7, enCurso, 30, 'a')))
+
+  const deAlta = pedidoDeEnvio(crearAltaOrden(capataz, { descripcion: 'Bache', tipo: 'BACHEO', origen: 'RECLAMO_VECINAL', prioridad: 'ALTA', lugarId: 2 }, 'Calle 1', { numero: 'n' }))
+  assert.equal(deAlta.ruta, '/sincronizacion/altas-orden/n')
+})
+
+test('el muro muestra los comentarios sin enviar de ESA OT, del más nuevo al más viejo', () => {
+  const cola = [
+    comentario(ot7, 10, 'viejo'),
+    comentario(ot7, 20, 'nuevo'),
+    comentario(ot8, 15, 'otra-ot'),
+    marcarConflicto(comentario(ot7, 25, 'chocado'), { mensaje: 'La orden ya no existe' }),
+    cambio(ot7, enCurso, 5, 'cambio'),
+  ]
+  assert.deepEqual(comentariosSinEnviar(cola, 7).map((o) => o.operacionId), ['nuevo', 'viejo'])
+  assert.deepEqual(comentariosSinEnviar(cola, '8').map((o) => o.operacionId), ['otra-ot'])
+  assert.deepEqual(comentariosSinEnviar(cola, 99), [])
+})
+
+test('los comentarios cuentan en el cuaderno pero no cambian la lista de OT ni hacen esperar a otros', () => {
+  const cola = [comentario(ot7, 10, 'c1'), cambio(ot7, enCurso, 20, 'a')]
+  assert.deepEqual(resumenCola(cola), { pendientes: 2, conflictos: 0 })
+  assert.deepEqual(aplicarPendientes([ot7], [comentario(ot7, 10, 'c1')]), [ot7])
+  const chocado = [marcarConflicto(comentario(ot7, 10, 'c1'), { mensaje: '…' }), cambio(ot7, enCurso, 20, 'a')]
+  assert.equal(siguienteParaEnviar(chocado).operacionId, 'a')
 })

@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { borrarComentario, listarComentarios, publicarComentario } from '../api/comentarios'
 import { useSesion } from '../context/useSesion'
-import { nuevoNumero } from '../offline/datosCola'
+import { useColaCambios } from '../hooks/useColaCambios'
+import { guardarOperacion } from '../offline/cola'
+import { COMENTARIO, REINTENTAR, clasificarError, comentariosSinEnviar, crearComentario, nuevoNumero } from '../offline/datosCola'
+import { EVENTO_RESPUESTA } from '../offline/sincronizar'
 import {
   MAX_TEXTO, contadorTexto, descripcionFoto, fechaComentario, fotosQueQuedan, mensajeDeError, puedeComentar,
   sacarDelMuro, sumarAlMuro, textoCantidad, validarComentario,
@@ -14,6 +17,8 @@ import VisorFotos from './VisorFotos'
 import '../estilos-comentarios.css'
 
 // El muro "Comentarios y fotos" de una OT (tarjetas 16 + 21): arriba se escribe, abajo se lee.
+// Sin señal (o si se corta en el camino) el comentario y sus fotos quedan en el cuaderno del celular (#47)
+// y se mandan solos cuando vuelve la red; mientras tanto se ven arriba de todo con "Sin enviar".
 // Lo usan Mis tareas (dentro de cada tarjeta y después de Finalizar) y Trabajos (en una hoja).
 // Las reglas (quién comenta, límites) están en utils/comentarios.js; el backend las vuelve a revisar.
 // Props: orden (la OT), titulo (opcional, para el aviso después de Finalizar),
@@ -24,6 +29,7 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
   const [comentarios, setComentarios] = useState([])
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState('')
+  const [sinSenal, setSinSenal] = useState(false) // no se pudo leer el muro por falta de señal
   const [texto, setTexto] = useState('')
   const [fotos, setFotos] = useState([]) // [{ clave, blob, vista }] — ya achicadas
   const [preparandoFotos, setPreparandoFotos] = useState(false)
@@ -42,16 +48,34 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
   const vistas = useRef([])
 
   const permitido = orden?.id != null && puedeComentar(usuario, orden)
+  const { cola } = useColaCambios(usuario)
+  const sinEnviar = comentariosSinEnviar(cola, orden?.id)
 
   useEffect(() => {
     if (!permitido) return undefined
     let vigente = true
     listarComentarios(orden.id)
-      .then((muro) => { if (vigente) setComentarios(muro) })
-      .catch((e) => { if (vigente) setErrorCarga(mensajeDeError(e)) })
+      .then((muro) => { if (vigente) { setComentarios(muro); setSinSenal(false) } })
+      .catch((e) => {
+        if (!vigente) return
+        if (clasificarError(e) === REINTENTAR) setSinSenal(true)
+        else setErrorCarga(mensajeDeError(e))
+      })
       .finally(() => { if (vigente) setCargando(false) })
     return () => { vigente = false }
   }, [orden?.id, permitido, vuelta])
+
+  // Cuando el cartero manda un comentario de esta OT que estaba en el cuaderno, se suma al muro la versión del servidor
+  useEffect(() => {
+    function alResponder(evento) {
+      const { operacion, respuesta } = evento.detail ?? {}
+      if (operacion?.tipo === COMENTARIO && respuesta && String(operacion.ordenId) === String(orden?.id)) {
+        setComentarios((muro) => sumarAlMuro(muro, respuesta))
+      }
+    }
+    window.addEventListener(EVENTO_RESPUESTA, alResponder)
+    return () => window.removeEventListener(EVENTO_RESPUESTA, alResponder)
+  }, [orden?.id])
 
   // Al salir de la pantalla, se liberan las vistas previas de las fotos elegidas
   useEffect(() => () => vistas.current.forEach((vista) => URL.revokeObjectURL(vista)), [])
@@ -61,7 +85,26 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
   function recargar() {
     setCargando(true)
     setErrorCarga('')
+    setSinSenal(false)
     setVuelta((v) => v + 1)
+  }
+
+  function limpiarFormulario() {
+    setTexto('')
+    setFotos([])
+    numero.current = nuevoNumero() // el próximo comentario es otra comanda
+  }
+
+  // Sin señal: se anota en el cuaderno con el MISMO número de comanda (si el primer intento había llegado, no se duplica)
+  async function guardarSinSenal() {
+    try {
+      await guardarOperacion(crearComentario(usuario, orden, { texto, fotos: fotos.map((foto) => foto.blob) },
+        { numero: numero.current }))
+      limpiarFormulario()
+      setAviso('No hay señal: el comentario quedó guardado en este celular y se envía solo cuando vuelva la señal.')
+    } catch {
+      setError('No hay señal y este navegador no permite guardar el comentario. Intentá de nuevo cuando tengas conexión.')
+    }
   }
 
   async function agregarFotos(evento) {
@@ -104,16 +147,20 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
     setError('')
     setEnviando(true)
     try {
+      if (navigator.onLine === false) {
+        await guardarSinSenal()
+        return
+      }
       const nuevo = await publicarComentario(orden.id, numero.current, {
         texto, fotos: fotos.map((foto) => foto.blob), hechoEn: new Date(),
       })
       setComentarios((muro) => sumarAlMuro(muro, nuevo))
-      setTexto('')
-      setFotos([])
-      numero.current = nuevoNumero() // el próximo comentario es otra comanda
+      limpiarFormulario()
       setAviso('Comentario publicado.')
     } catch (e) {
-      setError(mensajeDeError(e)) // lo escrito y las fotos se conservan para reintentar
+      // Se cortó la señal en el camino o el servidor (o el almacén de fotos) no respondió: va al cuaderno
+      if (clasificarError(e) === REINTENTAR) await guardarSinSenal()
+      else setError(mensajeDeError(e)) // lo escrito y las fotos se conservan para corregir y reintentar
     } finally {
       setEnviando(false)
     }
@@ -142,7 +189,7 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
         <h3 id={`${id}-titulo`} className={mostrarTitulo ? '' : 'solo-lectores'}>
           {mostrarTitulo && <Icono nombre="comentario" />}{titulo ?? 'Comentarios y fotos'}
         </h3>
-        {!cargando && !errorCarga && <span className="contador">{textoCantidad(comentarios.length)}</span>}
+        {!cargando && !errorCarga && !sinSenal && <span className="contador">{textoCantidad(comentarios.length)}</span>}
       </div>
 
       <form className="comentarios-formulario" onSubmit={publicar} aria-busy={ocupado}>
@@ -192,14 +239,43 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
         </div>
       </form>
 
-      {cargando ? (
+      {sinEnviar.length > 0 && (
+        <ol className="comentarios-lista" aria-label="Comentarios guardados en este celular, sin enviar">
+          {sinEnviar.map((operacion) => (
+            <li key={operacion.operacionId} className="comentario comentario-sin-enviar">
+              <p className="comentario-autor">
+                <strong>{operacion.usuarioNombre}</strong>
+                <span className="estado estado-sin-enviar">Sin enviar</span>
+                <time dateTime={operacion.creadaEn}>{fechaComentario(operacion.creadaEn)}</time>
+              </p>
+              {operacion.texto && <p className="comentario-texto">{operacion.texto}</p>}
+              {operacion.fotos.length > 0 && (
+                <ul className="comentario-fotos">
+                  {operacion.fotos.map((blob, indice) => (
+                    <li key={indice}><FotoLocal blob={blob} descripcion={`Foto ${indice + 1} sin enviar`} /></li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {sinSenal && !cargando && (
+        <p className="mensaje mensaje-informacion" role="status">
+          Sin señal: no se pueden ver los comentarios anteriores. Lo que escribas queda guardado en este celular.
+          <button type="button" className="boton boton-secundario" onClick={recargar}>Volver a intentar</button>
+        </p>
+      )}
+
+      {sinSenal && !cargando ? null : cargando ? (
         <p className="comentarios-estado" role="status"><span className="indicador-carga" aria-hidden="true" />Cargando comentarios…</p>
       ) : errorCarga ? (
         <div className="mensaje mensaje-error" role="alert">
           <p>{errorCarga}</p>
           <button type="button" className="boton boton-secundario" onClick={recargar}>Volver a cargar</button>
         </div>
-      ) : comentarios.length === 0 ? (
+      ) : comentarios.length === 0 && sinEnviar.length === 0 ? (
         <p className="comentarios-estado">Todavía no hay comentarios. Contá cómo va el trabajo o sumá fotos.</p>
       ) : (
         <ol className="comentarios-lista">
@@ -247,6 +323,18 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
       {visor && <VisorFotos comentario={visor.comentario} indiceInicial={visor.indice} onCerrar={() => setVisor(null)} />}
     </section>
   )
+}
+
+// Una foto que todavía está solo en el celular (en el cuaderno): se muestra directo desde sus bytes
+// (la dirección "blob:" se pone directo en la imagen y se libera al salir)
+function FotoLocal({ blob, descripcion }) {
+  const imagen = useRef(null)
+  useEffect(() => {
+    const creada = URL.createObjectURL(blob)
+    if (imagen.current) imagen.current.src = creada
+    return () => URL.revokeObjectURL(creada)
+  }, [blob])
+  return <img ref={imagen} className="foto-protegida foto-local" alt={descripcion} />
 }
 
 export default PanelComentarios

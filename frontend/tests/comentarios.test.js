@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { bajarFoto, borrarComentario, formularioDeComentario, listarComentarios, publicarComentario } from '../src/api/comentarios.js'
 import { ErrorApi } from '../src/api/cliente.js'
+import { enviarOperacion } from '../src/api/sincronizacion.js'
+import { crearComentario, crearCambioEstado } from '../src/offline/datosCola.js'
 import {
   MAX_FOTOS, MAX_TEXTO, contadorTexto, descripcionFoto, fechaComentario, fotosQueQuedan, mensajeDeError, puedeComentar,
   sacarDelMuro, sumarAlMuro, textoCantidad, validarComentario,
@@ -181,4 +183,29 @@ test('sacarDelMuro quita el comentario borrado', () => {
 test('descripcionFoto arma el texto para lectores de pantalla', () => {
   const comentario = { autorNombre: 'Carlos Rodríguez', fotos: [{}, {}, {}] }
   assert.equal(descripcionFoto(comentario, 1), 'Foto 2 de 3 del comentario de Carlos Rodríguez')
+})
+
+test('el cartero manda un comentario del cuaderno por el PUT de siempre, como formulario', async (t) => {
+  const pedidos = fetchFalso(t, { cuerpo: { id: 9 } })
+  const foto = new Blob(['jpeg'], { type: 'image/jpeg' })
+  const operacion = crearComentario({ id: 5 }, { id: 7 }, { texto: 'Sin señal', fotos: [foto] }, { numero: COMANDA })
+
+  await enviarOperacion(operacion)
+
+  assert.equal(pedidos[0].url, `/api/ordenes-trabajo/7/comentarios/${COMANDA}`)
+  assert.equal(pedidos[0].opciones.method, 'PUT')
+  assert.equal(pedidos[0].opciones.headers['Content-Type'], undefined)
+  assert.equal(pedidos[0].opciones.body.get('texto'), 'Sin señal')
+  assert.equal(pedidos[0].opciones.body.getAll('fotos').length, 1)
+})
+
+test('los cambios de estado del cuaderno siguen yendo como JSON a /sincronizacion', async (t) => {
+  const pedidos = fetchFalso(t, { cuerpo: { id: 7 } })
+  const operacion = crearCambioEstado({ id: 5 }, { id: 7, estadoId: 2 }, { id: 3, nombre: 'En curso' }, { numero: 'a' })
+
+  await enviarOperacion(operacion)
+
+  assert.equal(pedidos[0].url, '/api/sincronizacion/cambios-estado/a')
+  assert.equal(pedidos[0].opciones.headers['Content-Type'], 'application/json')
+  assert.deepEqual(JSON.parse(pedidos[0].opciones.body).estadoId, 3)
 })

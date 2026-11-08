@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icono from './Icono'
 import { guardarOperacion, quitarOperacion } from '../offline/cola'
-import { ALTA_ORDEN, CONFLICTO, PENDIENTE, aplicarIgual, estaEsperando } from '../offline/datosCola'
+import { ALTA_ORDEN, COMENTARIO, CONFLICTO, PENDIENTE, aplicarIgual, estaEsperando } from '../offline/datosCola'
 import '../estilos-cola.css'
 
 // El cartel del cuaderno: lo que se hizo sin señal y todavía no llegó, y lo que llegó pero ya no valía.
@@ -10,9 +10,13 @@ import '../estilos-cola.css'
 // ("Aplicar igual" o "Descartar"); si ya no se puede (OT cerrada, de otra cuadrilla, borrada) solo "Entendido".
 
 function queSeHizo(operacion) {
-  return operacion.tipo === ALTA_ORDEN
-    ? `OT nueva: ${operacion.descripcion}`
-    : `OT #${operacion.ordenId}: pasar a ${operacion.estadoNombre}`
+  if (operacion.tipo === ALTA_ORDEN) return `OT nueva: ${operacion.descripcion}`
+  if (operacion.tipo === COMENTARIO) {
+    const fotos = operacion.fotos?.length ?? 0
+    const conFotos = fotos === 0 ? '' : fotos === 1 ? ' con 1 foto' : ` con ${fotos} fotos`
+    return `OT #${operacion.ordenId}: comentario${conFotos}`
+  }
+  return `OT #${operacion.ordenId}: pasar a ${operacion.estadoNombre}`
 }
 
 function cuando(fecha) {

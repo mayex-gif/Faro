@@ -34,6 +34,10 @@
 .panel-comentarios .boton-texto .icono { width: 16px; height: 16px; }
 .panel-comentarios .comentario-confirmar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.875rem; }
 
+.panel-comentarios .comentario-sin-enviar { border-style: dashed; background: var(--blanco); }
+.panel-comentarios .foto-local { width: 88px; height: 88px; opacity: 0.85; }
+.panel-comentarios .mensaje-informacion .boton { margin-left: 8px; min-height: 40px; }
+
 /* Una foto que se baja con la sesión (FotoProtegida) */
 .foto-protegida { display: block; border-radius: 8px; object-fit: cover; background: var(--borde); }
 .foto-cargando { animation: foto-latido 1.2s ease-in-out infinite; }
