@@ -135,6 +135,22 @@ class ComentarioOrdenRepositoryPostgresIntegrationTest {
     }
 
     @Test
+    void paraBorrarSeTraeElComentarioConSuAutorYSusFotos() {
+        ComentarioOrden comentario = ComentarioOrden.nuevo(UUID.randomUUID(), orden, autor, null, hora("09:00"));
+        comentario.agregarFoto("image/jpeg", 10);
+        comentarios.save(comentario);
+        entityManager.flush();
+        entityManager.clear();
+
+        ComentarioOrden leido = comentarios.findConFotosById(comentario.getId()).orElseThrow();
+        entityManager.clear(); // si no vino todo en la misma consulta, lo de abajo fallaría
+
+        assertThat(leido.getAutor().getEmail()).isEqualTo("capataz.prueba@faro.gob.ar");
+        assertThat(leido.getFotos()).extracting(FotoComentario::getArchivo)
+                .containsExactly("comentarios/" + comentario.getOperacionId() + "/0.jpg");
+    }
+
+    @Test
     void borrarElComentarioBorraSusFotos() {
         ComentarioOrden comentario = ComentarioOrden.nuevo(UUID.randomUUID(), orden, autor, "Con fotos", hora("09:00"));
         comentario.agregarFoto("image/jpeg", 10);

@@ -80,7 +80,9 @@ public class AuditoriaSnapshotSerializer {
             return elementos;
         }
         if (valor.getClass().isAnnotationPresent(jakarta.persistence.Entity.class)) {
-            return Map.of("id", extraerId(valor));
+            // singletonMap (y no Map.of) porque acepta un id vacío: una relación con algo que todavía
+            // no se guardó (ej: las fotos de un comentario nuevo, que se guardan después que él) no tiene id aún
+            return java.util.Collections.singletonMap("id", extraerId(valor));
         }
         return valor.toString();
     }

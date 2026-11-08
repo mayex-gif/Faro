@@ -19,4 +19,8 @@ public interface ComentarioOrdenRepository extends JpaRepository<ComentarioOrden
     // Para no duplicar: ¿esta comanda del celular ya llegó antes?
     @EntityGraph(attributePaths = {"autor", "fotos"})
     Optional<ComentarioOrden> findByOperacionId(UUID operacionId);
+
+    // Para borrar: el comentario con su autor (¿quién lo escribió?) y sus fotos (¿qué archivos hay que borrar?)
+    @EntityGraph(attributePaths = {"autor", "fotos"})
+    Optional<ComentarioOrden> findConFotosById(Long id);
 }

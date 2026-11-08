@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -81,6 +82,27 @@ public class ManejadorDeErrores {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public RespuestaError rangoReporteInvalido(RangoReporteInvalidoException e) {
         return new RespuestaError(400, e.getMessage(), Map.of("desde", "Debe ser anterior o igual a hasta"));
+    }
+
+    // 400: un dato no cumple una regla del service (ej: comentario sin texto ni fotos, o una "foto" que no es imagen)
+    @ExceptionHandler(DatoInvalidoException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RespuestaError datoInvalido(DatoInvalidoException e) {
+        return new RespuestaError(400, e.getMessage(), Map.of(e.getCampo(), e.getMessage()));
+    }
+
+    // 413: lo que se mandó pesa más de lo permitido (spring.servlet.multipart.* en application.properties)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    public RespuestaError demasiadoGrande(MaxUploadSizeExceededException e) {
+        return new RespuestaError(413, "Las fotos pesan demasiado: cada una puede tener hasta 3 MB", Map.of());
+    }
+
+    // 503: el almacén de fotos no está configurado o no responde. No es culpa de quien pidió: puede reintentar más tarde.
+    @ExceptionHandler(AlmacenNoDisponibleException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public RespuestaError almacenNoDisponible(AlmacenNoDisponibleException e) {
+        return new RespuestaError(503, e.getMessage(), Map.of());
     }
 
     // 401: credenciales incorrectas o sesión no autenticada
