@@ -130,3 +130,7 @@ El frontend y el backend están desplegados en Render y la base de datos en Neon
 La API exige iniciar sesión (token JWT) y valida el rol en cada operación: 401 sin token, 403 si al rol no le corresponde. Ver [la tabla de quién puede qué y cómo usar Swagger con login](./LOGIN_Y_ACCESOS_BACKEND.md#9-permisos-por-rol).
 
 El encargado y la mesa de entradas gestionan el personal (altas, bajas, roles y claves) en **Más → Usuarios**: ver [Gestión de usuarios](./LOGIN_Y_ACCESOS_BACKEND.md#10-gestión-de-usuarios).
+
+## Comentarios y fotos de las OT
+
+Cada orden de trabajo tiene un muro de comentarios con fotos (evidencia del trabajo), también sin señal. Las fotos van a un almacén S3 aparte: RustFS en Docker y Backblaze B2 en Render. Ver [COMENTARIOS_Y_FOTOS.md](./COMENTARIOS_Y_FOTOS.md) (cómo probarlo en la compu) y [DESPLIEGUE.md](./DESPLIEGUE.md#9-almacén-de-fotos-backblaze-b2) (cómo configurarlo en Render).

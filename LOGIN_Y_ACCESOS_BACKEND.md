@@ -230,11 +230,16 @@ Tarjeta del Sprint 3 "Agregar las validaciones por roles en el backend". Antes, 
 | `PATCH /api/ordenes-trabajo/{id}/estado` | ✓ (cualquier OT) | ✗ | solo OT de su cuadrilla |
 | `PUT /api/sincronizacion/cambios-estado/{operacionId}` (cambio hecho sin señal) | ✓ (cualquier OT) | ✗ | solo OT de su cuadrilla (si ya no es suya: 409 `OTRA_CUADRILLA`) |
 | `PUT /api/sincronizacion/altas-orden/{operacionId}` (OT cargada sin señal) | ✓ | ✓ | ✗ |
+| `GET /api/ordenes-trabajo/{id}/comentarios` y `GET /api/comentarios/fotos/{fotoId}` | ✓ | ✓ | solo OT de su cuadrilla (si no: 403) |
+| `PUT /api/ordenes-trabajo/{id}/comentarios/{operacionId}` (escribir, con o sin señal) | ✓ | ✓ | solo OT de su cuadrilla (si no: 409 `OTRA_CUADRILLA`) |
+| `DELETE /api/comentarios/{id}` | ✓ (cualquiera) | solo los suyos | solo los suyos |
 | `GET /api/usuarios` (listar el personal) | ✓ | ✓ | ✗ |
 | `POST /api/usuarios`, `PUT /api/usuarios/{id}` | ✓ | ✓ | ✗ |
 | `PATCH /api/usuarios/{id}/activo` y `/clave` | ✓ | ✓ | ✗ |
 
 Los dos `PUT /api/sincronizacion/...` reciben lo que se hizo en el celular sin señal: aplican las mismas reglas, una sola vez por número de operación, y responden 409 con el motivo si la OT cambió mientras tanto (ver [frontend/PWA_SINCRONIZACION.md](./frontend/PWA_SINCRONIZACION.md#3-backend-la-ventanilla-de-comandas-atrasadas)).
+
+Comentarios y fotos: ver [COMENTARIOS_Y_FOTOS.md](./COMENTARIOS_Y_FOTOS.md). Excepción a "todos los GET abiertos": el capataz solo ve los comentarios y las fotos de las OT de su cuadrilla.
 
 Un rol nuevo (por ejemplo, uno de solo lectura) no aparece en ningún `@PreAuthorize`: puede consultar pero no escribir, sin tocar nada más. Excepción a "todos los GET abiertos": el listado del personal (`GET /api/usuarios`) es solo para encargado y mesa.
 
