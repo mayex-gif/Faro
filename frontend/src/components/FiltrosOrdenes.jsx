@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import Icono from './Icono'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO } from '../utils/ordenesTrabajo'
 import { rangoFechasValido } from '../utils/filtrosOrdenes'
 
@@ -5,6 +7,10 @@ import { rangoFechasValido } from '../utils/filtrosOrdenes'
 function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }) {
   const hayFiltros = Object.values(filtros).some((valor) => valor !== '')
   const rangoValido = rangoFechasValido(filtros)
+  // En el celular (≤ 760 px) queda a la vista solo el buscador: los otros siete filtros se abren con un botón,
+  // así la lista no queda dos pantallas más abajo. En la compu el botón no se muestra y los filtros están siempre.
+  const [abiertos, setAbiertos] = useState(false)
+  const otrosActivos = Object.entries(filtros).filter(([clave, valor]) => clave !== 'texto' && valor !== '').length
 
   function cambiar(evento) {
     const { name, value } = evento.target
@@ -12,7 +18,7 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
   }
 
   return (
-    <section className="bloque-filtros" aria-labelledby="titulo-filtros-ordenes">
+    <section className={abiertos ? 'bloque-filtros' : 'bloque-filtros filtros-plegados'} aria-labelledby="titulo-filtros-ordenes">
       <div className="filtros-encabezado">
         <div>
           <h3 id="titulo-filtros-ordenes">Buscar y filtrar órdenes</h3>
@@ -25,7 +31,7 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
         )}
       </div>
 
-      <div className="filtros filtros-ordenes">
+      <div className="filtros filtros-ordenes" id="filtros-ordenes-campos">
         <div className="campo filtro-busqueda">
           <label htmlFor="filtro-orden-texto">Buscar una orden</label>
           <input id="filtro-orden-texto" name="texto" type="search"
@@ -94,6 +100,11 @@ function FiltrosOrdenes({ filtros, lugares, estados = [], onCambiar, onLimpiar }
           </select>
         </div>
       </div>
+      <button type="button" className="boton boton-secundario boton-mas-filtros" aria-expanded={abiertos}
+        aria-controls="filtros-ordenes-campos" onClick={() => setAbiertos((anterior) => !anterior)}>
+        <Icono nombre="abajo" className={abiertos ? 'icono-girado' : ''} />
+        {abiertos ? 'Menos filtros' : `Más filtros${otrosActivos > 0 ? ` (${otrosActivos} en uso)` : ''}`}
+      </button>
       <p className="ayuda-campo" id="ayuda-fechas-ordenes">
         El rango usa la fecha de creación e incluye ambos días. Podés completar una sola fecha.
       </p>
