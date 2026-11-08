@@ -19,6 +19,8 @@ export const TIPOS_REGISTRO_CONOCIDOS = [
   { valor: 'EstadoOrden', etiqueta: 'Estado de orden' },
   { valor: 'TransicionEstado', etiqueta: 'Transición de estado' },
   { valor: 'ReglaMantenimiento', etiqueta: 'Regla de mantenimiento' },
+  { valor: 'ComentarioOrden', etiqueta: 'Comentario de una orden' },
+  { valor: 'FotoComentario', etiqueta: 'Foto de un comentario' },
 ]
 
 export const FILTROS_VACIOS = { accion: '', tipoRegistro: '', registroId: '', actor: '', desde: '', hasta: '' }

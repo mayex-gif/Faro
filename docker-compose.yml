@@ -32,8 +32,35 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-faro}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       TZ: America/Argentina/Buenos_Aires
+      # Almacén de fotos: el servicio rustfs de acá abajo. Las claves salen del archivo .env (no se sube a GitHub)
+      FARO_S3_ENDPOINT: http://rustfs:9000
+      FARO_S3_BUCKET: faro-fotos
+      FARO_S3_ACCESS_KEY: ${FARO_S3_ACCESS_KEY:-}
+      FARO_S3_SECRET_KEY: ${FARO_S3_SECRET_KEY:-}
     ports:
       - "8080:8080"
+
+  # Almacén de fotos de las OT (estándar S3, como Backblaze B2 o Cloudflare R2 en la nube).
+  # Es RustFS porque MinIO dejó de publicar imágenes de Docker.
+  # Necesita dos líneas en el archivo .env de la raíz (cada uno escribe las suyas; .env no se sube a GitHub):
+  #   FARO_S3_ACCESS_KEY=<un nombre de usuario>   y   FARO_S3_SECRET_KEY=<una clave de 8 caracteres o más>
+  # Sin ese archivo, este servicio se detiene y el resto de FARO funciona igual (sin fotos).
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    container_name: faro-rustfs
+    restart: on-failure:3
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_ACCESS_KEY: ${FARO_S3_ACCESS_KEY:-}
+      RUSTFS_SECRET_KEY: ${FARO_S3_SECRET_KEY:-}
+    ports:
+      - "127.0.0.1:9000:9000" # API S3 (la usa el backend)
+      - "127.0.0.1:9001:9001" # consola web para mirar las fotos guardadas
+    volumes:
+      - fotos_data:/data
 
   frontend:
     build:
@@ -54,3 +81,4 @@ services:
 
 volumes:
   db_data:
+  fotos_data:

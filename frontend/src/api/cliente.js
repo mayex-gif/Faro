@@ -23,12 +23,15 @@ export class ErrorApi extends Error {
 }
 
 // Manda el pedido con el token de la sesión y, si el backend responde con error, lo convierte en ErrorApi.
+// Si el cuerpo es un formulario con archivos (FormData, ej: un comentario con fotos), NO se pone
+// "Content-Type": el navegador lo arma solo, con el "separador" entre las partes del formulario.
 async function enviarPedido(ruta, { autenticacion = true, headers = {}, ...opciones } = {}) {
   const token = autenticacion ? leerToken() : ''
+  const esFormulario = typeof FormData !== 'undefined' && opciones.body instanceof FormData
   const respuesta = await fetch(`${API_BASE}${ruta}`, {
     ...opciones,
     headers: {
-      'Content-Type': 'application/json',
+      ...(esFormulario ? {} : { 'Content-Type': 'application/json' }),
       ...headers,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -69,4 +72,11 @@ export async function pedirArchivo(ruta, nombrePorDefecto) {
     contenido: await respuesta.blob(),
     nombre: nombreDeArchivo(respuesta.headers.get('Content-Disposition'), nombrePorDefecto),
   }
+}
+
+// Pide una imagen (ej: una foto de un comentario) con la sesión iniciada y devuelve sus bytes (un Blob).
+// Hace falta porque las fotos son privadas: un <img src="..."> no manda el encabezado Authorization.
+export async function pedirImagen(ruta) {
+  const respuesta = await enviarPedido(ruta) // sin "Accept: image/*": así los errores (403, 404) llegan en JSON
+  return respuesta.blob()
 }

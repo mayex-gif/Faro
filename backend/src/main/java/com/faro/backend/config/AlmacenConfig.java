@@ -1,0 +1,74 @@
+package com.faro.backend.config;
+
+import com.faro.backend.services.AlmacenArchivos;
+import com.faro.backend.services.AlmacenS3;
+import com.faro.backend.services.AlmacenSinConfigurar;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Configuration;
+
+import java.net.URI;
+import java.time.Duration;
+
+/**
+ * Arma el almacén de fotos con las properties faro.s3.* (variables FARO_S3_*).
+ * - Con las dos claves cargadas: almacén S3 de verdad (RustFS, Backblaze B2, Cloudflare R2...).
+ * - Sin claves: AlmacenSinConfigurar (el backend arranca igual; los pedidos de fotos responden 503).
+ * Crear el cliente NO se conecta a nada: la primera conexión es al guardar o leer una foto.
+ */
+@Configuration
+public class AlmacenConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(AlmacenConfig.class);
+
+    @Bean
+    public AlmacenArchivos almacenArchivos(
+            @Value("${faro.s3.endpoint:}") String endpoint,
+            @Value("${faro.s3.region:us-east-1}") String region,
+            @Value("${faro.s3.bucket:faro-fotos}") String bucket,
+            @Value("${faro.s3.access-key:}") String accessKey,
+            @Value("${faro.s3.secret-key:}") String secretKey,
+            @Value("${faro.s3.path-style:true}") boolean pathStyle) {
+
+        if (accessKey.isBlank() || secretKey.isBlank()) {
+            log.warn("Almacén de fotos sin configurar (faltan FARO_S3_ACCESS_KEY / FARO_S3_SECRET_KEY): "
+                    + "los pedidos con fotos van a responder 503");
+            return new AlmacenSinConfigurar();
+        }
+        S3Client cliente = crearCliente(endpoint, region, accessKey, secretKey, pathStyle);
+        log.info("Almacén de fotos S3: bucket '{}' en {}", bucket, endpoint.isBlank() ? "AWS" : endpoint);
+        return new AlmacenS3(cliente, bucket);
+    }
+
+    static S3Client crearCliente(String endpoint, String region, String accessKey, String secretKey,
+                                 boolean pathStyle) {
+        S3ClientBuilder builder = S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+                // Cliente HTTP liviano (el de Java), con tiempos máximos para no colgar un pedido
+                .httpClientBuilder(UrlConnectionHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(5))
+                        .socketTimeout(Duration.ofSeconds(30)))
+                // "path style" = http://servidor/bucket/foto (RustFS lo necesita; B2 y R2 lo aceptan)
+                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(pathStyle).build())
+                // Los controles de integridad nuevos de AWS no los entienden todos los proveedores S3:
+                // se mandan solo cuando la operación los exige
+                .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
+                .responseChecksumValidation(ResponseChecksumValidation.WHEN_REQUIRED);
+        if (!endpoint.isBlank()) {
+            builder.endpointOverride(URI.create(endpoint));
+        }
+        return builder.build();
+    }
+}

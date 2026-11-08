@@ -1,6 +1,6 @@
 /* global leerSesionParaEnvios, olvidarSesionParaEnvios, leerCola, guardarOperacion, quitarOperacion,
-   siguienteParaEnviar, cuerpoDeEnvio, clasificarError, conflictoDesdeError, marcarConflicto, sumarIntento,
-   ALTA_ORDEN, CONFLICTO, SESION */
+   siguienteParaEnviar, pedidoDeEnvio, clasificarError, conflictoDesdeError, marcarConflicto, sumarIntento,
+   CONFLICTO, SESION */
 // Envío con FARO cerrado (Background Sync, Chrome/Android). Va pegado dentro de sw.js por scripts/armar-sw.js,
 // junto con src/offline/datosCola.js y src/offline/cola.js: usa las MISMAS reglas que el cartero de la página.
 // Si falla por falta de señal, tira un error: así el navegador lo vuelve a intentar más tarde.
@@ -21,13 +21,14 @@ async function mandarCuaderno() {
   for (;;) {
     const operacion = siguienteParaEnviar(await leerCola(sesion.usuarioId))
     if (!operacion) return
-    const ruta = operacion.tipo === ALTA_ORDEN ? 'altas-orden' : 'cambios-estado'
+    // Cambios y altas van como JSON; los comentarios con fotos, como formulario (el navegador arma su Content-Type)
+    const { ruta, body, esJson } = pedidoDeEnvio(operacion)
     let respuesta
     try {
-      respuesta = await fetch(`${sesion.apiBase}/sincronizacion/${ruta}/${operacion.operacionId}`, {
+      respuesta = await fetch(`${sesion.apiBase}${ruta}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sesion.token}` },
-        body: JSON.stringify(cuerpoDeEnvio(operacion)),
+        headers: { ...(esJson ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${sesion.token}` },
+        body,
       })
     } catch (error) {
       await guardarOperacion(sumarIntento(operacion))

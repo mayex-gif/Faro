@@ -34,6 +34,12 @@ const trazos = {
   reportes: 'M3 3v18h18 M7 16v-4 M12 16V8 M17 16v-7',
   descargar: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
   pausar: 'M9 5v14 M15 5v14',
+  // Comentarios y fotos de las OT (tarjetas 16 + 21)
+  comentario: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z',
+  camara: 'M4 8h3l2-3h6l2 3h3v11H4Z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  foto: 'M4 5h16v14H4Z M4 16l5-5 4 4 2-2 5 5 M15.5 9.5h.01',
+  anterior: 'm15 18-6-6 6-6',
+  siguiente: 'm9 18 6-6-6-6',
 }
 
 function Icono({ nombre, className = '' }) {
