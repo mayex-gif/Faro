@@ -22,12 +22,16 @@ public class JwtService {
     private final String secretKeyString;
     private final long expirationMs;
 
-    public JwtService(
-            @Value("${faro.jwt.secret:faro-municipalidad-estacion-general-paz-clave-secreta-jwt-segura-2026}") String secretKeyString,
-            @Value("${faro.jwt.expiration-ms:86400000}") long expirationMs) {
-        this.secretKeyString = secretKeyString;
-        this.expirationMs = expirationMs;
+public JwtService(
+        @Value("${faro.jwt.secret}") String secretKeyString,
+        @Value("${faro.jwt.expiration-ms:86400000}") long expirationMs) {
+    if (secretKeyString == null || secretKeyString.getBytes(StandardCharsets.UTF_8).length < 32) {
+        throw new IllegalStateException(
+            "FARO_JWT_SECRET falta o tiene menos de 32 caracteres (256 bits).");
     }
+    this.secretKeyString = secretKeyString;
+    this.expirationMs = expirationMs;
+}
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));

@@ -177,11 +177,11 @@ Para facilitar el desarrollo local, las pruebas automatizadas y la verificación
 En `application.properties`:
 ```properties
 # JWT - Clave secreta (mínimo 256 bits para HS256) y duración del token (24 horas)
-faro.jwt.secret=${FARO_JWT_SECRET:faro-municipalidad-estacion-general-paz-clave-secreta-jwt-segura-2026}
+faro.jwt.secret=${FARO_JWT_SECRET}
 faro.jwt.expiration-ms=${FARO_JWT_EXPIRATION_MS:86400000}
 ```
 
-* **`FARO_JWT_SECRET`**: Clave criptográfica para la firma de tokens. En Render y producción se recomienda definir una clave aleatoria de al menos 64 caracteres.
+* **`FARO_JWT_SECRET`**: **Obligatoria.** Clave criptográfica para la firma de tokens, de al menos 32 caracteres (256 bits), generada al azar. No tiene valor por defecto: si falta, el backend no arranca. En la compu va en el `.env` (copiar de `.env.example`); en Render, en Environment. Nunca se sube al repositorio.
 * **`FARO_JWT_EXPIRATION_MS`**: Tiempo de vida del token en milisegundos (por defecto 24 horas: `86400000`).
 
 ---
