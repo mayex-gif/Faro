@@ -1,26 +1,21 @@
-import { useState } from 'react'
-import { etiquetaPeriodo, marcasEje } from '../utils/reportes'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { COLORES, serieEvolucion } from '../utils/reportes'
+import TablaDatosGrafico from './TablaDatosGrafico'
 
 const SERIES = [
-  { clave: 'otsCreadas', nombre: 'Creadas', clase: 'serie-creadas' },
-  { clave: 'otsCerradas', nombre: 'Cerradas', clase: 'serie-cerradas' },
+  { clave: 'otsCreadas', nombre: 'Creadas', color: COLORES.creadas },
+  { clave: 'otsCerradas', nombre: 'Cerradas', color: COLORES.cerradas },
 ]
 
-// Órdenes creadas y cerradas en cada día, semana o mes del período: barras agrupadas sobre un único eje.
-// Al pasar el mouse por un período aparece el detalle. Con teclado o lector de pantalla, los mismos datos
-// están escritos en la tabla "Ver los datos en una tabla" que acompaña al gráfico.
+// Órdenes creadas y cerradas en cada día, semana o mes del período (Recharts: áreas sobre un mismo eje).
+// Al pasar el mouse o tocar un período aparece el detalle. Para teclado y lector de pantalla,
+// los mismos números están en "Ver los datos en una tabla", debajo del gráfico.
 function GraficoEvolucion({ serie }) {
-  const [activo, setActivo] = useState(null)
-
   if (serie.length === 0) {
     return <p className="barras-vacio">No se crearon ni cerraron órdenes en este período.</p>
   }
 
-  const maximo = Math.max(...serie.flatMap((punto) => SERIES.map((s) => punto[s.clave])))
-  const marcas = marcasEje(maximo)
-  const tope = marcas[marcas.length - 1]
-  // Con muchos períodos (ej. 31 días) no entran todas las etiquetas: se escribe una cada tantas.
-  const cadaCuantas = Math.ceil(serie.length / 12)
+  const puntos = serieEvolucion(serie)
   const totalCreadas = serie.reduce((suma, punto) => suma + punto.otsCreadas, 0)
   const totalCerradas = serie.reduce((suma, punto) => suma + punto.otsCerradas, 0)
   const resumen = `Evolución en ${serie.length} períodos: ${totalCreadas} órdenes creadas y ${totalCerradas} cerradas.`
@@ -29,68 +24,50 @@ function GraficoEvolucion({ serie }) {
     <div className="grafico-evolucion">
       <ul className="leyenda-grafico" aria-label="Referencias">
         {SERIES.map((s) => (
-          <li key={s.clave}><span className={`muestra-serie ${s.clase}`} aria-hidden="true" />{s.nombre}</li>
+          <li key={s.clave}><span className="muestra-serie" style={{ background: s.color }} aria-hidden="true" />{s.nombre}</li>
         ))}
       </ul>
 
-      <div className="grafico-desplazable" tabIndex={0} aria-label="Gráfico de evolución (se puede deslizar)">
-        <div className="grafico-area" role="img" aria-label={resumen}
-          style={{ '--cantidad-periodos': serie.length }} onMouseLeave={() => setActivo(null)}>
-          <div className="grafico-eje" aria-hidden="true">
-            {marcas.map((marca) => (
-              <span key={marca} className="grafico-linea" style={{ bottom: `${(marca / tope) * 100}%` }}>
-                <span className="grafico-marca">{marca}</span>
-              </span>
+      <div className="grafico-lienzo" role="img" aria-label={resumen}>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={puntos} margin={{ top: 8, right: 12, bottom: 0, left: -18 }} accessibilityLayer={false}>
+            <defs>
+              {SERIES.map((s) => (
+                <linearGradient key={s.clave} id={`relleno-${s.clave}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={s.color} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={s.color} stopOpacity={0.02} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid vertical={false} stroke={COLORES.grilla} />
+            <XAxis dataKey="etiqueta" tickLine={false} axisLine={{ stroke: COLORES.grilla }} tick={{ fill: COLORES.eje, fontSize: 11 }}
+              interval="preserveStartEnd" minTickGap={14} />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: COLORES.eje, fontSize: 11 }} width={44} />
+            <Tooltip content={<GloboEvolucion />} cursor={{ stroke: COLORES.eje, strokeDasharray: '3 3' }} />
+            {SERIES.map((s) => (
+              <Area key={s.clave} type="monotone" dataKey={s.clave} name={s.nombre} stroke={s.color} strokeWidth={2.5}
+                fill={`url(#relleno-${s.clave})`} dot={puntos.length <= 14 ? { r: 3, fill: s.color, strokeWidth: 0 } : false}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: '#FFFFFF' }} />
             ))}
-          </div>
-
-          <ol className="grafico-columnas" aria-hidden="true">
-            {serie.map((punto, indice) => (
-              <li key={punto.periodo} className={activo === indice ? 'grafico-grupo grafico-grupo-activo' : 'grafico-grupo'}
-                onMouseEnter={() => setActivo(indice)}>
-                <span className="grafico-barras">
-                  {SERIES.map((s) => (
-                    <span key={s.clave} className={`grafico-barra ${s.clase}`}
-                      style={{ height: `${(punto[s.clave] / tope) * 100}%` }} />
-                  ))}
-                </span>
-                <span className="grafico-periodo">
-                  {indice % cadaCuantas === 0 ? etiquetaPeriodo(punto.periodo) : ''}
-                </span>
-                {activo === indice && (
-                  <span className={indice > serie.length / 2 ? 'grafico-globo grafico-globo-izquierda' : 'grafico-globo'}>
-                    <strong>{etiquetaPeriodo(punto.periodo, { larga: true })}</strong>
-                    {SERIES.map((s) => (
-                      <span key={s.clave}><span className={`muestra-serie ${s.clase}`} />{s.nombre}: {punto[s.clave]}</span>
-                    ))}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
 
-      <details className="datos-grafico">
-        <summary>Ver los datos en una tabla</summary>
-        <div className="tabla-contenedor" tabIndex={0}>
-          <table className="tabla tabla-evolucion">
-            <caption className="solo-lectores">Órdenes creadas y cerradas por período</caption>
-            <thead>
-              <tr><th scope="col">Período</th><th scope="col">Creadas</th><th scope="col">Cerradas</th></tr>
-            </thead>
-            <tbody>
-              {serie.map((punto) => (
-                <tr key={punto.periodo}>
-                  <th scope="row">{etiquetaPeriodo(punto.periodo, { larga: true })}</th>
-                  <td>{punto.otsCreadas}</td>
-                  <td>{punto.otsCerradas}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <TablaDatosGrafico titulo="Órdenes creadas y cerradas por período"
+        columnas={['Período', 'Creadas', 'Cerradas']}
+        filas={puntos.map((p) => ({ clave: p.periodo, celdas: [p.etiquetaLarga, p.otsCreadas, p.otsCerradas] }))} />
+    </div>
+  )
+}
+
+function GloboEvolucion({ active, payload }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="grafico-globo">
+      <strong>{payload[0].payload.etiquetaLarga}</strong>
+      {payload.map((item) => (
+        <span key={item.dataKey}><span className="muestra-serie" style={{ background: item.color }} />{item.name}: {item.value}</span>
+      ))}
     </div>
   )
 }

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../src/api/reportes.js'
 import { nombreDeArchivo } from '../src/api/cliente.js'
 import {
-  PERIODO_INICIAL, describirRango, errorPeriodo, etiquetaPeriodo, filasBarras, formatearDia, granularidadSugerida,
-  marcasEje, nombreTipoTrabajo, parametrosReporte, porcentaje, tableroVacio,
+  PERIODO_INICIAL, altoBarras, describirRango, errorPeriodo, etiquetaPeriodo, filasBarras, filasDesvios, formatearDia,
+  granularidadSugerida, nombreTipoTrabajo, parametrosReporte, porcentaje, serieEvolucion, tableroVacio,
 } from '../src/utils/reportes.js'
 
 // ---------- API ----------
@@ -111,24 +111,40 @@ test('porcentaje redondea y no divide por cero', () => {
   assert.equal(porcentaje(0, 0), 0)
 })
 
-test('filasBarras ordena de mayor a menor y mide cada barra contra la más grande', () => {
+test('filasBarras ordena de mayor a menor y calcula el % de cada fila', () => {
   const filas = filasBarras(
     [{ n: 'Poda', c: 5 }, { n: 'Bacheo', c: 10 }, { n: 'Alumbrado', c: 5 }],
     { nombre: (f) => f.n, valor: (f) => f.c },
   )
   assert.deepEqual(filas.map((f) => f.nombre), ['Bacheo', 'Alumbrado', 'Poda'])
-  assert.deepEqual(filas.map((f) => f.ancho), [100, 50, 50])
   assert.deepEqual(filas.map((f) => f.parte), [50, 25, 25])
   assert.deepEqual(filasBarras([], { nombre: () => '', valor: () => 0 }), [])
 })
 
-test('marcasEje arma valores redondos que cubren el máximo', () => {
-  assert.deepEqual(marcasEje(12), [0, 5, 10, 15])
-  assert.deepEqual(marcasEje(4), [0, 1, 2, 3, 4])
-  assert.deepEqual(marcasEje(0), [0, 1])
-  const grandes = marcasEje(230)
-  assert.ok(grandes.at(-1) >= 230)
-  assert.ok(grandes.length <= 6)
+test('filasBarras con ordenar: false respeta el orden recibido', () => {
+  const filas = filasBarras([{ n: 'B', c: 1 }, { n: 'A', c: 9 }], { nombre: (f) => f.n, valor: (f) => f.c }, { ordenar: false })
+  assert.deepEqual(filas.map((f) => f.nombre), ['B', 'A'])
+})
+
+test('serieEvolucion agrega las etiquetas corta y larga de cada período', () => {
+  const [punto] = serieEvolucion([{ periodo: '2026-W45', otsCreadas: 3, otsCerradas: 1 }])
+  assert.equal(punto.etiqueta, 'Sem. 45')
+  assert.equal(punto.etiquetaLarga, 'Semana 45 de 2026')
+  assert.equal(punto.otsCreadas, 3)
+  assert.deepEqual(serieEvolucion(undefined), [])
+})
+
+test('filasDesvios deja solo las categorías con órdenes, en su orden y con su color', () => {
+  const filas = filasDesvios({ aTiempo: 6, adelantadas: 0, demoradas: 2, pendientesVencidas: 0, pendientesEnPlazo: 2, canceladas: 0 })
+  assert.deepEqual(filas.map((f) => f.nombre), ['A tiempo', 'Demoradas', 'Pendientes en plazo'])
+  assert.deepEqual(filas.map((f) => f.parte), [60, 20, 20])
+  assert.ok(filas.every((f) => /^#[0-9A-F]{6}$/i.test(f.color)))
+  assert.deepEqual(filasDesvios(null), [])
+})
+
+test('altoBarras crece con las filas y tiene un mínimo', () => {
+  assert.equal(altoBarras(1), 120)
+  assert.equal(altoBarras(5), 224)
 })
 
 test('tableroVacio solo cuando no hubo órdenes ni programadas', () => {
