@@ -7,5 +7,11 @@ import '../estilos-navegacion.css'
 import '../estilos-mis-tareas.css'
 import './estilos-local.css'
 
-createRoot(document.getElementById('root')).render(<ConsultaLocal />)
+import AuthProvider from '../context/AuthContext';
+
+createRoot(document.getElementById('root')).render(
+  <AuthProvider>
+    <ConsultaLocal />
+  </AuthProvider>
+)
 registrarAplicacion()
