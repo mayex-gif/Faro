@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../api/reportes'
 import SelectorPeriodo from '../components/SelectorPeriodo'
 import GraficoEvolucion from '../components/GraficoEvolucion'
-import BarrasHorizontales from '../components/BarrasHorizontales'
+import GraficoBarras from '../components/GraficoBarras'
+import GraficoDona from '../components/GraficoDona'
 import Icono from '../components/Icono'
 import {
-  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, nombreTipoTrabajo, parametrosReporte, porcentaje, tableroVacio,
+  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, porcentaje,
+  tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
 
@@ -13,7 +15,8 @@ import '../estilos-reportes.css'
 // por estado, tipo de trabajo y cuadrilla, y cómo viene el plan de mantenimiento (planificado vs. ejecutado).
 // Lo ve solamente el encargado del corralón (utils/permisos.js → puedeVerReportes); el backend valida lo mismo
 // y responde 403 para cualquier otro rol (ver ReporteController.java).
-// Los números los calcula el backend; esta pantalla solo los ordena y los dibuja.
+// Los números los calcula el backend; esta pantalla solo los ordena y los dibuja (gráficos con Recharts).
+// App.jsx la carga recién cuando se abre (React.lazy): Recharts pesa y el resto de los roles no lo descarga.
 function PaginaReportes() {
   const [periodo, setPeriodo] = useState(PERIODO_INICIAL)
   const [tablero, setTablero] = useState(null)
@@ -181,7 +184,8 @@ function PaginaReportes() {
                 <div className="panel-encabezado">
                   <div><h2 id="titulo-por-estado">Por estado</h2><p>Dónde están hoy las órdenes creadas en el período.</p></div>
                 </div>
-                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
+                <GraficoDona titulo="Órdenes por estado" mensajeVacio="Sin órdenes en el período."
+                  centro={{ valor: tablero.totalOts, texto: tablero.totalOts === 1 ? 'orden' : 'órdenes' }}
                   filas={filasBarras(tablero.otsPorEstado, { nombre: (f) => f.estadoNombre, valor: (f) => f.cantidad, color: (f) => f.estadoColor })} />
               </section>
 
@@ -189,7 +193,7 @@ function PaginaReportes() {
                 <div className="panel-encabezado">
                   <div><h2 id="titulo-por-tipo">Por tipo de trabajo</h2><p>Qué se pidió más.</p></div>
                 </div>
-                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
+                <GraficoBarras titulo="Órdenes por tipo de trabajo" mensajeVacio="Sin órdenes en el período."
                   filas={filasBarras(tablero.otsPorTipoTrabajo, { nombre: (f) => nombreTipoTrabajo(f.tipoTrabajo), valor: (f) => f.cantidad })} />
               </section>
 
@@ -197,7 +201,7 @@ function PaginaReportes() {
                 <div className="panel-encabezado">
                   <div><h2 id="titulo-por-cuadrilla">Por cuadrilla</h2><p>Carga de trabajo de cada cuadrilla.</p></div>
                 </div>
-                <BarrasHorizontales mensajeVacio="Sin órdenes en el período."
+                <GraficoBarras titulo="Órdenes por cuadrilla" mensajeVacio="Sin órdenes en el período."
                   filas={filasBarras(tablero.otsPorCuadrilla, { nombre: (f) => f.cuadrillaNombre ?? 'Sin asignar', valor: (f) => f.cantidad })} />
               </section>
 
@@ -209,15 +213,10 @@ function PaginaReportes() {
                   <p className="barras-vacio">No hubo trabajos programados con fecha en este período.</p>
                 ) : (
                   <>
-                    <BarrasHorizontales unidad={['orden', 'órdenes']} mensajeVacio=""
-                      filas={filasBarras([
-                        { nombre: 'A tiempo', cantidad: desvios.aTiempo, color: 'var(--exito)' },
-                        { nombre: 'Adelantadas', cantidad: desvios.adelantadas, color: 'var(--exito)' },
-                        { nombre: 'Demoradas', cantidad: desvios.demoradas, color: 'var(--error)' },
-                        { nombre: 'Pendientes en plazo', cantidad: desvios.pendientesEnPlazo, color: 'var(--texto-secundario)' },
-                        { nombre: 'Pendientes vencidas', cantidad: desvios.pendientesVencidas, color: 'var(--error)' },
-                        { nombre: 'Canceladas', cantidad: desvios.canceladas, color: 'var(--borde-campo)' },
-                      ].filter((f) => f.cantidad > 0), { nombre: (f) => f.nombre, valor: (f) => f.cantidad, color: (f) => f.color })} />
+                    <GraficoDona titulo="Órdenes del plan según cómo terminaron" mensajeVacio="" filas={filasDesvios(desvios)}
+                      centro={finalizadasPlan > 0
+                        ? { valor: `${Math.round(desvios.porcentajeCumplimiento)}%`, texto: 'a tiempo' }
+                        : { valor: desvios.totalConPlanificacion, texto: 'programadas' }} />
                     {finalizadasPlan > 0 && (
                       <p className="nota-plan">
                         Desvío promedio: <strong>{formatearDesvioPromedio(desvios.desvioPromedioDias)}</strong>

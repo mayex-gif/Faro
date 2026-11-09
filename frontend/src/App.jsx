@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import Icono from './components/Icono'
 import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
@@ -16,11 +16,13 @@ import PaginaMisTareas from './pages/PaginaMisTareas'
 import PaginaUsuarios from './pages/PaginaUsuarios'
 import PaginaMantenimiento from './pages/PaginaMantenimiento'
 import PaginaAuditoria from './pages/PaginaAuditoria'
-import PaginaReportes from './pages/PaginaReportes'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
 import { iniciarSincronizacion } from './offline/sincronizar'
 import './App.css'
 import './estilos-navegacion.css'
+
+// Reportes se baja recién al abrirla: trae Recharts (~100 KB) y solo la usa el encargado del corralón.
+const PaginaReportes = lazy(() => import('./pages/PaginaReportes'))
 
 // Qué pantalla se dibuja para cada clave. El orden del menú y los nombres están en utils/navegacion.js.
 // Para agregar una pantalla nueva: sumarla acá y en utils/navegacion.js.
@@ -112,7 +114,9 @@ function Aplicacion() {
       </header>
 
       <main className={completa ? 'pagina-completa' : 'pagina'} id="contenido" tabIndex={-1}>
-        <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
+        <Suspense fallback={<CargandoPantalla />}>
+          <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
+        </Suspense>
 
         {!completa && (
           <footer className="pie-pagina">
@@ -137,6 +141,16 @@ function Aplicacion() {
           claseBoton={estaEnMas ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
           contenidoBoton={<><span className="nav-abajo-icono"><Icono nombre="mas" /></span>Más</>} />}
       </nav>
+    </div>
+  )
+}
+
+// Mientras se baja una pantalla que se carga aparte (hoy, Reportes)
+function CargandoPantalla() {
+  return (
+    <div className="panel estado-listado" role="status">
+      <span className="indicador-carga" aria-hidden="true" />
+      <p>Abriendo la pantalla…</p>
     </div>
   )
 }

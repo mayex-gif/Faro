@@ -90,36 +90,62 @@ export function porcentaje(parte, total) {
   return Math.round((parte / total) * 100)
 }
 
-// Filas para las barras horizontales, de mayor a menor, con el ancho relativo a la más grande.
+// Filas para los gráficos de barras y de dona, de mayor a menor, con el % de cada una sobre el total.
 // items: lo que manda el backend; nombre(item) y valor(item) dicen qué mostrar.
-export function filasBarras(items = [], { nombre, valor, color = () => null }) {
+// ordenar: false respeta el orden recibido (ej. los desvíos, que tienen un orden propio).
+export function filasBarras(items = [], { nombre, valor, color = () => null }, { ordenar = true } = {}) {
   const total = items.reduce((suma, item) => suma + valor(item), 0)
-  const maximo = Math.max(0, ...items.map(valor))
-  return items
-    .map((item) => ({
-      nombre: nombre(item),
-      valor: valor(item),
-      color: color(item),
-      ancho: maximo ? (valor(item) / maximo) * 100 : 0,
-      parte: porcentaje(valor(item), total),
-    }))
-    .sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es'))
+  const filas = items.map((item) => ({
+    nombre: nombre(item),
+    valor: valor(item),
+    color: color(item),
+    parte: porcentaje(valor(item), total),
+  }))
+  return ordenar ? filas.sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es')) : filas
 }
 
 export function nombreTipoTrabajo(tipo) {
   return etiqueta(TIPOS_TRABAJO, tipo)
 }
 
-// Marcas del eje vertical: 0 y 3 o 4 valores "redondos" hasta cubrir el máximo (ej. 0, 5, 10, 15)
-export function marcasEje(maximo) {
-  if (maximo <= 0) return [0, 1]
-  const pasoCrudo = maximo / 4
-  const potencia = 10 ** Math.floor(Math.log10(pasoCrudo))
-  const paso = [1, 2, 5, 10].map((m) => m * potencia).find((p) => p >= pasoCrudo)
-  const pasoEntero = Math.max(1, Math.round(paso))
-  const marcas = []
-  for (let valor = 0; valor < maximo + pasoEntero; valor += pasoEntero) marcas.push(valor)
-  return marcas
+// Colores de los gráficos (Recharts los pone como atributo SVG, donde var(--x) no funciona: van en hex).
+// Son los mismos tokens de index.css: cian y naranja de marca para las series, verde/rojo para el plan.
+export const COLORES = {
+  creadas: '#1B9FB5', // --marca-cian
+  cerradas: '#EA6A25', // --marca-naranja
+  barra: '#1B9FB5',
+  grilla: '#E6ECEE',
+  eje: '#566A73', // --texto-secundario
+  sinColor: '#81949D', // --borde-campo: si un estado llega sin color del backend
+}
+
+// Serie de "Evolución" lista para el gráfico: cada punto con su etiqueta corta (eje) y larga (globo y tabla).
+export function serieEvolucion(serie = []) {
+  return serie.map((punto) => ({
+    ...punto,
+    etiqueta: etiquetaPeriodo(punto.periodo),
+    etiquetaLarga: etiquetaPeriodo(punto.periodo, { larga: true }),
+  }))
+}
+
+// Cómo terminaron las órdenes del plan de mantenimiento, en el orden en que se leen (de lo bueno a lo malo).
+// Solo las categorías con órdenes, con su color: verdes = cumplidas, naranja/rojo = desvíos, grises = el resto.
+export function filasDesvios(desvios) {
+  if (!desvios) return []
+  return filasBarras([
+    { nombre: 'A tiempo', cantidad: desvios.aTiempo, color: '#22633E' }, // --exito
+    { nombre: 'Adelantadas', cantidad: desvios.adelantadas, color: '#5FA77D' },
+    { nombre: 'Demoradas', cantidad: desvios.demoradas, color: '#EA6A25' }, // --marca-naranja
+    { nombre: 'Pendientes vencidas', cantidad: desvios.pendientesVencidas, color: '#A52A27' }, // --error
+    { nombre: 'Pendientes en plazo', cantidad: desvios.pendientesEnPlazo, color: '#566A73' }, // --texto-secundario
+    { nombre: 'Canceladas', cantidad: desvios.canceladas, color: '#C3CFD4' },
+  ].filter((fila) => fila.cantidad > 0), { nombre: (f) => f.nombre, valor: (f) => f.cantidad, color: (f) => f.color },
+  { ordenar: false })
+}
+
+// Alto del gráfico de barras horizontales: una franja por fila, con un mínimo para que no quede aplastado.
+export function altoBarras(cantidadFilas) {
+  return Math.max(120, cantidadFilas * 40 + 24)
 }
 
 // ¿Hay algo para mostrar en el período? (para el estado vacío)
