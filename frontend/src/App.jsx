@@ -3,6 +3,7 @@ import Icono from './components/Icono'
 import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
 import BarraUsuario from './components/BarraUsuario'
+import BotonAyuda from './components/BotonAyuda'
 import RutaProtegida from './components/RutaProtegida'
 import AvisoVersionNueva from './components/AvisoVersionNueva'
 import { useSesion } from './context/useSesion'
@@ -110,6 +111,8 @@ function Aplicacion() {
         {nuevas.length > 0 && <MenuDesplegable opciones={nuevas} onElegir={(clave) => navegar(clave)}
           claseBoton="boton boton-primario boton-nuevo"
           contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />}
+        {/* "?": qué se hace en la pantalla actual (contenido en utils/ayuda.js) */}
+        <BotonAyuda clave={paginaActual} rol={usuario.rol} />
         <BarraUsuario />
       </header>
 
