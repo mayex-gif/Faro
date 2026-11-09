@@ -4,10 +4,13 @@ import com.faro.backend.services.AlmacenArchivos;
 import com.faro.backend.services.AlmacenS3;
 import com.faro.backend.services.AlmacenSinConfigurar;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Qué almacén arma Spring según las variables FARO_S3_*. Ninguno de estos tests se conecta a nada. */
 class AlmacenConfigTest {
@@ -51,5 +54,51 @@ class AlmacenConfigTest {
         try (S3Client cliente = AlmacenConfig.crearCliente("", "us-east-1", "usuario", "clave-de-prueba", false)) {
             assertThat(cliente.serviceClientConfiguration().endpointOverride()).isEmpty();
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "s3.us-east-005.backblazeb2.com        | https://s3.us-east-005.backblazeb2.com",
+            "'  https://s3.us-east-005.backblazeb2.com/ ' | https://s3.us-east-005.backblazeb2.com",
+            "http://localhost:9000                 | http://localhost:9000",
+            "http://rustfs:9000//                  | http://rustfs:9000",
+    })
+    void normalizarEndpoint_completaElEsquemaYSacaLaBarraFinal(String escrito, String esperado) {
+        assertThat(AlmacenConfig.normalizarEndpoint(escrito)).isEqualTo(esperado);
+    }
+
+    @Test
+    void normalizarEndpoint_vacioSigueVacio() {
+        assertThat(AlmacenConfig.normalizarEndpoint("  ")).isEmpty();
+        assertThat(AlmacenConfig.normalizarEndpoint(null)).isEmpty();
+    }
+
+    @Test
+    void endpointSinHttps_igualArmaElAlmacenS3() throws Exception {
+        // Lo que pasó en Render: el endpoint copiado de B2 sin "https://" frenaba el arranque
+        AlmacenArchivos almacen = config.almacenArchivos("s3.us-east-005.backblazeb2.com", "us-east-005",
+                "faro-fotos", "usuario", "clave-de-prueba", true);
+
+        assertThat(almacen).isInstanceOf(AlmacenS3.class);
+        ((AlmacenS3) almacen).close();
+    }
+
+    @Test
+    void endpointQueNoEsUnaDireccion_arrancaSinFotosEnVezDeFallar() {
+        AlmacenArchivos almacen = config.almacenArchivos("https://s3 us-east-005 backblazeb2.com", "us-east-005",
+                "faro-fotos", "usuario", "clave-de-prueba", true);
+
+        assertThat(almacen).isInstanceOf(AlmacenSinConfigurar.class);
+        assertThatThrownBy(() -> almacen.leer("comentarios/x/0.jpg"))
+                .hasMessageContaining("FARO_S3_ENDPOINT");
+    }
+
+    @Test
+    void clavesConEspaciosPegados_seLimpian() throws Exception {
+        AlmacenArchivos almacen = config.almacenArchivos("http://localhost:9000", " us-east-1 ", " faro-fotos ",
+                " usuario ", " clave-de-prueba\n", true);
+
+        assertThat(almacen).isInstanceOf(AlmacenS3.class);
+        ((AlmacenS3) almacen).close();
     }
 }

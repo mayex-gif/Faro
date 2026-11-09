@@ -25,6 +25,10 @@ import java.time.Duration;
  * Arma el almacén de fotos con las properties faro.s3.* (variables FARO_S3_*).
  * - Con las dos claves cargadas: almacén S3 de verdad (RustFS, Backblaze B2, Cloudflare R2...).
  * - Sin claves: AlmacenSinConfigurar (el backend arranca igual; los pedidos de fotos responden 503).
+ * - Con alguna variable mal escrita (ej. un endpoint que no es una dirección): también AlmacenSinConfigurar,
+ *   con un error en el log que dice qué variable revisar. Las fotos son una parte del sistema:
+ *   un error de tipeo en ellas no puede dejar sin backend a todo el resto.
+ * Antes se limpian los valores pegados a mano: espacios de más, endpoint sin "https://" o con "/" al final.
  * Crear el cliente NO se conecta a nada: la primera conexión es al guardar o leer una foto.
  */
 @Configuration
@@ -41,14 +45,49 @@ public class AlmacenConfig {
             @Value("${faro.s3.secret-key:}") String secretKey,
             @Value("${faro.s3.path-style:true}") boolean pathStyle) {
 
+        endpoint = normalizarEndpoint(endpoint);
+        region = region == null || region.isBlank() ? "us-east-1" : region.trim();
+        bucket = bucket == null || bucket.isBlank() ? "faro-fotos" : bucket.trim();
+        accessKey = accessKey == null ? "" : accessKey.trim();
+        secretKey = secretKey == null ? "" : secretKey.trim();
+
         if (accessKey.isBlank() || secretKey.isBlank()) {
             log.warn("Almacén de fotos sin configurar (faltan FARO_S3_ACCESS_KEY / FARO_S3_SECRET_KEY): "
                     + "los pedidos con fotos van a responder 503");
             return new AlmacenSinConfigurar();
         }
-        S3Client cliente = crearCliente(endpoint, region, accessKey, secretKey, pathStyle);
+        S3Client cliente;
+        try {
+            cliente = crearCliente(endpoint, region, accessKey, secretKey, pathStyle);
+        } catch (RuntimeException e) {
+            // Solo se muestran endpoint y región: las claves nunca van al log
+            log.error("No se pudo armar el almacén de fotos S3. Revisá FARO_S3_ENDPOINT (ahora '{}') y "
+                    + "FARO_S3_REGION (ahora '{}'). El backend arranca igual, sin fotos. Detalle: {}",
+                    endpoint, region, e.getMessage());
+            return new AlmacenSinConfigurar("El almacén de fotos está mal configurado: revisá las variables "
+                    + "FARO_S3_ENDPOINT y FARO_S3_REGION del backend");
+        }
         log.info("Almacén de fotos S3: bucket '{}' en {}", bucket, endpoint.isBlank() ? "AWS" : endpoint);
         return new AlmacenS3(cliente, bucket);
+    }
+
+    /**
+     * Deja el endpoint como lo espera el SDK: sin espacios, con "https://" si no trae
+     * ningún esquema (el caso de copiar "s3.us-east-005.backblazeb2.com" de la página de B2)
+     * y sin "/" al final. Vacío = usar AWS.
+     */
+    static String normalizarEndpoint(String endpoint) {
+        if (endpoint == null || endpoint.isBlank()) {
+            return "";
+        }
+        String limpio = endpoint.trim();
+        if (!limpio.contains("://")) {
+            limpio = "https://" + limpio;
+        }
+        while (limpio.endsWith("/")) {
+            limpio = limpio.substring(0, limpio.length() - 1);
+        }
+        return limpio;
     }
 
     static S3Client crearCliente(String endpoint, String region, String accessKey, String secretKey,
