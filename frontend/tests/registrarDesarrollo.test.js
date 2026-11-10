@@ -16,10 +16,10 @@ function preparar({ registros = [], caches = [] } = {}) {
 
 test('en desarrollo se da de baja un service worker viejo y se borra solo la caché de FARO', async () => {
   let dado = 0
-  const registro = { unregister: async () => { dado += 1; return true } }
+  const registro = { active: { scriptURL: 'http://localhost:5173/sw.js' }, unregister: async () => { dado += 1; return true } }
   const { trabajador, almacenes, borradas, consola } = preparar({ registros: [registro], caches: ['faro-app-abc123', 'otra-cosa'] })
 
-  await limpiarServiceWorkerEnDesarrollo({ trabajador, almacenes, consola })
+  await limpiarServiceWorkerEnDesarrollo({ trabajador, almacenes, consola, urlServiceWorker: 'http://localhost:5173/sw.js' })
 
   assert.equal(dado, 1)
   assert.deepEqual(borradas, ['faro-app-abc123'])

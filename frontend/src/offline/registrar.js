@@ -27,14 +27,19 @@ export function registrarAplicacion() {
  */
 export async function limpiarServiceWorkerEnDesarrollo({
   trabajador = globalThis.navigator?.serviceWorker, almacenes = globalThis.caches, consola = console,
+  urlServiceWorker = globalThis.location?.origin ? new URL('/sw.js', globalThis.location.origin).href : null,
 } = {}) {
   try {
     const registros = trabajador?.getRegistrations ? await trabajador.getRegistrations() : []
-    const bajas = await Promise.all(registros.map((registro) => registro.unregister()))
+    const propios = urlServiceWorker
+      ? registros.filter((registro) => [registro.active, registro.waiting, registro.installing]
+        .some((worker) => worker?.scriptURL === urlServiceWorker))
+      : []
+    const bajas = await Promise.all(propios.map((registro) => registro.unregister()))
     const nombres = almacenes?.keys ? await almacenes.keys() : []
-    const propios = nombres.filter((nombre) => nombre.startsWith(PREFIJO_CACHE_FARO))
-    await Promise.all(propios.map((nombre) => almacenes.delete(nombre)))
-    if (bajas.some(Boolean) || propios.length > 0) {
+    const cachesFaro = nombres.filter((nombre) => nombre.startsWith(PREFIJO_CACHE_FARO))
+    await Promise.all(cachesFaro.map((nombre) => almacenes.delete(nombre)))
+    if (bajas.some(Boolean) || cachesFaro.length > 0) {
       consola.info('FARO (desarrollo): se quitó un service worker viejo de este puerto. Recargá la página.')
     }
   } catch {

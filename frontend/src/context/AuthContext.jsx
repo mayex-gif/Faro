@@ -64,7 +64,7 @@ function AuthProvider({ children }) {
         if (!vigente || token !== leerToken()) return
         if (e.estado === 401 || e.estado === 403 || e.estado === 409) {
           terminarSesion(token, e.message)
-        } else {
+        } else if (e instanceof TypeError) {
           // Sin señal (o servidor caído): con una sesión vigente se entra con el perfil guardado, para que el
           // capataz pueda trabajar en el cuaderno. Sin perfil guardado, se pide reintentar como antes.
           const guardado = perfilParaTrabajarSinSenal(token, leerSesion().usuario, rolConocido)
@@ -72,6 +72,9 @@ function AuthProvider({ children }) {
             setUsuario(guardado)
             return
           }
+          setError('No pudimos verificar tu sesión. Revisá la conexión e intentá nuevamente.')
+        } else {
+          // Un HTTP inesperado (por ejemplo, 500) o una respuesta inválida no equivale a estar sin conexión.
           setError('No pudimos verificar tu sesión. Revisá la conexión e intentá nuevamente.')
         }
       } finally {

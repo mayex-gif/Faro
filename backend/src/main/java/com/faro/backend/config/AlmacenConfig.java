@@ -49,10 +49,15 @@ public class AlmacenConfig {
             @Value("${faro.s3.bucket:faro-fotos}") String bucket,
             @Value("${faro.s3.access-key:}") String accessKey,
             @Value("${faro.s3.secret-key:}") String secretKey,
-            @Value("${faro.s3.path-style:true}") boolean pathStyle) {
+            @Value("${faro.s3.path-style:true}") boolean pathStyle,
+            @Value("${faro.almacen.permitir-memoria:false}") boolean memoriaPermitida) {
 
         String elegido = tipo == null || tipo.isBlank() ? TIPO_S3 : tipo.trim().toLowerCase();
         if (TIPO_MEMORIA.equals(elegido)) {
+            if (!memoriaPermitida) {
+                throw new IllegalStateException("FARO_ALMACEN=memoria solo se permite en desarrollo. "
+                        + "Habilitalo explícitamente con FARO_ALMACEN_MEMORIA_PERMITIDA=true.");
+            }
             log.warn("Almacén de fotos EN MEMORIA (FARO_ALMACEN=memoria): solo para desarrollar. "
                     + "Las fotos se pierden al reiniciar el backend. En Render no se usa: ahí va S3.");
             return new AlmacenEnMemoria();

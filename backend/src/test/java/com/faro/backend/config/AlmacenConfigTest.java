@@ -21,21 +21,21 @@ class AlmacenConfigTest {
 
     @Test
     void sinClaves_usaElAlmacenSinConfigurar() {
-        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "", "", true);
+        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "", "", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenSinConfigurar.class);
     }
 
     @Test
     void conUnaSolaClave_usaElAlmacenSinConfigurar() {
-        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", " ", true);
+        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", " ", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenSinConfigurar.class);
     }
 
     @Test
     void conLasDosClaves_usaElAlmacenS3() throws Exception {
-        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true);
+        AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenS3.class);
         ((AlmacenS3) almacen).close();
@@ -44,7 +44,7 @@ class AlmacenConfigTest {
     @Test
     void tipoMemoria_usaElAlmacenEnMemoria_yAlmacenaDeVerdad() {
         // Aunque haya claves S3 cargadas, "memoria" manda: es lo que se elige a propósito para desarrollar
-        AlmacenArchivos almacen = config.almacenArchivos("memoria", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true);
+        AlmacenArchivos almacen = config.almacenArchivos("memoria", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true, true);
 
         assertThat(almacen).isInstanceOf(AlmacenEnMemoria.class);
         almacen.guardar("foto", new byte[]{7, 8}, "image/png");
@@ -54,20 +54,20 @@ class AlmacenConfigTest {
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {" MEMORIA ", "Memoria"})
     void tipoMemoria_noDistingueMayusculasNiEspacios(String escrito) {
-        assertThat(config.almacenArchivos(escrito, "", "us-east-1", "faro-fotos", "", "", true))
+        assertThat(config.almacenArchivos(escrito, "", "us-east-1", "faro-fotos", "", "", true, true))
                 .isInstanceOf(AlmacenEnMemoria.class);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  "})
     void tipoVacio_sigueSiendoS3(String escrito) {
-        assertThat(config.almacenArchivos(escrito, "", "us-east-1", "faro-fotos", "", "", true))
+        assertThat(config.almacenArchivos(escrito, "", "us-east-1", "faro-fotos", "", "", true, false))
                 .isInstanceOf(AlmacenSinConfigurar.class);
     }
 
     @Test
     void tipoDesconocido_noFrenaElBackend_ysoloFallanLasFotos() {
-        AlmacenArchivos almacen = config.almacenArchivos("memory", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true);
+        AlmacenArchivos almacen = config.almacenArchivos("memory", "http://localhost:9000", "us-east-1", "faro-fotos", "usuario", "clave-de-prueba", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenSinConfigurar.class);
         assertThatThrownBy(() -> almacen.leer("foto"))
@@ -112,7 +112,7 @@ class AlmacenConfigTest {
     void endpointSinHttps_igualArmaElAlmacenS3() throws Exception {
         // Lo que pasó en Render: el endpoint copiado de B2 sin "https://" frenaba el arranque
         AlmacenArchivos almacen = config.almacenArchivos("s3", "s3.us-east-005.backblazeb2.com", "us-east-005",
-                "faro-fotos", "usuario", "clave-de-prueba", true);
+                "faro-fotos", "usuario", "clave-de-prueba", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenS3.class);
         ((AlmacenS3) almacen).close();
@@ -121,7 +121,7 @@ class AlmacenConfigTest {
     @Test
     void endpointQueNoEsUnaDireccion_arrancaSinFotosEnVezDeFallar() {
         AlmacenArchivos almacen = config.almacenArchivos("s3", "https://s3 us-east-005 backblazeb2.com", "us-east-005",
-                "faro-fotos", "usuario", "clave-de-prueba", true);
+                "faro-fotos", "usuario", "clave-de-prueba", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenSinConfigurar.class);
         assertThatThrownBy(() -> almacen.leer("comentarios/x/0.jpg"))
@@ -131,7 +131,7 @@ class AlmacenConfigTest {
     @Test
     void clavesConEspaciosPegados_seLimpian() throws Exception {
         AlmacenArchivos almacen = config.almacenArchivos("s3", "http://localhost:9000", " us-east-1 ", " faro-fotos ",
-                " usuario ", " clave-de-prueba\n", true);
+                " usuario ", " clave-de-prueba\n", true, false);
 
         assertThat(almacen).isInstanceOf(AlmacenS3.class);
         ((AlmacenS3) almacen).close();
