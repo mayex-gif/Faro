@@ -36,18 +36,22 @@ Después de un deploy, las páginas se piden primero a la red (al abrir FARO se 
 
 ## Cómo revisar
 
-1. En el entorno normal (`localhost:5173` con Vite), ingresar como capataz y revisar Guardar/Actualizar/Eliminar copia y Ver copia local. El modo de desarrollo no registra el Service Worker, para conservar la recarga de cambios.
-2. Para verificar la apertura sin servidor, usar el **build** en un perfil de navegador de pruebas. El backend local admite por defecto el origen `http://localhost:5173`, por lo que la vista previa debe usar ese puerto:
+1. En el entorno normal (`localhost:5173` con `npm run dev`), ingresar como capataz y revisar Guardar/Actualizar/Eliminar copia y Ver copia local. **El servidor de desarrollo no registra el Service Worker, a propósito** (para conservar la recarga de cambios de Vite): por eso, con la red cortada desde las herramientas de desarrollo, Chrome muestra el dinosaurio en lugar de `sin-conexion.html`. Es lo esperado y no es un error. En la consola se deja un aviso, y si quedó un worker viejo de una prueba anterior en ese mismo puerto, se da de baja solo.
+2. Para verificar la apertura sin servidor, usar la **versión compilada** (la única que lleva Service Worker). Corre en `http://localhost:4173`, un puerto distinto del de desarrollo: así no se pisan y el backend ya admite ese origen por defecto.
 
    ```powershell
-   docker compose exec -T frontend npm run build
-   docker compose stop frontend
-   docker compose run --rm --no-deps --service-ports frontend npm run preview -- --host 0.0.0.0 --port 5173
+   # Sin Docker, desde la carpeta frontend (compila y sirve):
+   npm run pwa
+
+   # Con Docker (no toca al frontend de desarrollo):
+   docker compose --profile pwa up --build frontend-pwa
    ```
+
+   Cada cambio de código requiere volver a correr ese comando (compila de nuevo). Usar un perfil de navegador de pruebas.
 
 3. Con conexión, ingresar como capataz, guardar la copia y abrirla. Luego simular red desconectada desde las herramientas de desarrollo del navegador y recargar. Comprobar fecha, cuadrilla y ausencia de acciones de escritura.
 4. Reconectar, cerrar sesión y volver a ingresar. La copia anterior ya no debe aparecer. Probar otra cuenta y otro capataz: no deben ver una copia ajena.
-5. Al terminar la prueba del build, quitar su Service Worker desde **Application → Service Workers → Unregister** en el perfil de pruebas, cerrar esa vista previa y restaurar el entorno habitual con `docker compose up -d frontend`. La vista previa de Vite se usa para revisar el build, no como servidor de producción.
+5. Al terminar la prueba del build, quitar su Service Worker desde **Application → Service Workers → Unregister** (o abrir `localhost:4173` y cerrar la vista previa con Ctrl+C). El frontend de desarrollo (`localhost:5173`) no se ve afectado. La vista previa de Vite se usa para revisar el build, no como servidor de producción.
 
 Pruebas de código desde `frontend`: `npm test`, `npm run lint` y `npm run build`. Incluyen separación por usuario/cuadrilla, exclusión de OT cerradas, errores de almacenamiento, cierre durante un guardado y límites del Service Worker.
 
@@ -66,3 +70,12 @@ Pruebas de código desde `frontend`: `npm test`, `npm run lint` y `npm run build
 Conviene registrar en Sprint 3 **Actualizar prototipo Figma — Login, roles y consulta sin conexión**: incorporar Login, navegación actual «El mapa primero», Mis tareas del capataz y estados de copia disponible/no disponible/vencimiento, en escritorio y celular. Mantener la guía visual y diferenciar los diseños propuestos de las funciones implementadas. La entrega de Sprint 2 permanece como antecedente.
 
 Referencias técnicas: [Service Workers, MDN](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers), [almacenamiento local e IndexedDB, MDN](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Client-side_APIs/Client-side_storage) y [vista previa del build, Vite](https://vite.dev/guide/static-deploy.html).
+
+## Abrir o recargar FARO sin señal (capataz)
+
+Si ya se entró una vez con señal, al abrir o recargar FARO sin señal ya no se queda en "Verificar sesión":
+- Se entra con el **perfil guardado** si el token no venció y el perfil está activo (el servidor lo vuelve a validar con el primer pedido con señal; si ya no vale, se cierra la sesión).
+- "Mis tareas" muestra **las últimas tareas cargadas con señal** (`src/offline/ultimaCarga.js`, en el celular, por persona) con el aviso de sin señal, y "Comentarios y fotos" deja escribir y juntar fotos: quedan en el cuaderno y se envían al volver la señal.
+- Todo eso se borra al cerrar sesión.
+
+Cómo probarlo: `npm run pwa` → http://localhost:4173 → entrar y esperar a que cargue "Mis tareas" → recargar una vez (para que el service worker controle la página) → DevTools → Network → **Offline** → recargar → abrir "Comentarios y fotos". En `npm run dev` no se puede recargar sin señal (no hay service worker a propósito).

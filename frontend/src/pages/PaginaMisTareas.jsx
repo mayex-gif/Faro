@@ -13,6 +13,7 @@ import { leerToken } from '../utils/sesion'
 import { borrarCopia, guardarCopia, leerCopia } from '../offline/almacen'
 import { crearCopia, fechaDeCopia } from '../offline/datosLocal'
 import { guardarOperacion } from '../offline/cola'
+import { leerCarga, recordarCarga } from '../offline/ultimaCarga'
 import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado } from '../offline/datosCola'
 import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import '../estilos-mis-tareas.css'
@@ -29,9 +30,8 @@ function leerCuadrillaGuardada() {
   }
 }
 
-// Lo último que se cargó con señal, por persona. Vive mientras FARO esté abierto (no se guarda en el celular):
-// si se corta la señal y se toca "Actualizar", o se va al mapa y se vuelve, se siguen viendo las tareas en vez de un error.
-const ultimaCarga = new Map()
+// Lo último que se cargó con señal (offline/ultimaCarga.js): si se corta la señal y se toca "Actualizar",
+// se va al mapa y se vuelve, o se recarga FARO sin señal, se siguen viendo las tareas en vez de un error.
 
 function horaDe(fecha) {
   return fecha ? new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
@@ -51,7 +51,7 @@ function PaginaMisTareas({ onNavegar }) {
   const esCapataz = tieneRol(usuario, 'CAPATAZ_CUADRILLA')
   // Fijo mientras la pantalla está abierta (App la vuelve a armar si entra otra persona)
   const idUsuario = useRef(usuario.id)
-  const recordada = ultimaCarga.get(usuario.id)
+  const recordada = leerCarga(usuario.id)
   const [ordenes, setOrdenes] = useState(() => recordada?.ordenes ?? [])
   const [estados, setEstados] = useState(() => recordada?.estados ?? [])
   const [cargadasA, setCargadasA] = useState(() => recordada?.hora ?? null)
@@ -88,7 +88,7 @@ function PaginaMisTareas({ onNavegar }) {
       })
       .catch((e) => {
         // Sin señal, pero con tareas ya cargadas: se siguen mostrando (con un aviso) en vez de borrar la lista
-        if (clasificarError(e) === REINTENTAR && ultimaCarga.get(idUsuario.current)?.ordenes) {
+        if (clasificarError(e) === REINTENTAR && leerCarga(idUsuario.current)?.ordenes) {
           setSinSenal(true)
           return
         }
@@ -105,7 +105,7 @@ function PaginaMisTareas({ onNavegar }) {
         setErrorCuadrillas(null)
       })
       .catch((e) => {
-        if (clasificarError(e) === REINTENTAR && ultimaCarga.get(idUsuario.current)?.cuadrillas) return // se usan las que ya estaban
+        if (clasificarError(e) === REINTENTAR && leerCarga(idUsuario.current)?.cuadrillas) return // se usan las que ya estaban
         console.error(e)
         setErrorCuadrillas('No pudimos cargar las cuadrillas. Revisá la conexión e intentá nuevamente.')
       })
@@ -133,7 +133,7 @@ function PaginaMisTareas({ onNavegar }) {
   // Se recuerda lo cargado (también después de iniciar o finalizar con señal) para usarlo si se corta la señal
   useEffect(() => {
     if (cargando || cargandoCuadrillas || error || errorCuadrillas) return
-    ultimaCarga.set(usuario.id, { ordenes, estados, cuadrillas, hora: cargadasA })
+    recordarCarga(usuario.id, { ordenes, estados, cuadrillas, hora: cargadasA })
   }, [usuario.id, ordenes, estados, cuadrillas, cargadasA, cargando, cargandoCuadrillas, error, errorCuadrillas])
 
   // Cuando un cambio del cuaderno llega al servidor (o queda para revisar), se trae cómo quedaron las tareas
