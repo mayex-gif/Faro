@@ -27,9 +27,12 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-faro}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-faro}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-faro}
+      SPRING_DATASOURCE_URL: ${NEON_DB_URL:-jdbc:postgresql://owner:password@ep-red-salad-b8w7xlae-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DB_USERNAME:-owner}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DB_PASSWORD:-password}
+      FARO_JWT_SECRET: ${FARO_JWT_SECRET:-FaroSuperSecretKeyParaDesarrolloLocal2026!}
+      FARO_JWT_EXPIRATION_MS: ${FARO_JWT_EXPIRATION_MS:-86400000}
+
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       TZ: America/Argentina/Buenos_Aires
       # Almacén de fotos: el servicio rustfs de acá abajo. Las claves salen del archivo .env (no se sube a GitHub)
