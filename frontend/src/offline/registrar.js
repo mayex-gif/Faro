@@ -1,15 +1,47 @@
-// El servidor de desarrollo conserva la recarga de Vite; la copia de la aplicación se prueba con el build.
+// El servidor de desarrollo (npm run dev) NO registra el service worker, a propósito: el worker se arma recién en el
+// build (scripts/generar-sw.js escribe dist/sw.js) y, si guardara los módulos de Vite, la recarga automática dejaría de
+// funcionar. Por eso, con "npm run dev" y la red cortada, Chrome muestra el dinosaurio: es lo esperado.
+// Para probar FARO sin conexión se usa la versión compilada: "npm run pwa" (ver frontend/PWA_CONSULTA_LOCAL.md).
 export const EVENTO_VERSION_NUEVA = 'faro:version-nueva'
+export const PREFIJO_CACHE_FARO = 'faro-app-'
 
 let pidioActualizar = false
 
 export function registrarAplicacion() {
-  if (!import.meta.env?.PROD || !('serviceWorker' in navigator) || !window.isSecureContext) return
+  if (!import.meta.env?.PROD) {
+    limpiarServiceWorkerEnDesarrollo()
+    return
+  }
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) return
   navigator.serviceWorker.register('/sw.js')
     .then((registro) => vigilarVersiones(registro))
     .catch((error) => {
       console.warn('No se pudo preparar FARO para abrir sin conexión.', error)
     })
+}
+
+/**
+ * En desarrollo, un service worker que quedó de una prueba anterior (por ejemplo, de abrir el build en este mismo
+ * puerto) respondería con archivos viejos y taparía los cambios de Vite. Se lo da de baja junto con su caché,
+ * y se deja un aviso en la consola de cómo probar la versión sin conexión. Nunca falla: es solo una comodidad.
+ */
+export async function limpiarServiceWorkerEnDesarrollo({
+  trabajador = globalThis.navigator?.serviceWorker, almacenes = globalThis.caches, consola = console,
+} = {}) {
+  try {
+    const registros = trabajador?.getRegistrations ? await trabajador.getRegistrations() : []
+    const bajas = await Promise.all(registros.map((registro) => registro.unregister()))
+    const nombres = almacenes?.keys ? await almacenes.keys() : []
+    const propios = nombres.filter((nombre) => nombre.startsWith(PREFIJO_CACHE_FARO))
+    await Promise.all(propios.map((nombre) => almacenes.delete(nombre)))
+    if (bajas.some(Boolean) || propios.length > 0) {
+      consola.info('FARO (desarrollo): se quitó un service worker viejo de este puerto. Recargá la página.')
+    }
+  } catch {
+    // sin permisos o sin soporte: no hay nada para limpiar
+  }
+  consola.info('FARO (desarrollo): sin service worker, así que sin red verías el dinosaurio. '
+    + 'Para probar el modo sin conexión: npm run pwa (http://localhost:4173).')
 }
 
 /**
