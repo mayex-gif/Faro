@@ -1,6 +1,7 @@
 package com.faro.backend.config;
 
 import com.faro.backend.services.AlmacenArchivos;
+import com.faro.backend.services.AlmacenEnMemoria;
 import com.faro.backend.services.AlmacenS3;
 import com.faro.backend.services.AlmacenSinConfigurar;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.time.Duration;
 /**
  * Arma el almacén de fotos con las properties faro.s3.* (variables FARO_S3_*).
  * - Con las dos claves cargadas: almacén S3 de verdad (RustFS, Backblaze B2, Cloudflare R2...).
+ * - FARO_ALMACEN=memoria (solo para desarrollar): AlmacenEnMemoria, sin necesidad de ningún depósito.
  * - Sin claves: AlmacenSinConfigurar (el backend arranca igual; los pedidos de fotos responden 503).
  * - Con alguna variable mal escrita (ej. un endpoint que no es una dirección): también AlmacenSinConfigurar,
  *   con un error en el log que dice qué variable revisar. Las fotos son una parte del sistema:
@@ -36,14 +38,37 @@ public class AlmacenConfig {
 
     private static final Logger log = LoggerFactory.getLogger(AlmacenConfig.class);
 
+    static final String TIPO_S3 = "s3";
+    static final String TIPO_MEMORIA = "memoria";
+
     @Bean
     public AlmacenArchivos almacenArchivos(
+            @Value("${faro.almacen.tipo:s3}") String tipo,
             @Value("${faro.s3.endpoint:}") String endpoint,
             @Value("${faro.s3.region:us-east-1}") String region,
             @Value("${faro.s3.bucket:faro-fotos}") String bucket,
             @Value("${faro.s3.access-key:}") String accessKey,
             @Value("${faro.s3.secret-key:}") String secretKey,
-            @Value("${faro.s3.path-style:true}") boolean pathStyle) {
+            @Value("${faro.s3.path-style:true}") boolean pathStyle,
+            @Value("${faro.almacen.permitir-memoria:false}") boolean memoriaPermitida) {
+
+        String elegido = tipo == null || tipo.isBlank() ? TIPO_S3 : tipo.trim().toLowerCase();
+        if (TIPO_MEMORIA.equals(elegido)) {
+            if (!memoriaPermitida) {
+                throw new IllegalStateException("FARO_ALMACEN=memoria solo se permite en desarrollo. "
+                        + "Habilitalo explícitamente con FARO_ALMACEN_MEMORIA_PERMITIDA=true.");
+            }
+            log.warn("Almacén de fotos EN MEMORIA (FARO_ALMACEN=memoria): solo para desarrollar. "
+                    + "Las fotos se pierden al reiniciar el backend. En Render no se usa: ahí va S3.");
+            return new AlmacenEnMemoria();
+        }
+        if (!TIPO_S3.equals(elegido)) {
+            // Igual que con una variable FARO_S3_* mal escrita: el backend arranca, solo fallan los pedidos con fotos
+            log.error("FARO_ALMACEN tiene un valor desconocido ('{}'): los valores válidos son 's3' y 'memoria'. "
+                    + "El backend arranca igual, sin fotos.", elegido);
+            return new AlmacenSinConfigurar("El almacén de fotos está mal configurado: "
+                    + "FARO_ALMACEN tiene que ser 's3' o 'memoria'");
+        }
 
         endpoint = normalizarEndpoint(endpoint);
         region = region == null || region.isBlank() ? "us-east-1" : region.trim();

@@ -16,7 +16,7 @@ public class CorsConfig implements WebMvcConfigurer {
     private final String[] origenesPermitidos;
 
     // Spring convierte "http://a.com,http://b.com" en un arreglo de dos elementos
-    public CorsConfig(@Value("${faro.cors.origenes,http://localhost:5173,http://localhost:4173}") String[] origenesPermitidos) {
+    public CorsConfig(@Value("${faro.cors.origenes}") String[] origenesPermitidos) {
         this.origenesPermitidos = origenesPermitidos;
     }
 
