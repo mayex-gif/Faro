@@ -45,6 +45,7 @@ docker compose up --build
 | Servicio | URL |
 |---|---|
 | Frontend | http://localhost:5173 |
+| Frontend PWA (versión compilada, para probar sin conexión) | http://localhost:4173 (`npm run pwa` o `docker compose --profile pwa up --build frontend-pwa`) |
 | Backend | http://localhost:8080 |
 | PostgreSQL | localhost:5432 |
 

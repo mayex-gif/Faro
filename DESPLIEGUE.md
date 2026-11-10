@@ -33,6 +33,7 @@ El código **no tiene ninguna contraseña**: todo lo que cambia entre la compu y
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | Hibernate crea o actualiza las tablas al arrancar |
 | `TZ` | `America/Argentina/Buenos_Aires` | Hora argentina en las fechas |
 | `FARO_CORS_ORIGENES` | `https://<dirección-del-frontend>.onrender.com,http://localhost:5173` | Páginas web que pueden llamar a la API, separadas por comas, **sin espacios y sin `/` al final**. **No usar `*`** (no funciona junto con `allowCredentials`) |
+| `FARO_ALMACEN` | **no definirla** (o `s3`) | Qué almacén de fotos usar. `memoria` es solo para la computadora: en Render las fotos se perderían en cada reinicio |
 | `FARO_S3_ENDPOINT` | `https://s3.<región>.backblazeb2.com` | Dirección del almacén de fotos (punto 9) |
 | `FARO_S3_REGION` | la región de B2, ej. `us-east-005` | La parte del medio del endpoint |
 | `FARO_S3_BUCKET` | el nombre del bucket de B2 | La "caja" donde van las fotos |

@@ -445,6 +445,28 @@ class ComentarioServiceTest {
     }
 
     @Test
+    void conElAlmacenEnMemoria_laFotoPublicadaSeLeeConSusMismosBytes() {
+        // Sin simulacros: el almacén de desarrollo (FARO_ALMACEN=memoria) guarda y devuelve de verdad
+        ComentarioService conAlmacenReal = new ComentarioService(comentarioRepository, fotoRepository, ordenRepository,
+                new AlmacenEnMemoria());
+        ordenExiste();
+        guardarDevuelveLoMismo();
+
+        conAlmacenReal.publicar(7L, COMANDA, null, HECHO_EN, List.of(foto(JPG), foto(PNG)), capatazVerde);
+
+        ArgumentCaptor<ComentarioOrden> guardado = ArgumentCaptor.forClass(ComentarioOrden.class);
+        verify(comentarioRepository).save(guardado.capture());
+        FotoComentario segunda = guardado.getValue().getFotos().get(1);
+        segunda.setId(101L);
+        when(fotoRepository.findConOrdenById(101L)).thenReturn(Optional.of(segunda));
+
+        ComentarioService.FotoParaMostrar mostrada = conAlmacenReal.leerFoto(101L, capatazVerde);
+
+        assertThat(mostrada.contenido()).containsExactly(PNG);
+        assertThat(mostrada.tipoContenido()).isEqualTo("image/png");
+    }
+
+    @Test
     void leerFoto_deUnaOrdenDeOtraCuadrilla_da403SinIrAlAlmacen() {
         when(fotoRepository.findConOrdenById(100L)).thenReturn(Optional.of(fotoGuardada()));
 
