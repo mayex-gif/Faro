@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { iniciarSesion, obtenerPerfil } from '../api/auth'
 import { rolConocido } from '../utils/permisos'
 import {
-  CLAVE_TOKEN, CLAVE_USUARIO, EVENTO_SESION_TERMINADA, guardarSesion, leerSesion, leerToken,
-  limpiarSesion, olvidarSesionTemporal, perfilParaTrabajarSinSenal, terminarSesion, tokenVigente, vencimientoToken,
+  CLAVE_TOKEN, CLAVE_USUARIO, EVENTO_SESION_TERMINADA, guardarSesion, leerToken,
+  limpiarSesion, olvidarSesionTemporal, terminarSesion, tokenVigente, vencimientoToken,
 } from '../utils/sesion'
 import { ContextoSesion } from './useSesion'
 import { borrarCopia } from '../offline/almacen'
@@ -64,17 +64,7 @@ function AuthProvider({ children }) {
         if (!vigente || token !== leerToken()) return
         if (e.estado === 401 || e.estado === 403 || e.estado === 409) {
           terminarSesion(token, e.message)
-        } else if (e instanceof TypeError) {
-          // Sin señal (o servidor caído): con una sesión vigente se entra con el perfil guardado, para que el
-          // capataz pueda trabajar en el cuaderno. Sin perfil guardado, se pide reintentar como antes.
-          const guardado = perfilParaTrabajarSinSenal(token, leerSesion().usuario, rolConocido)
-          if (guardado) {
-            setUsuario(guardado)
-            return
-          }
-          setError('No pudimos verificar tu sesión. Revisá la conexión e intentá nuevamente.')
         } else {
-          // Un HTTP inesperado (por ejemplo, 500) o una respuesta inválida no equivale a estar sin conexión.
           setError('No pudimos verificar tu sesión. Revisá la conexión e intentá nuevamente.')
         }
       } finally {

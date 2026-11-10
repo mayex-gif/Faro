@@ -2,7 +2,6 @@
 export const CLAVE_TOKEN = 'faro_token'
 export const CLAVE_USUARIO = 'faro_usuario'
 export const EVENTO_SESION_TERMINADA = 'faro:sesion-terminada'
-import { olvidarCargas } from '../offline/ultimaCarga.js'
 let sesionTemporal = null
 
 export function leerSesion() {
@@ -42,7 +41,6 @@ function borrarSesionGuardada() {
 export function limpiarSesion() {
   sesionTemporal = null
   borrarSesionGuardada()
-  olvidarCargas()
 }
 
 // Al cambiar la sesión en otra pestaña, hay que volver a leer el almacenamiento.
@@ -72,13 +70,4 @@ export function terminarSesion(tokenEnviado, motivo = 'Tu sesión venció. Volv�
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(EVENTO_SESION_TERMINADA, { detail: motivo }))
   }
-}
-
-// Perfil guardado que alcanza para seguir trabajando cuando no hay señal para verificar la sesión:
-// solo si el token todavía no venció y el perfil está activo y con un rol conocido.
-// El servidor lo vuelve a validar en el primer pedido con señal (si ya no vale, se cierra la sesión).
-export function perfilParaTrabajarSinSenal(token, usuario, rolValido, ahora = Date.now()) {
-  if (!token || !usuario || !tokenVigente(token, ahora)) return null
-  if (!usuario.activo || !rolValido(usuario.rol)) return null
-  return usuario
 }

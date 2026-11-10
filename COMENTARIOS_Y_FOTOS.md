@@ -50,7 +50,6 @@ Las fotos son **privadas**: no tienen dirección pública; se ven solo a través
 | Dónde | Almacén | Cómo se configura |
 |---|---|---|
 | En la compu (Docker) | **RustFS** (servicio `rustfs` de `docker-compose.yml`) | Dos líneas en el archivo `.env` de la raíz (punto 6) |
-| En la compu, sin RustFS | **Memoria del backend** (`AlmacenEnMemoria`) | `FARO_ALMACEN=memoria` en el `.env` (punto 6, opción B). Solo para desarrollar |
 | En Render | **Backblaze B2** (10 GB gratis) | Variables `FARO_S3_*` en Render ([DESPLIEGUE.md](./DESPLIEGUE.md#9-almacén-de-fotos-backblaze-b2)) |
 
 Cambiar de proveedor (por ejemplo, a Cloudflare R2) es cambiar las variables; el código no cambia.
@@ -62,8 +61,6 @@ Cambiar de proveedor (por ejemplo, a Cloudflare R2) es cambiar las variables; el
 
 ## 6. Probarlo en la compu
 
-**Opción A — con RustFS (las fotos sobreviven a los reinicios).**
-
 1. En el archivo **`.env`** de la raíz del repo (no se sube a GitHub; si no existe, crearlo) agregar dos líneas con valores
    que **inventa cada uno**: `FARO_S3_ACCESS_KEY=` (un nombre de usuario) y `FARO_S3_SECRET_KEY=` (una clave de 8 caracteres o más).
 2. `docker compose up --build`. En `docker compose ps` tiene que aparecer **faro-rustfs** "Up".
@@ -72,22 +69,7 @@ Cambiar de proveedor (por ejemplo, a Cloudflare R2) es cambiar las variables; el
 4. Ver las fotos guardadas: consola de RustFS en `http://localhost:9001` (usuario y clave del `.env`) → bucket `faro-fotos`.
    El bucket se crea solo con la primera foto.
 5. Sin señal: F12 → **Network** → cambiar **"No throttling"** por **"Offline"**, publicar un comentario (queda "Sin enviar")
-   y volver a **"No throttling"**: se manda solo en unos segundos. Ojo: con el servidor de desarrollo (`npm run dev`) la
-   pantalla sigue abierta pero **no se puede recargar** sin red (ver [PWA_CONSULTA_LOCAL.md](./frontend/PWA_CONSULTA_LOCAL.md#cómo-revisar));
-   para probar recargas y cierre de FARO sin señal, usar `npm run pwa` (`http://localhost:4173`).
-
-**Opción B — sin RustFS (`FARO_ALMACEN=memoria`).** Para quien no puede o no quiere levantar el depósito.
-Las fotos se guardan en la memoria del backend: se publican y se ven igual que con S3, pero **se pierden cada vez que se reinicia el
-backend** (por ejemplo, al reconstruir la imagen). Las fotos viejas, cuya fila sigue en la base, muestran "No se pudo cargar" (404).
-Es normal; no es un error de la pantalla. Poner `FARO_ALMACEN=memoria` en el `.env` (ya viene así en `.env.example`) y
-`docker compose up --build`; en el log del backend aparece el aviso `Almacén de fotos EN MEMORIA`.
-Si el backend corre fuera de Docker: `$env:FARO_ALMACEN='memoria'; .\mvnw.cmd spring-boot:run`.
-
-**Comprobar que las fotos se ven con la red activa** (descarta que el problema sea de la conexión): publicar un comentario con una
-foto, ver que aparece en el muro y, en F12 → **Network**, que el pedido `/api/comentarios/fotos/<id>` responde **200** con tipo `image/*`.
-Si responde 404, el backend se reinició después de publicar (con `memoria`) o la foto no está en RustFS.
-Al estar en memoria, con la red cortada una foto que **no** se había abierto antes no se puede bajar: las respuestas de `/api` nunca
-se guardan en el navegador (a propósito, son privadas). Las ya vistas se conservan mientras no se cierre la pestaña.
+   y volver a **"No throttling"**: se manda solo en unos segundos.
 
 ## 7. Backend (para quien lo mantenga)
 
@@ -103,7 +85,7 @@ se guardan en el navegador (a propósito, son privadas). Las ya vistas se conser
 - 409 con `errores.motivo`: `ORDEN_NO_EXISTE` u `OTRA_CUADRILLA` (el celular muestra "Entendido").
 - Orden de guardado: primero se suben las fotos al almacén y **después** se guarda el comentario en la base
   (si el almacén falla, no queda un comentario con fotos que no existen). Al borrar: primero la base, después el almacén.
-- Archivos: `config/AlmacenConfig`, `services/AlmacenArchivos` (+ `AlmacenS3`, `AlmacenEnMemoria`, `AlmacenSinConfigurar`),
+- Archivos: `config/AlmacenConfig`, `services/AlmacenArchivos` (+ `AlmacenS3`, `AlmacenSinConfigurar`),
   `services/ComentarioService`, `controllers/ComentarioController`, `models/ComentarioOrden`, `models/FotoComentario`.
   Nombre de cada foto en el almacén: `comentarios/{operacionId}/{posición}.jpg`.
 - El JWT va en el header `Authorization`, por eso el frontend no puede usar `<img src="/api/...">`: baja cada foto con

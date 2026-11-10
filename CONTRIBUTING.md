@@ -163,5 +163,3 @@ No se necesita instalar Java, Node ni Postgres localmente — todo corre dentro 
 - Comando para ejecutar el frontend en local: `..\FARO\frontend> npm run dev`
 - Comando para ejecutar el backend en local: `..\FARO\backend> mvn spring-boot:run`
 - Comando para ejecutar la base de datos en docker: `..\FARO>docker-compose up -d db`
-- Fotos de comentarios sin levantar RustFS: arrancar el backend con `FARO_ALMACEN=memoria` (PowerShell: `$env:FARO_ALMACEN='memoria'` antes de `mvn spring-boot:run`). Las fotos se pierden al reiniciarlo.
-- Probar el modo sin conexión (PWA): `npm run pwa` en `frontend` (abre `http://localhost:4173`). `npm run dev` no tiene service worker, así que sin red muestra el dinosaurio de Chrome: es lo esperado.

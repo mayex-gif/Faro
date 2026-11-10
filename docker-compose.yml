@@ -27,21 +27,15 @@ services:
       db:
         condition: service_healthy
     environment:
-      # La demo apunta a su rama Neon; cada persona configura sus credenciales en su .env local.
-      SPRING_DATASOURCE_URL: ${NEON_DB_URL:-jdbc:postgresql://ep-red-salad-b8w7xlae-pooler.c-14.us-east-1.aws.neon.tech:5432/neondb?sslmode=require&channel_binding=require}
+      SPRING_DATASOURCE_URL: ${NEON_DB_URL:-jdbc:postgresql://owner:password@ep-red-salad-b8w7xlae-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
       SPRING_DATASOURCE_USERNAME: ${NEON_DB_USERNAME:-owner}
-      SPRING_DATASOURCE_PASSWORD: ${NEON_DB_PASSWORD:-}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DB_PASSWORD:-password}
+      FARO_JWT_SECRET: ${FARO_JWT_SECRET:-FaroSuperSecretKeyParaDesarrolloLocal2026!}
       FARO_JWT_EXPIRATION_MS: ${FARO_JWT_EXPIRATION_MS:-86400000}
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       TZ: America/Argentina/Buenos_Aires
-      # Clave de las sesiones (obligatoria: sin ella el backend no arranca). Sale del archivo .env
-      FARO_JWT_SECRET: ${FARO_JWT_SECRET:-}
       # Almacén de fotos: el servicio rustfs de acá abajo. Las claves salen del archivo .env (no se sube a GitHub)
-      # s3 = el servicio rustfs de abajo (hace falta FARO_S3_* en .env) · memoria = sin depósito, las fotos se pierden al reiniciar
-      FARO_ALMACEN: ${FARO_ALMACEN:-s3}
-      # Requiere habilitación explícita; en Render no se define y queda desactivado.
-      FARO_ALMACEN_MEMORIA_PERMITIDA: ${FARO_ALMACEN_MEMORIA_PERMITIDA:-false}
       FARO_S3_ENDPOINT: http://rustfs:9000
       FARO_S3_BUCKET: faro-fotos
       FARO_S3_ACCESS_KEY: ${FARO_S3_ACCESS_KEY:-}
@@ -87,25 +81,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     command: npm run dev -- --host 0.0.0.0
-
-  # Para probar FARO SIN CONEXIÓN (PWA): la versión compilada, con service worker, en http://localhost:4173.
-  # El servidor de desarrollo (frontend, puerto 5173) no registra service worker a propósito, así que sin red
-  # muestra el dinosaurio de Chrome. Se levanta aparte y no pisa al de desarrollo:
-  #   docker compose --profile pwa up --build frontend-pwa
-  # Cada cambio de código requiere volver a correr ese comando (compila de nuevo).
-  frontend-pwa:
-    profiles: ["pwa"]
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: faro-frontend-pwa
-    depends_on:
-      - backend
-    environment:
-      API_PROXY_TARGET: http://backend:8080
-    ports:
-      - "4173:4173"
-    command: npm run pwa
 
 volumes:
   db_data:
