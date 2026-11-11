@@ -21,7 +21,7 @@
 .selector-periodo .error-campo { margin-top: -8px; }
 
 /* Totales del período */
-.indicadores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 24px; padding: 0; list-style: none; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--blanco); }
+.indicadores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 0 24px; padding: 0; list-style: none; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--blanco); }
 .indicadores li { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 20px 24px; }
 .indicadores li + li { border-left: 1px solid var(--borde); }
 .indicador-nombre { color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 600; }
@@ -84,7 +84,7 @@
 @media (max-width: 1050px) {
   .reportes-columnas { grid-template-columns: minmax(0, 1fr); }
   .indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .indicadores li:nth-child(3) { border-left: 0; }
+  .indicadores li:nth-child(odd) { border-left: 0; }
   .indicadores li:nth-child(n + 3) { border-top: 1px solid var(--borde); }
 }
 @media (max-width: 760px) {

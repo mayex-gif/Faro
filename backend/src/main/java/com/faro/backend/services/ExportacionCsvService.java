@@ -51,6 +51,8 @@ public class ExportacionCsvService {
           .append("Lugar").append(SEPARADOR)
           .append("Origen").append(SEPARADOR)
           .append("Prioridad").append(SEPARADOR)
+          .append("Monto Aproximado Gastado").append(SEPARADOR)
+          .append("Ubicacion de Calle").append(SEPARADOR)
           .append("Fecha Creacion").append(SEPARADOR)
           .append("Fecha Finalizacion")
           .append(NUEVA_LINEA);
@@ -64,6 +66,8 @@ public class ExportacionCsvService {
               .append(escapar(ot.getLugar() != null ? ot.getLugar().getNombre() : "")).append(SEPARADOR)
               .append(escapar(ot.getOrigen().name())).append(SEPARADOR)
               .append(escapar(ot.getPrioridad().name())).append(SEPARADOR)
+              .append(ot.getMontoAproximado() != null ? ot.getMontoAproximado().toPlainString() : "").append(SEPARADOR)
+              .append(escapar(ubicacionCalle(ot))).append(SEPARADOR)
               .append(ot.getFechaCreacion() != null ? ot.getFechaCreacion().format(FMT_FECHA_HORA) : "").append(SEPARADOR)
               .append(ot.getFechaFinalizacion() != null ? ot.getFechaFinalizacion().format(FMT_FECHA_HORA) : "")
               .append(NUEVA_LINEA);
@@ -131,5 +135,11 @@ public class ExportacionCsvService {
             return "\"" + valor.replace("\"", "\"\"") + "\"";
         }
         return valor;
+    }
+
+    private String ubicacionCalle(OrdenTrabajo ot) {
+        if (ot.getAltura() != null) return "Altura " + ot.getAltura();
+        if (ot.getCalleEntre1() != null) return "Entre " + ot.getCalleEntre1() + " y " + ot.getCalleEntre2();
+        return "";
     }
 }

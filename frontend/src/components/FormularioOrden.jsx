@@ -20,6 +20,11 @@ const FORMULARIO_VACIO = {
   origen: '',
   prioridad: 'MEDIA',
   lugarId: '',
+  modoUbicacion: 'NINGUNA',
+  calleEntre1: '',
+  calleEntre2: '',
+  altura: '',
+  montoAproximado: '',
 }
 
 // Convierte una OT que viene del backend en los valores del formulario
@@ -30,6 +35,11 @@ function ordenAFormulario(orden) {
     origen: orden.origen,
     prioridad: orden.prioridad,
     lugarId: String(orden.lugarId), // los <select> trabajan con texto
+    modoUbicacion: orden.altura ? 'ALTURA' : (orden.calleEntre1 ? 'ENTRE_CALLES' : 'NINGUNA'),
+    calleEntre1: orden.calleEntre1 ?? '',
+    calleEntre2: orden.calleEntre2 ?? '',
+    altura: orden.altura ?? '',
+    montoAproximado: orden.montoAproximado ?? '',
   }
 }
 
@@ -70,6 +80,9 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
   }, [])
 
   const sinLugares = !errorLugares && lugares.length === 0
+  const lugarSeleccionado = lugares.find((lugar) => String(lugar.id) === String(datos.lugarId))
+  const esLugarCalle = lugarSeleccionado?.tipo === 'CALLE'
+  const modoUbicacion = esLugarCalle ? datos.modoUbicacion : 'NINGUNA'
 
   // Al editar, o si ya viene el lugar elegido, el cursor arranca en la descripción
   useEffect(() => {
@@ -78,7 +91,15 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
 
   function cambiar(evento) {
     const { name, value } = evento.target
-    setDatos({ ...datos, [name]: value })
+    setDatos((anterior) => {
+      if (name === 'lugarId') {
+        const lugarNuevo = lugares.find((lugar) => String(lugar.id) === value)
+        return lugarNuevo?.tipo === 'CALLE'
+          ? { ...anterior, lugarId: value }
+          : { ...anterior, lugarId: value, modoUbicacion: 'NINGUNA', calleEntre1: '', calleEntre2: '', altura: '' }
+      }
+      return { ...anterior, [name]: value }
+    })
     // Si el campo tenía un error y el usuario lo está corrigiendo, lo sacamos
     if (errores[name]) setErrores({ ...errores, [name]: undefined })
   }
@@ -100,6 +121,16 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
     if (!repite && !datos.origen) encontrados.origen = 'Elegí de dónde surge la orden.'
     if (!datos.prioridad) encontrados.prioridad = 'Elegí la prioridad.'
     if (!datos.lugarId) encontrados.lugarId = 'Elegí el lugar donde se va a trabajar.'
+    if (modoUbicacion === 'ENTRE_CALLES') {
+      if (!datos.calleEntre1.trim()) encontrados.calleEntre1 = 'Indicá la primera calle.'
+      if (!datos.calleEntre2.trim()) encontrados.calleEntre2 = 'Indicá la segunda calle.'
+    }
+    if (modoUbicacion === 'ALTURA') {
+      if (!datos.altura.trim()) encontrados.altura = 'Indicá la altura.'
+    }
+    if (datos.montoAproximado !== '' && (!Number.isFinite(Number(datos.montoAproximado)) || Number(datos.montoAproximado) < 0)) {
+      encontrados.montoAproximado = 'Ingresá un monto igual o mayor a cero.'
+    }
     return repite ? { ...encontrados, ...validarProgramacion(datos, recurrencia) } : encontrados
   }
 
@@ -124,6 +155,10 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
       origen: datos.origen,
       prioridad: datos.prioridad,
       lugarId: Number(datos.lugarId),
+      calleEntre1: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre1.trim() : null,
+      calleEntre2: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre2.trim() : null,
+      altura: modoUbicacion === 'ALTURA' ? datos.altura.trim() : null,
+      montoAproximado: datos.montoAproximado === '' ? null : Number(datos.montoAproximado),
     }
 
     envioEnCurso.current = true
@@ -275,6 +310,33 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
                   ))}
                 </select>
                 {mensajeCampo('lugarId', 'ayuda-lugar', 'El lugar del pueblo donde se va a realizar el trabajo.')}
+              </div>
+
+              {esLugarCalle && <div className="campo">
+                <label htmlFor="modoUbicacion">Ubicación dentro de la calle</label>
+                <select id="modoUbicacion" name="modoUbicacion" value={datos.modoUbicacion} onChange={cambiar}>
+                  <option value="NINGUNA">Sin detalle</option>
+                  <option value="ENTRE_CALLES">Entre calles</option>
+                  <option value="ALTURA">Por altura</option>
+                </select>
+              </div>}
+              {esLugarCalle && datos.modoUbicacion === 'ENTRE_CALLES' && <>
+                <div className="campo"><label htmlFor="calleEntre1">Entre calle <span aria-hidden="true">*</span></label>
+                  <input id="calleEntre1" name="calleEntre1" maxLength={120} value={datos.calleEntre1} onChange={cambiar} {...accesibilidad('calleEntre1')} />
+                  {mensajeCampo('calleEntre1')}</div>
+                <div className="campo"><label htmlFor="calleEntre2">Y calle <span aria-hidden="true">*</span></label>
+                  <input id="calleEntre2" name="calleEntre2" maxLength={120} value={datos.calleEntre2} onChange={cambiar} {...accesibilidad('calleEntre2')} />
+                  {mensajeCampo('calleEntre2')}</div>
+              </>}
+              {esLugarCalle && datos.modoUbicacion === 'ALTURA' && <div className="campo">
+                <label htmlFor="altura">Altura <span aria-hidden="true">*</span></label>
+                <input id="altura" name="altura" maxLength={20} value={datos.altura} onChange={cambiar} {...accesibilidad('altura')} />
+                {mensajeCampo('altura')}</div>}
+              <div className="campo">
+                <label htmlFor="montoAproximado">Monto aproximado gastado</label>
+                <input id="montoAproximado" name="montoAproximado" type="number" min="0" step="0.01"
+                  value={datos.montoAproximado} onChange={cambiar} {...accesibilidad('montoAproximado')} />
+                {mensajeCampo('montoAproximado', null, 'Opcional. Se incluye en los reportes como estimación.')}
               </div>
 
               <div className="campo">

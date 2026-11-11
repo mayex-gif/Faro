@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 /**
  * Servicio de reportes: orquesta las consultas JPA agrupadas y construye
@@ -96,7 +97,9 @@ public class ReporteService {
                 porTipoTrabajo,
                 porCuadrilla,
                 porPeriodo,
-                resumenDesvios
+                resumenDesvios,
+                java.util.Optional.ofNullable(reporteRepository.sumarMontosAproximados(desdeTs, hastaTs))
+                        .orElse(BigDecimal.ZERO)
         );
     }
 

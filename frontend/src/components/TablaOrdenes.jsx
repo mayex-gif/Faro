@@ -46,6 +46,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
             <tr>
               <th scope="col">Trabajo</th>
               <th scope="col">Lugar</th>
+              <th scope="col">Ubicación</th>
               <th scope="col">Tipo</th>
               <th scope="col">Origen</th>
               <th scope="col">Prioridad</th>
@@ -76,6 +77,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   </span>}
                 </th>
                 <td>{orden.lugarNombre}</td>
+                <td>{orden.altura ? `Altura ${orden.altura}` : (orden.calleEntre1 ? `Entre ${orden.calleEntre1} y ${orden.calleEntre2}` : '—')}</td>
                 <td><span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span></td>
                 <td>{etiqueta(ORIGENES, orden.origen)}</td>
                 <td>

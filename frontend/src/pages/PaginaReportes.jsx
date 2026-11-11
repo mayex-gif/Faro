@@ -160,6 +160,13 @@ function PaginaReportes() {
                   <span className="indicador-detalle">pendientes, asignadas o en curso</span>
                 </li>
                 <li>
+                  <span className="indicador-nombre">Monto aproximado</span>
+                  <strong className="indicador-valor">{Number(tablero.montoAproximadoTotal ?? 0).toLocaleString('es-AR', {
+                    style: 'currency', currency: 'ARS', maximumFractionDigits: 2,
+                  })}</strong>
+                  <span className="indicador-detalle">informado para las órdenes del período</span>
+                </li>
+                <li>
                   <span className="indicador-nombre">Plan cumplido a tiempo</span>
                   <strong className="indicador-valor">{finalizadasPlan > 0 ? `${Math.round(desvios.porcentajeCumplimiento)}%` : '—'}</strong>
                   <span className="indicador-detalle">
