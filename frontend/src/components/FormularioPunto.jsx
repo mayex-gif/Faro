@@ -10,7 +10,7 @@ const FORMULARIO_VACIO = {
   tipo: 'LUMINARIA',
   datosTecnicos: '',
   estadoOperativo: true,
-  instalada: true, // solo luminarias: false = "Todavía no está instalada" (falta poner)
+  instalada: true, // solo luminarias: false = luminaria a futuro (la planificó el intendente, todavía no se puso)
   latitud: '',
   longitud: '',
 }
@@ -175,8 +175,8 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
                 <input id="instalada" name="instalada" type="checkbox" checked={!datos.instalada}
                   onChange={(evento) => setDatos({ ...datos, instalada: !evento.target.checked })} aria-describedby="ayuda-instalada" />
                 <span>
-                  <strong>Todavía no está instalada</strong>
-                  <span id="ayuda-instalada">Marcala si la luminaria está planificada pero falta ponerla.</span>
+                  <strong>Luminaria a futuro</strong>
+                  <span id="ayuda-instalada">Planificada por el intendente, todavía no se puso. No se le pueden asignar OT hasta marcarla como instalada.</span>
                 </span>
               </label>
             )}

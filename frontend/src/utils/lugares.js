@@ -25,20 +25,20 @@ export function lugaresDeCategoria(lugares, categoria) {
   return lugares.filter((lugar) => tipos.includes(lugar.tipo))
 }
 
-// Texto del estado de un lugar en las listas: las luminarias que faltan poner (instalada === false) lo dicen.
+// Texto del estado de un lugar en las listas: las luminarias a futuro (instalada === false) lo dicen.
 export function textoEstadoLugar(lugar) {
-  if (lugar.instalada === false) return 'Falta poner'
+  if (lugar.instalada === false) return 'A futuro'
   return textoEstadoOperativo(lugar.estadoOperativo)
 }
 
-// Clase CSS del estado: verde (funciona), rojo (fuera de servicio) o gris (falta poner).
+// Clase CSS del estado: verde (funciona), rojo (fuera de servicio) o gris (a futuro).
 export function claseEstadoLugar(lugar) {
   if (lugar.instalada === false) return 'estado estado-pendiente'
   return lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'
 }
 
 // Los dos datos de estado que se mandan al backend al guardar un lugar desde un formulario.
-// "Todavía no está instalada" solo existe para luminarias, y una luminaria que no se puso no puede funcionar.
+// "A futuro" (instalada = false) solo existe para luminarias, y una luminaria que no se puso no puede funcionar.
 export function estadoParaGuardar({ tipo, estadoOperativo, instalada }) {
   if (tipo !== 'LUMINARIA') return { estadoOperativo, instalada: true }
   return instalada === false ? { estadoOperativo: false, instalada: false } : { estadoOperativo, instalada: true }

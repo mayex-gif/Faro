@@ -126,20 +126,21 @@ export const AYUDA = {
 
   luminarias: {
     titulo: 'Luminarias',
-    resumen: 'El registro del alumbrado público: cada luminaria del pueblo, sus datos técnicos, si funciona y cuáles faltan poner.',
+    resumen: 'El registro del alumbrado público: cada luminaria del pueblo, sus datos técnicos, si funciona y las luminarias a futuro que planificó el intendente.',
     secciones: [
       {
         titulo: 'Registrar una luminaria',
         items: [
           'Completá el nombre (por ejemplo "Luminaria San Martín y Belgrano") y los datos técnicos (potencia, altura del poste, tipo de lámpara…).',
           'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448). También podés agregarla tocando el mapa: Mapa → pestaña Luminarias → "Agregar luminaria".',
-          'Si está apagada, desmarcá "Funciona correctamente". Si está planificada pero todavía no se puso, marcá "Todavía no está instalada". Después tocá "Registrar luminaria".',
+          'Si está apagada, desmarcá "Funciona correctamente". Después tocá "Registrar luminaria".',
+          'Si es una luminaria que el intendente planificó y todavía no se puso, marcá "Luminaria a futuro". No se le pueden asignar órdenes de trabajo hasta que se instale: ahí, en el Mapa → pestaña Luminarias, tocala y elegí "Marcar como instalada".',
         ],
       },
       {
         titulo: 'Consultar y modificar',
         items: [
-          'Filtrá por nombre, datos técnicos o estado: Funciona, Fuera de servicio o Falta poner.',
+          'Filtrá por nombre, datos técnicos o estado: Funciona, Fuera de servicio o A futuro.',
           '"Editar" carga la luminaria en el formulario; "Ficha" abre su historia; "Borrar" la elimina (si tiene órdenes de trabajo, FARO no deja borrarla).',
           'Para ver cómo está todo el alumbrado de un vistazo, entrá al Mapa → pestaña Luminarias. Ahí también podés cambiar el estado de una luminaria tocándola.',
         ],

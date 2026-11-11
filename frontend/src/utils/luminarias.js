@@ -13,7 +13,9 @@ export const ESTADOS_LUMINARIA = [
   { clave: 'funciona', nombre: 'Funciona', plural: 'Funcionan', descripcion: 'Anda bien', color: '#2F9E5B' },
   { clave: 'apagada', nombre: 'Apagada', plural: 'Apagadas', descripcion: 'No anda y no tiene una OT abierta', color: '#B3261E' },
   { clave: 'arreglo', nombre: 'En arreglo', plural: 'En arreglo', descripcion: 'No anda y ya tiene una OT abierta', color: '#F2B01E' },
-  { clave: 'falta', nombre: 'Falta poner', plural: 'Faltan poner', descripcion: 'Planificada, todavía no se instaló', color: '#4F5D65' },
+  // "A futuro": las que el intendente planificó (con su arquitecto, ingeniero…). Las carga el encargado, no llevan OT
+  // y se marcan como instaladas cuando se ponen. La clave 'falta' es la de siempre (instalada === false).
+  { clave: 'falta', nombre: 'A futuro', plural: 'A futuro', descripcion: 'Planificada, todavía no se instaló', color: '#4F5D65' },
 ]
 
 export function datosDelEstado(clave) {
@@ -49,7 +51,7 @@ function contarPorEstado(items) {
   return cuenta
 }
 
-// Porcentaje de las INSTALADAS que funcionan (las que faltan poner no cuentan). null si no hay ninguna instalada.
+// Porcentaje de las INSTALADAS que funcionan (las luminarias a futuro no cuentan). null si no hay ninguna instalada.
 function porcentajeQueFunciona(cuenta) {
   const instaladas = cuenta.funciona + cuenta.apagada + cuenta.arreglo
   return instaladas === 0 ? null : Math.round((cuenta.funciona * 100) / instaladas)
@@ -137,9 +139,11 @@ export function textoDeZona(zona) {
 }
 
 // ---------- Cambiar el estado desde el mapa (ficha de la luminaria) ----------
-// Se elige a mano entre tres: Funciona, Apagada o Falta poner. "En arreglo" NO se elige: sale de tener una OT
+// Una luminaria instalada se cambia a mano entre Funciona y Apagada. "En arreglo" NO se elige: sale de tener una OT
 // abierta (desde la ficha se crea con "Crear OT de arreglo") y, al finalizar esa OT, el backend la deja funcionando.
-export const ESTADOS_A_MANO = ['funciona', 'apagada', 'falta']
+// Las luminarias a futuro no se eligen acá: se cargan así ("Agregar luminaria a futuro") y se pasan a
+// instaladas con "Marcar como instalada" (= pedidoParaEstado(lugar, 'funciona')).
+export const ESTADOS_A_MANO = ['funciona', 'apagada']
 
 const DATOS_A_MANO = {
   funciona: { estadoOperativo: true, instalada: true },
@@ -147,7 +151,7 @@ const DATOS_A_MANO = {
   falta: { estadoOperativo: false, instalada: false },
 }
 
-// Cuál de los tres está marcado hoy (sin mirar las OT: "en arreglo" se ve como "apagada")
+// Cómo está marcada hoy (sin mirar las OT: "en arreglo" se ve como "apagada"; 'falta' = a futuro)
 export function estadoAMano(lugar) {
   if (lugar.instalada === false) return 'falta'
   return lugar.estadoOperativo === false ? 'apagada' : 'funciona'

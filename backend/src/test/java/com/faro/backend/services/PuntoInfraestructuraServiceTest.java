@@ -247,6 +247,30 @@ class PuntoInfraestructuraServiceTest {
     }
 
     @Test
+    void modificarLugar_pasarAFuturoUnaLuminariaConOrdenes_lanzaErrorYNoGuarda() {
+        PuntoInfraestructura existente = lugar(6L, "Luminaria #300", "LUMINARIA", true);
+        when(repository.findById(6L)).thenReturn(Optional.of(existente));
+        when(ordenRepository.existsByLugarId(6L)).thenReturn(true);
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Luminaria #300", "LUMINARIA", "", false, punto(-58.50, -34.70), false);
+
+        assertThrows(OperacionNoPermitidaException.class, () -> service.modificarLugar(6L, cambios));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modificarLugar_pasarAFuturoUnaLuminariaSinOrdenes_seGuarda() {
+        PuntoInfraestructura existente = lugar(6L, "Luminaria #300", "LUMINARIA", true);
+        when(repository.findById(6L)).thenReturn(Optional.of(existente));
+        when(ordenRepository.existsByLugarId(6L)).thenReturn(false);
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Luminaria #300", "LUMINARIA", "", false, punto(-58.50, -34.70), false);
+
+        assertFalse(service.modificarLugar(6L, cambios).instalada());
+    }
+
+    @Test
     void obtenerTodos_lugarViejoSinInstalada_llegaComoInstalado() {
         // los lugares cargados antes del campo tienen instalada = null en la base
         when(repository.findAll()).thenReturn(List.of(lugar(1L, "Luminaria #102", "LUMINARIA", true)));

@@ -78,12 +78,13 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
         </button>
-        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
+        {/* Las luminarias a futuro no llevan OT (el backend también lo controla) */}
+        {puedeCrearOrden(usuario) && lugar.instalada !== false && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
         </button>}
       </div>
 
-      {/* Luminarias: cómo está y, para el encargado, cambiarla ahí mismo (Funciona / Apagada / Falta poner) */}
+      {/* Luminarias: cómo está y, para el encargado, cambiarla ahí mismo (Funciona / Apagada, o marcar como instalada) */}
       {esLuminaria(lugar) && (
         <EstadoLuminaria resumen={resumen} puedeCambiar={puedeCambiarEstadoLuminaria(usuario)} puedeCrearOT={puedeCrearOrden(usuario)}
           onCambiado={(actualizado) => { onLugarActualizado?.(actualizado); setIntento((anterior) => anterior + 1) }}

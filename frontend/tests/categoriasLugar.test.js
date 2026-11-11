@@ -22,10 +22,10 @@ test('sin categoría (o una desconocida) se ven todos los tipos', () => {
   assert.equal(lugaresDeCategoria(lugares, 'otra').length, 4)
 })
 
-test('el estado dice "Falta poner" para las luminarias que no se instalaron', () => {
+test('el estado dice "A futuro" para las luminarias que no se instalaron', () => {
   assert.equal(textoEstadoLugar(lugares[0]), 'Funciona')
   assert.equal(textoEstadoLugar(lugares[1]), 'Fuera de servicio')
-  assert.equal(textoEstadoLugar(lugares[3]), 'Falta poner')
+  assert.equal(textoEstadoLugar(lugares[3]), 'A futuro')
   assert.equal(claseEstadoLugar(lugares[3]), 'estado estado-pendiente')
   assert.equal(claseEstadoLugar(lugares[1]), 'estado estado-falla')
 })

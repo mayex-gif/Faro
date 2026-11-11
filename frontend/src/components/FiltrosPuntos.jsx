@@ -1,7 +1,7 @@
 import { TIPOS_LUGAR, tiposDeCategoria } from '../utils/lugares'
 
 // tipos: los tipos de lugar de la pantalla (Infraestructura: espacios verdes y calles; Luminarias: solo luminarias).
-// Con un solo tipo no se muestra el filtro de tipo. Si hay luminarias, se puede filtrar por "Falta poner".
+// Con un solo tipo no se muestra el filtro de tipo. Si hay luminarias, se puede filtrar por "A futuro".
 function FiltrosPuntos({ filtros, onCambiar, onLimpiar, tipos = tiposDeCategoria() }) {
   function cambiar(evento) {
     const { name, value } = evento.target
@@ -46,7 +46,7 @@ function FiltrosPuntos({ filtros, onCambiar, onLimpiar, tipos = tiposDeCategoria
             <option value="">Todos los estados</option>
             <option value="funciona">Funciona</option>
             <option value="falla">Fuera de servicio</option>
-            {tipos.includes('LUMINARIA') && <option value="falta">Falta poner</option>}
+            {tipos.includes('LUMINARIA') && <option value="falta">A futuro</option>}
           </select>
         </div>
       </div>

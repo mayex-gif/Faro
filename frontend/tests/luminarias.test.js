@@ -18,7 +18,7 @@ const otAbierta = { id: 50, lugarId: 1, prioridad: 'ALTA', estadoId: 1 }
 
 test('hay cuatro estados, en el orden de la leyenda, y se buscan por clave', () => {
   assert.deepEqual(ESTADOS_LUMINARIA.map((e) => e.clave), ['funciona', 'apagada', 'arreglo', 'falta'])
-  assert.equal(datosDelEstado('falta').plural, 'Faltan poner')
+  assert.equal(datosDelEstado('falta').nombre, 'A futuro')
   assert.equal(datosDelEstado('otra'), null)
 })
 
@@ -40,7 +40,7 @@ test('si no funciona: "apagada" sin OT abierta, "arreglo" con OT abierta', () =>
   assert.equal(estadoLuminaria(resumen(1, { estadoOperativo: false, ordenes: [otAbierta] })), 'arreglo')
 })
 
-test('"falta poner" gana sobre todo lo demás (aunque tenga la OT de instalación abierta)', () => {
+test('"a futuro" gana sobre todo lo demás', () => {
   assert.equal(estadoLuminaria(resumen(1, { instalada: false, estadoOperativo: false })), 'falta')
   assert.equal(estadoLuminaria(resumen(1, { instalada: false, ordenes: [otAbierta] })), 'falta')
 })
@@ -103,7 +103,7 @@ test('las zonas parten el pueblo en 4 y salen primero las que tienen menos luz',
   assert.deepEqual(noreste.limites, { sur: -31.13, norte: -31.11, oeste: -64.14, este: -64.12 })
 })
 
-test('una zona donde solo hay luminarias que faltan poner no aparece', () => {
+test('una zona donde solo hay luminarias a futuro no aparece', () => {
   const items = esquinas().filter((i) => i.resumen.lugar.id !== 2 && i.resumen.lugar.id !== 5)
   items.push(...luminariasConEstado([resumen(9, { lng: -64.12, lat: -31.11, instalada: false })]))
   assert.equal(zonasDeLuminarias(items).some((z) => z.clave === 'noreste'), false)
@@ -122,8 +122,8 @@ test('el texto de la zona dice cuántas apagadas y, si hay, cuántas en arreglo'
   assert.equal(textoDeZona({ cuenta: { apagada: 0, arreglo: 2 } }), '0 apagadas · 2 en arreglo')
 })
 
-test('a mano se eligen tres estados; "en arreglo" sale de las OT', () => {
-  assert.deepEqual(ESTADOS_A_MANO, ['funciona', 'apagada', 'falta'])
+test('a mano se elige Funciona o Apagada; "en arreglo" sale de las OT y "a futuro" se carga así', () => {
+  assert.deepEqual(ESTADOS_A_MANO, ['funciona', 'apagada'])
   assert.equal(estadoAMano({ estadoOperativo: true, instalada: true }), 'funciona')
   assert.equal(estadoAMano({ estadoOperativo: false, instalada: true }), 'apagada')
   assert.equal(estadoAMano({ estadoOperativo: false, instalada: false }), 'falta')

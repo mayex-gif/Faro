@@ -12,8 +12,12 @@ import { puntoEnLaZona, redondearCoordenada, ubicacionDelPunto } from '../utils/
 // - onGuardado(lugarCreado): el backend registró el lugar (responde el lugar con su id)
 // - onCancelar(): salir sin guardar
 // - tipos: qué se puede registrar (pestaña "Todo el pueblo": espacios verdes y calles; pestaña Luminarias: luminarias)
-function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCategoria() }) {
-  const [datos, setDatos] = useState({ nombre: '', tipo: tipos[0], datosTecnicos: '', estadoOperativo: true, instalada: true })
+// - permitirAFuturo: se puede cargar una luminaria a futuro (solo el encargado; ver utils/permisos.js)
+// - aFuturo: arranca como luminaria a futuro ("Agregar luminaria a futuro" del panel de Luminarias)
+function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCategoria(), permitirAFuturo = false, aFuturo = false }) {
+  const [datos, setDatos] = useState({
+    nombre: '', tipo: tipos[0], datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !(aFuturo && permitirAFuturo),
+  })
   const soloLuminarias = tipos.length === 1 && tipos[0] === 'LUMINARIA'
   const sinInstalar = datos.tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
@@ -105,11 +109,11 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCat
               <label htmlFor="lugar-nuevo-datos">Datos técnicos <span className="opcional">(opcional)</span></label>
               <textarea id="lugar-nuevo-datos" name="datosTecnicos" rows={2} value={datos.datosTecnicos} onChange={cambiar} />
             </div>
-            {datos.tipo === 'LUMINARIA' && (
+            {datos.tipo === 'LUMINARIA' && permitirAFuturo && (
               <label className="campo-check" htmlFor="lugar-nuevo-instalada">
                 <input id="lugar-nuevo-instalada" type="checkbox" checked={!datos.instalada}
                   onChange={(evento) => setDatos({ ...datos, instalada: !evento.target.checked })} />
-                <span><strong>Todavía no está instalada</strong><span>Marcala si está planificada pero falta ponerla.</span></span>
+                <span><strong>Luminaria a futuro</strong><span>Planificada por el intendente, todavía no se puso. No lleva OT hasta marcarla como instalada.</span></span>
               </label>
             )}
             <label className="campo-check" htmlFor="lugar-nuevo-funciona">

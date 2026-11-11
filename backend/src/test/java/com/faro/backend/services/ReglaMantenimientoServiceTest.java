@@ -2,6 +2,7 @@ package com.faro.backend.services;
 
 import com.faro.backend.dto.ReglaMantenimientoDTO;
 import com.faro.backend.dto.ReglaMantenimientoRequestDTO;
+import com.faro.backend.exceptions.DatoInvalidoException;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.*;
@@ -184,6 +185,18 @@ class ReglaMantenimientoServiceTest {
         when(lugarRepository.findById(10L)).thenReturn(Optional.empty());
 
         assertThrows(RecursoNoEncontradoException.class, () -> service.crear(request));
+        verify(reglaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Crear regla falla con 400 si el lugar es una luminaria a futuro")
+    void crearReglaEnLuminariaAFuturo() {
+        ReglaMantenimientoRequestDTO request = pedidoValido(LocalDate.now(), null);
+        plaza.setTipo("LUMINARIA");
+        plaza.setInstalada(false);
+        when(lugarRepository.findById(10L)).thenReturn(Optional.of(plaza));
+
+        assertThrows(DatoInvalidoException.class, () -> service.crear(request));
         verify(reglaRepository, never()).save(any());
     }
 

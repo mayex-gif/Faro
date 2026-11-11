@@ -131,13 +131,14 @@ class OrdenTrabajoServiceEstadoTest {
     }
 
     @Test
-    void cambiarEstado_finalizarLaOtDeUnaLuminariaQueFaltabaPoner_quedaInstaladaYFuncionando() {
+    void cambiarEstado_finalizarUnaOtDeUnaLuminariaAFuturo_noLaMarcaComoInstalada() {
+        // No debería pasar (no se le pueden crear OT), pero si había una vieja, instalarla lo decide el encargado
         OrdenTrabajo orden = ordenDeLuminaria(false, false);
 
         pasarA(orden, finalizada);
 
-        assertTrue(orden.getLugar().getInstalada());
-        assertTrue(orden.getLugar().getEstadoOperativo());
+        assertFalse(orden.getLugar().getInstalada());
+        assertFalse(orden.getLugar().getEstadoOperativo());
     }
 
     @Test

@@ -272,7 +272,7 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
                 <select id="lugarId" name="lugarId" value={datos.lugarId} onChange={cambiar} required
                   disabled={sinLugares || errorLugares} {...accesibilidad('lugarId', 'ayuda-lugar')}>
                   <option value="">Elegí un lugar…</option>
-                  {lugares.map((lugar) => (
+                  {lugares.filter((lugar) => lugar.instalada !== false).map((lugar) => ( // sin luminarias a futuro: no llevan OT
                     <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>
                   ))}
                 </select>

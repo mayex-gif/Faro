@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  inicioDe, puedeAsignar, puedeCambiarEstadoLuminaria, puedeCrearOrden, puedeGestionarMantenimiento, puedeGestionarUsuarios, puedeVer,
+  inicioDe, puedeAsignar, puedeCambiarEstadoLuminaria, puedeCargarLuminariaAFuturo, puedeCrearOrden, puedeGestionarMantenimiento, puedeGestionarUsuarios, puedeVer,
   puedeVerAuditoria, puedeVerReportes, rolConocido, tieneRol,
 } from '../src/utils/permisos.js'
 
@@ -82,4 +82,10 @@ test('la sección Luminarias (Más → Luminarias) es del encargado, como Infrae
   assert.equal(puedeVer(encargado, 'luminarias'), true)
   assert.equal(puedeVer(mesa, 'luminarias'), false)
   assert.equal(puedeVer(capataz, 'luminarias'), false)
+})
+
+test('las luminarias a futuro las carga solo el encargado (por ahora, hasta que exista el rol Intendente)', () => {
+  assert.equal(puedeCargarLuminariaAFuturo(encargado), true)
+  assert.equal(puedeCargarLuminariaAFuturo(mesa), false)
+  assert.equal(puedeCargarLuminariaAFuturo(capataz), false)
 })

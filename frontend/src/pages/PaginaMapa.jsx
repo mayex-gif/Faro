@@ -24,7 +24,7 @@ import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
 import { tiposDeCategoria } from '../utils/lugares'
 import { useSesion } from '../context/useSesion'
-import { puedeAgregarLugar, puedeVer } from '../utils/permisos'
+import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
 import '../estilos-luminarias.css'
@@ -70,6 +70,7 @@ function PaginaMapa({ params, onNavegar }) {
   const puedeAgregar = puedeAgregarLugar(usuario)
   const [agregando, setAgregando] = useState(false)
   const [puntoNuevo, setPuntoNuevo] = useState(null) // { latitud, longitud } del pin
+  const [agregandoAFuturo, setAgregandoAFuturo] = useState(false) // "Agregar luminaria a futuro" (panel de Luminarias)
   const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
   const hojaLugarNuevo = useRef(null) // celular: la hoja del formulario, para que el mapa no deje el pin debajo
 
@@ -131,7 +132,8 @@ function PaginaMapa({ params, onNavegar }) {
     return () => window.clearTimeout(reloj)
   }, [aviso])
 
-  function empezarAgregar() {
+  function empezarAgregar(aFuturo = false) {
+    setAgregandoAFuturo(aFuturo === true)
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
@@ -292,6 +294,7 @@ function PaginaMapa({ params, onNavegar }) {
       ) : pestana === 'luminarias' ? (
         <PanelLuminarias items={luminarias} totales={totalesLuminarias} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista}
           zonaElegida={zonaElegida?.clave ?? null}
+          onAgregarAFuturo={puedeCargarLuminariaAFuturo(usuario) ? () => empezarAgregar(true) : undefined}
           onElegirZona={(zona) => { setZonaElegida(zona); if (angosta && zona) setVistaAngosta('mapa') }} />
       ) : (
         <ListaLugares resumenes={enLista} total={resumenes.length}
@@ -427,8 +430,9 @@ function PaginaMapa({ params, onNavegar }) {
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
           {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
-          <FormularioLugarMapa key={pestana} punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
-            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')} />
+          <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
+            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')}
+            permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>
       )}
 

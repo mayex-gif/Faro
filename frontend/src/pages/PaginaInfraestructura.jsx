@@ -20,7 +20,7 @@ const TEXTOS = {
   },
   luminarias: {
     sobreTitulo: 'ALUMBRADO PÚBLICO', titulo: 'Luminarias',
-    bajada: 'Registrá las luminarias del pueblo, si funcionan y cuáles faltan poner. Para ver cómo está el alumbrado, entrá al Mapa → pestaña Luminarias.',
+    bajada: 'Registrá las luminarias del pueblo, si funcionan y las luminarias a futuro que planificó el intendente. Para ver cómo está el alumbrado, entrá al Mapa → pestaña Luminarias.',
     listado: 'Luminarias registradas', ayudaListado: 'Consultá los datos y el estado de cada luminaria.',
     contador: 'luminarias', vacio: 'Todavía no hay luminarias cargadas.', cargando: 'Cargando luminarias…',
   },

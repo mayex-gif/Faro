@@ -45,9 +45,15 @@ export function puedeAgregarLugar(usuario) {
   return tieneRol(usuario, ENCARGADO, MESA)
 }
 
-// Cambiar el estado de una luminaria desde el mapa (Funciona / Apagada / Falta poner) es modificar el lugar:
+// Cambiar el estado de una luminaria desde el mapa (Funciona / Apagada, o "Marcar como instalada") es modificar el lugar:
 // en el backend, PUT /api/infraestructura/{id} es solo del encargado. Los demás lo ven, pero no lo cambian.
 export function puedeCambiarEstadoLuminaria(usuario) {
+  return tieneRol(usuario, ENCARGADO)
+}
+
+// Luminarias a futuro (las que planificó el intendente): por ahora las carga solo el encargado.
+// El backend también lo controla (mesa recibe 403 si lo intenta).
+export function puedeCargarLuminariaAFuturo(usuario) {
   return tieneRol(usuario, ENCARGADO)
 }
 

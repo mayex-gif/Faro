@@ -75,7 +75,7 @@
 /* ---- Ficha de la luminaria: "Estado de la luminaria" (components/EstadoLuminaria.jsx) ---- */
 .estado-luminaria { display: flex; flex-direction: column; gap: 10px; }
 .estado-luminaria-actual { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 0.875rem; }
-.opciones-estado-luminaria { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
+.opciones-estado-luminaria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
 .opciones-estado-luminaria legend { margin-bottom: 6px; padding: 0; color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 650; }
 .opcion-estado-luminaria { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; border: 1px solid var(--borde); border-radius: 10px; background: var(--blanco); font-size: 0.8125rem; font-weight: 600; text-align: center; cursor: pointer; }
 .opcion-estado-luminaria:hover { border-color: var(--borde-campo); }
@@ -108,3 +108,5 @@
 .zona-luz-barra { display: block; height: 8px; overflow: hidden; border-radius: 4px; background: #FBE4E2; }
 .zona-luz-barra span { display: block; height: 100%; background: #2F9E5B; }
 .zona-luz-texto { color: var(--texto-secundario); font-size: 0.8125rem; }
+.luminarias-accion { margin: 2px 0 6px; }
+.estado-luminaria .boton-primario { align-self: stretch; }

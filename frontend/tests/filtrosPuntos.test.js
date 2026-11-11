@@ -27,7 +27,7 @@ test('lugares: sin coincidencias y sin registros devuelve lista vacía', () => {
   assert.deepEqual(filtrarPuntos([], FILTROS_VACIOS), [])
 })
 
-test('luminarias: "Falta poner" separa las que todavía no se instalaron de las fuera de servicio', () => {
+test('luminarias: "A futuro" separa las que todavía no se instalaron de las fuera de servicio', () => {
   const luminarias = [
     { id: 4, nombre: 'L4', datosTecnicos: '', tipo: 'LUMINARIA', estadoOperativo: false, instalada: true },
     { id: 5, nombre: 'L5', datosTecnicos: '', tipo: 'LUMINARIA', estadoOperativo: false, instalada: false },
