@@ -9,7 +9,7 @@ export const NOMBRES_ROL = {
 }
 
 const VISTAS_POR_ROL = {
-  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
+  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'luminarias', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
   [MESA]: ['mapa', 'ordenes', 'ficha', 'usuarios'],
   [CAPATAZ]: ['tareas', 'mapa', 'ficha'],
 }
@@ -43,6 +43,18 @@ export function puedeAsignar(usuario) {
 // responde 403 (ver "Permisos por rol" en LOGIN_Y_ACCESOS_BACKEND.md).
 export function puedeAgregarLugar(usuario) {
   return tieneRol(usuario, ENCARGADO, MESA)
+}
+
+// Cambiar el estado de una luminaria desde el mapa (Funciona / Apagada, o "Marcar como instalada") es modificar el lugar:
+// en el backend, PUT /api/infraestructura/{id} es solo del encargado. Los demás lo ven, pero no lo cambian.
+export function puedeCambiarEstadoLuminaria(usuario) {
+  return tieneRol(usuario, ENCARGADO)
+}
+
+// Luminarias a futuro (las que planificó el intendente): por ahora las carga solo el encargado.
+// El backend también lo controla (mesa recibe 403 si lo intenta).
+export function puedeCargarLuminariaAFuturo(usuario) {
+  return tieneRol(usuario, ENCARGADO)
 }
 
 // Gestionar usuarios (altas, bajas, cambios de rol y restablecer claves): el encargado y mesa de entradas,

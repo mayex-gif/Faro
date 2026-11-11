@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { crearPunto } from '../api/infraestructura'
 import Icono from './Icono'
-import { TIPOS_LUGAR } from '../utils/lugares'
+import { TIPOS_LUGAR, estadoParaGuardar, tiposDeCategoria } from '../utils/lugares'
 import { puntoEnLaZona, redondearCoordenada, ubicacionDelPunto } from '../utils/zona'
 
 // Formulario corto para registrar un lugar marcado en el mapa (pantalla Mapa).
@@ -11,8 +11,15 @@ import { puntoEnLaZona, redondearCoordenada, ubicacionDelPunto } from '../utils/
 // - punto: { latitud, longitud } del pin, o null mientras todavía no se tocó el mapa
 // - onGuardado(lugarCreado): el backend registró el lugar (responde el lugar con su id)
 // - onCancelar(): salir sin guardar
-function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
-  const [datos, setDatos] = useState({ nombre: '', tipo: 'LUMINARIA', datosTecnicos: '', estadoOperativo: true })
+// - tipos: qué se puede registrar (pestaña "Todo el pueblo": espacios verdes y calles; pestaña Luminarias: luminarias)
+// - permitirAFuturo: se puede cargar una luminaria a futuro (solo el encargado; ver utils/permisos.js)
+// - aFuturo: arranca como luminaria a futuro ("Agregar luminaria a futuro" del panel de Luminarias)
+function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCategoria(), permitirAFuturo = false, aFuturo = false }) {
+  const [datos, setDatos] = useState({
+    nombre: '', tipo: tipos[0], datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !(aFuturo && permitirAFuturo),
+  })
+  const soloLuminarias = tipos.length === 1 && tipos[0] === 'LUMINARIA'
+  const sinInstalar = datos.tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const campoNombre = useRef(null)
@@ -33,7 +40,7 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
     evento.preventDefault()
     if (!dentro) return
     if (datos.nombre.trim() === '') {
-      setError('Escribí el nombre del lugar.')
+      setError(soloLuminarias ? 'Escribí el nombre de la luminaria.' : 'Escribí el nombre del lugar.')
       campoNombre.current?.focus()
       return
     }
@@ -44,7 +51,7 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
         nombre: datos.nombre.trim(),
         tipo: datos.tipo,
         datosTecnicos: datos.datosTecnicos.trim(),
-        estadoOperativo: datos.estadoOperativo,
+        ...estadoParaGuardar(datos),
         ubicacion: ubicacionDelPunto(punto),
       })
       onGuardado(creado)
@@ -61,17 +68,17 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
     <section className="panel-lugar formulario-lugar-mapa" aria-labelledby="titulo-lugar-nuevo">
       <div className="panel-lugar-cabecera">
         <div className="panel-lugar-datos">
-          <p className="panel-lugar-tipo">Agregar un lugar</p>
-          <h2 id="titulo-lugar-nuevo">Lugar nuevo</h2>
+          <p className="panel-lugar-tipo">{soloLuminarias ? 'Agregar una luminaria' : 'Agregar un lugar'}</p>
+          <h2 id="titulo-lugar-nuevo">{soloLuminarias ? 'Luminaria nueva' : 'Lugar nuevo'}</h2>
         </div>
-        <button type="button" className="boton-cerrar" onClick={onCancelar} disabled={guardando} aria-label="Cancelar y no agregar el lugar">
+        <button type="button" className="boton-cerrar" onClick={onCancelar} disabled={guardando} aria-label={soloLuminarias ? 'Cancelar y no agregar la luminaria' : 'Cancelar y no agregar el lugar'}>
           <Icono nombre="cerrar" />
         </button>
       </div>
 
       {!hayPunto ? (
         <div className="panel-lugar-seccion">
-          <p className="paso-agregar"><Icono nombre="lugar" />Tocá el mapa donde está el lugar.</p>
+          <p className="paso-agregar"><Icono nombre="lugar" />Tocá el mapa donde está {soloLuminarias ? 'la luminaria' : 'el lugar'}.</p>
           <p className="panel-lugar-vacio">Solo se pueden agregar lugares dentro de Estación General Paz.</p>
         </div>
       ) : (
@@ -83,25 +90,35 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
           </div>
 
           <fieldset className="campos-lugar-mapa" disabled={guardando}>
-            <legend className="solo-lectores">Datos del lugar nuevo</legend>
+            <legend className="solo-lectores">{soloLuminarias ? 'Datos de la luminaria nueva' : 'Datos del lugar nuevo'}</legend>
             <div className="campo">
               <label htmlFor="lugar-nuevo-nombre">Nombre <span aria-hidden="true">*</span></label>
               <input id="lugar-nuevo-nombre" name="nombre" ref={campoNombre} value={datos.nombre} onChange={cambiar}
                 required aria-describedby="ayuda-lugar-nuevo-nombre" aria-invalid={error !== '' && datos.nombre.trim() === ''} />
-              <p className="ayuda-campo" id="ayuda-lugar-nuevo-nombre">Ej.: Luminaria San Martín y Belgrano.</p>
+              <p className="ayuda-campo" id="ayuda-lugar-nuevo-nombre">Ej.: {soloLuminarias ? 'Luminaria San Martín y Belgrano' : 'Plaza San Martín'}.</p>
             </div>
-            <div className="campo">
-              <label htmlFor="lugar-nuevo-tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
-              <select id="lugar-nuevo-tipo" name="tipo" value={datos.tipo} onChange={cambiar}>
-                {Object.entries(TIPOS_LUGAR).map(([valor, texto]) => <option key={valor} value={valor}>{texto}</option>)}
-              </select>
-            </div>
+            {tipos.length > 1 && (
+              <div className="campo">
+                <label htmlFor="lugar-nuevo-tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
+                <select id="lugar-nuevo-tipo" name="tipo" value={datos.tipo} onChange={cambiar}>
+                  {tipos.map((tipo) => <option key={tipo} value={tipo}>{TIPOS_LUGAR[tipo]}</option>)}
+                </select>
+              </div>
+            )}
             <div className="campo">
               <label htmlFor="lugar-nuevo-datos">Datos técnicos <span className="opcional">(opcional)</span></label>
               <textarea id="lugar-nuevo-datos" name="datosTecnicos" rows={2} value={datos.datosTecnicos} onChange={cambiar} />
             </div>
+            {datos.tipo === 'LUMINARIA' && permitirAFuturo && (
+              <label className="campo-check" htmlFor="lugar-nuevo-instalada">
+                <input id="lugar-nuevo-instalada" type="checkbox" checked={!datos.instalada}
+                  onChange={(evento) => setDatos({ ...datos, instalada: !evento.target.checked })} />
+                <span><strong>Luminaria a futuro</strong><span>Planificada por el intendente, todavía no se puso. No lleva OT hasta marcarla como instalada.</span></span>
+              </label>
+            )}
             <label className="campo-check" htmlFor="lugar-nuevo-funciona">
-              <input id="lugar-nuevo-funciona" name="estadoOperativo" type="checkbox" checked={datos.estadoOperativo} onChange={cambiar} />
+              <input id="lugar-nuevo-funciona" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
+                checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} />
               <span><strong>Funciona correctamente</strong><span>Desmarcala si está fuera de servicio.</span></span>
             </label>
           </fieldset>
@@ -111,7 +128,7 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar }) {
           <div className="botones">
             <button type="button" className="boton boton-secundario" onClick={onCancelar} disabled={guardando}>Cancelar</button>
             <button type="submit" className="boton boton-primario" disabled={guardando || !dentro}>
-              <Icono nombre="guardar" />{guardando ? 'Guardando…' : 'Registrar lugar'}
+              <Icono nombre="guardar" />{guardando ? 'Guardando…' : soloLuminarias ? 'Registrar luminaria' : 'Registrar lugar'}
             </button>
           </div>
         </form>

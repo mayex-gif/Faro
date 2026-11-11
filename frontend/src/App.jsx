@@ -9,6 +9,7 @@ import AvisoVersionNueva from './components/AvisoVersionNueva'
 import { useSesion } from './context/useSesion'
 import { inicioDe, puedeVer, tieneRol } from './utils/permisos'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
+import PaginaLuminarias from './pages/PaginaLuminarias'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
@@ -29,6 +30,7 @@ const PaginaReportes = lazy(() => import('./pages/PaginaReportes'))
 // Para agregar una pantalla nueva: sumarla acá y en utils/navegacion.js.
 const PAGINAS = {
   infraestructura: PaginaInfraestructura,
+  luminarias: PaginaLuminarias,
   ordenes: PaginaOrdenes,
   asignacion: PaginaAsignacion,
   mapa: PaginaMapa,

@@ -52,12 +52,14 @@ function ordenAFormulario(orden) {
 // - lugarInicial: id del lugar con el que arranca una OT nueva ("+ Nueva OT acá" en la ficha del mapa); puede faltar
 // - programarInicial: abre la opción periódica al llegar desde Mantenimiento
 // - onVerProgramaciones: permite revisar las reglas si no se pudo confirmar un alta
-function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial, programarInicial, onVerProgramaciones }) {
+function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial, tipoInicial, programarInicial, onVerProgramaciones }) {
   const { usuario } = useSesion()
   const editando = ordenEditando != null
   const [datos, setDatos] = useState(() => {
     if (editando) return ordenAFormulario(ordenEditando)
-    return lugarInicial != null ? { ...FORMULARIO_VACIO, lugarId: String(lugarInicial) } : FORMULARIO_VACIO
+    const inicial = lugarInicial != null ? { ...FORMULARIO_VACIO, lugarId: String(lugarInicial) } : FORMULARIO_VACIO
+    // Desde la pestaña Luminarias del mapa, el tipo arranca en "Alumbrado" (se puede cambiar)
+    return tipoInicial ? { ...inicial, tipo: tipoInicial } : inicial
   })
   const [errores, setErrores] = useState({}) // errores por campo: { descripcion: '...', tipo: '...' }
   const [error, setError] = useState(null)   // mensaje general, abajo del formulario
@@ -305,7 +307,7 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
                 <select id="lugarId" name="lugarId" value={datos.lugarId} onChange={cambiar} required
                   disabled={sinLugares || errorLugares} {...accesibilidad('lugarId', 'ayuda-lugar')}>
                   <option value="">Elegí un lugar…</option>
-                  {lugares.map((lugar) => (
+                  {lugares.filter((lugar) => lugar.instalada !== false).map((lugar) => ( // sin luminarias a futuro: no llevan OT
                     <option key={lugar.id} value={lugar.id}>{lugar.nombre}</option>
                   ))}
                 </select>

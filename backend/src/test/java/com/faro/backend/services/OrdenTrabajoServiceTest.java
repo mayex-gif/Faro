@@ -2,6 +2,7 @@ package com.faro.backend.services;
 
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.dto.OrdenTrabajoRequestDTO;
+import com.faro.backend.exceptions.DatoInvalidoException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.OrdenTrabajo;
@@ -181,6 +182,21 @@ class OrdenTrabajoServiceTest {
                 () -> service.crear(pedido("Cortar pasto", 99L)));
 
         assertEquals("Lugar no encontrado", error.getMessage());
+        verify(ordenRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_enUnaLuminariaAFuturo_lanzaDatoInvalidoYNoGuarda() {
+        PuntoInfraestructura aFuturo = lugar(8L, "Luminaria plan 2027");
+        aFuturo.setTipo("LUMINARIA");
+        aFuturo.setInstalada(false);
+        when(lugarRepository.findById(8L)).thenReturn(Optional.of(aFuturo));
+
+        DatoInvalidoException error = assertThrows(DatoInvalidoException.class,
+                () -> service.crear(pedido("Cambiar lámpara", 8L)));
+
+        assertEquals("lugarId", error.getCampo());
+        assertEquals(PuntoInfraestructuraService.SIN_TRABAJOS_A_FUTURO, error.getMessage());
         verify(ordenRepository, never()).save(any());
     }
 

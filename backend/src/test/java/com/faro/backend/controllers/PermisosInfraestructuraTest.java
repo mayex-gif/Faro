@@ -5,6 +5,7 @@ import com.faro.backend.dto.PuntoInfraestructuraDTO;
 import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
 import com.faro.backend.services.PuntoInfraestructuraService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -17,6 +18,7 @@ import java.util.List;
 import static com.faro.backend.config.security.UsuariosDePrueba.capataz;
 import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static com.faro.backend.config.security.UsuariosDePrueba.mesaDeEntradas;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -87,6 +89,40 @@ class PermisosInfraestructuraTest {
         mockMvc.perform(post(URL).with(user(mesaDeEntradas())).contentType(MediaType.APPLICATION_JSON).content(JSON_LUGAR))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
+    }
+
+    // ---------- Luminarias a futuro: solo el encargado ----------
+
+    private static final String JSON_LUMINARIA_A_FUTURO = """
+            {
+              "nombre": "Luminaria plan 2027",
+              "tipo": "LUMINARIA",
+              "datosTecnicos": "",
+              "estadoOperativo": false,
+              "instalada": false,
+              "ubicacion": { "type": "Point", "coordinates": [-64.14, -31.13] }
+            }
+            """;
+
+    @Test
+    void elEncargadoPuedeCargarUnaLuminariaAFuturo() throws Exception {
+        when(service.crearLugar(any(PuntoInfraestructuraRequestDTO.class))).thenReturn(lugarGuardado());
+
+        mockMvc.perform(post(URL).with(user(encargado())).contentType(MediaType.APPLICATION_JSON).content(JSON_LUMINARIA_A_FUTURO))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PuntoInfraestructuraRequestDTO> captor = ArgumentCaptor.forClass(PuntoInfraestructuraRequestDTO.class);
+        verify(service).crearLugar(captor.capture());
+        assertFalse(captor.getValue().instalada());
+    }
+
+    @Test
+    void mesaDeEntradasNoPuedeCargarUnaLuminariaAFuturo() throws Exception {
+        mockMvc.perform(post(URL).with(user(mesaDeEntradas())).contentType(MediaType.APPLICATION_JSON).content(JSON_LUMINARIA_A_FUTURO))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.estado").value(403));
+
+        verifyNoInteractions(service);
     }
 
     @Test

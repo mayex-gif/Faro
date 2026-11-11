@@ -40,7 +40,7 @@ export const AYUDA = {
 
   mapa: {
     titulo: 'Mapa',
-    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos.',
+    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está.',
     secciones: [
       {
         titulo: 'Qué ves',
@@ -60,7 +60,21 @@ export const AYUDA = {
           'Con el buscador de arriba encontrás un lugar, una calle o un trabajo escribiendo al menos 2 letras.',
           { texto: '"Nueva OT acá" crea una orden de trabajo para ese lugar, con el lugar ya elegido.', roles: [ENCARGADO, MESA] },
           { texto: 'En la ficha, los trabajos que esperan cuadrilla se pueden asignar ahí mismo: elegí la cuadrilla y tocá "Asignar".', roles: [ENCARGADO] },
-          { texto: '"Agregar lugar": tocá el mapa donde está el lugar, completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar lugar": tocá el mapa donde está el lugar (un espacio verde o una calle), completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+        ],
+      },
+      {
+        titulo: 'Pestaña Luminarias',
+        items: [
+          'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: cada luminaria es un poste y se ve cómo está. "Todo el pueblo" vuelve al mapa de siempre.',
+          'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
+          'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
+          '"¿Dónde falta luz?" ordena las zonas del pueblo de la que tiene menos luminarias andando a la que tiene más. Tocá una para marcarla en el mapa y ver solo sus luminarias.',
+          'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Los números no cambian.',
+          '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
+          { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Cuando esa OT se finaliza, la luminaria vuelve sola a "Funciona".', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando.', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
         ],
       },
     ],
@@ -124,14 +138,38 @@ export const AYUDA = {
     ],
   },
 
+  luminarias: {
+    titulo: 'Luminarias',
+    resumen: 'El registro del alumbrado público: cada luminaria del pueblo, sus datos técnicos, si funciona y las luminarias a futuro que planificó el intendente.',
+    secciones: [
+      {
+        titulo: 'Registrar una luminaria',
+        items: [
+          'Completá el nombre (por ejemplo "Luminaria San Martín y Belgrano") y los datos técnicos (potencia, altura del poste, tipo de lámpara…).',
+          'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448). También podés agregarla tocando el mapa: Mapa → pestaña Luminarias → "Agregar luminaria".',
+          'Si está apagada, desmarcá "Funciona correctamente". Después tocá "Registrar luminaria".',
+          'Si es una luminaria que el intendente planificó y todavía no se puso, marcá "Luminaria a futuro". No se le pueden asignar órdenes de trabajo hasta que se instale: ahí, en el Mapa → pestaña Luminarias, tocala y elegí "Marcar como instalada".',
+        ],
+      },
+      {
+        titulo: 'Consultar y modificar',
+        items: [
+          'Filtrá por nombre, datos técnicos o estado: Funciona, Fuera de servicio o A futuro.',
+          '"Editar" carga la luminaria en el formulario; "Ficha" abre su historia; "Borrar" la elimina (si tiene órdenes de trabajo, FARO no deja borrarla).',
+          'Para ver cómo está todo el alumbrado de un vistazo, entrá al Mapa → pestaña Luminarias. Ahí también podés cambiar el estado de una luminaria tocándola.',
+        ],
+      },
+    ],
+  },
+
   infraestructura: {
     titulo: 'Infraestructura',
-    resumen: 'El registro de todos los lugares del pueblo que mantiene el corralón: luminarias, espacios verdes y calles, con sus datos y si funcionan o no.',
+    resumen: 'El registro de los espacios verdes y las calles que mantiene el corralón, con sus datos y si están en condiciones o no. Las luminarias están aparte, en Más → Luminarias.',
     secciones: [
       {
         titulo: 'Registrar un lugar',
         items: [
-          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (potencia, altura del poste, características…).',
+          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (superficie, características…).',
           'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448).',
           'Si el lugar está fuera de servicio, desmarcá "Funciona correctamente". Después tocá "Registrar lugar".',
         ],

@@ -10,6 +10,7 @@ import Icono from '../components/Icono'
 import ListaLugares from '../components/ListaLugares'
 import MapaLugares from '../components/MapaLugares'
 import PanelLugar from '../components/PanelLugar'
+import PanelLuminarias, { MuestraPoste } from '../components/PanelLuminarias'
 import TarjetaLugar from '../components/TarjetaLugar'
 import usePantallaAngosta from '../hooks/usePantallaAngosta'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes } from '../utils/filtrosOrdenes'
@@ -20,14 +21,27 @@ import {
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
+import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
+import { tiposDeCategoria } from '../utils/lugares'
 import { useSesion } from '../context/useSesion'
-import { puedeAgregarLugar, puedeVer } from '../utils/permisos'
+import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
+import '../estilos-luminarias.css'
 
 const PRIORIDADES_DE_MAYOR_A_MENOR = [...PRIORIDADES].reverse()
 
 // Pantalla principal de FARO (propuesta A "El mapa primero").
+// Modo noche de la pestaña Luminarias: se recuerda en este navegador (si el navegador no deja guardar, dura la visita).
+const CLAVE_NOCHE = 'faro-mapa-noche'
+function leerModoNoche() {
+  try {
+    return window.localStorage.getItem(CLAVE_NOCHE) === '1'
+  } catch {
+    return false
+  }
+}
+
 // En la compu, tres columnas: a la izquierda la lista de lugares con sus filtros, en el centro el mapa y,
 // a la derecha, la ficha del lugar elegido. La lista y el mapa muestran los mismos lugares.
 // En el celular y la tablet (usePantallaAngosta): el mapa ocupa todo, los botoncitos van arriba,
@@ -45,6 +59,11 @@ function PaginaMapa({ params, onNavegar }) {
   const [filtrosLugares, setFiltrosLugares] = useState(FILTROS_LUGARES_VACIOS) // los botoncitos
   const [filtros, setFiltros] = useState(FILTROS_ORDENES_VACIOS) // "Más filtros" (de las órdenes)
   const [modoColor, setModoColor] = useState('prioridad') // 'prioridad' o 'estado' (RNF11)
+  // Pestaña del mapa: 'todo' (todos los lugares) o 'luminarias' (solo luminarias y su estado: lo pidió el intendente)
+  const [pestana, setPestana] = useState(params?.pestana === 'luminarias' ? 'luminarias' : 'todo')
+  const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
+  const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
+  const [noche, setNoche] = useState(leerModoNoche) // modo noche (pestaña Luminarias)
   const [soloVisibles, setSoloVisibles] = useState(false)
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
   const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
@@ -62,6 +81,7 @@ function PaginaMapa({ params, onNavegar }) {
   const puedeAgregar = puedeAgregarLugar(usuario)
   const [agregando, setAgregando] = useState(false)
   const [puntoNuevo, setPuntoNuevo] = useState(null) // { latitud, longitud } del pin
+  const [agregandoAFuturo, setAgregandoAFuturo] = useState(false) // "Agregar luminaria a futuro" (panel de Luminarias)
   const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
   const hojaLugarNuevo = useRef(null) // celular: la hoja del formulario, para que el mapa no deje el pin debajo
 
@@ -116,6 +136,14 @@ function PaginaMapa({ params, onNavegar }) {
     return () => document.removeEventListener('keydown', alApretarTecla)
   }, [agregando])
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CLAVE_NOCHE, noche ? '1' : '0')
+    } catch {
+      // sin almacenamiento (modo privado, permisos): el modo noche dura solo esta visita
+    }
+  }, [noche])
+
   // El aviso de "Se registró..." desaparece solo.
   useEffect(() => {
     if (!aviso) return
@@ -123,7 +151,8 @@ function PaginaMapa({ params, onNavegar }) {
     return () => window.clearTimeout(reloj)
   }, [aviso])
 
-  function empezarAgregar() {
+  function empezarAgregar(aFuturo = false) {
+    setAgregandoAFuturo(aFuturo === true)
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
@@ -164,6 +193,10 @@ function PaginaMapa({ params, onNavegar }) {
   const enMapa = useMemo(() => filtrarLugares(resumenes, filtrosLugares), [resumenes, filtrosLugares])
   // La ficha muestra todos los trabajos abiertos del lugar, aunque "Más filtros" esconda algunos.
   const resumenesCompletos = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertas), [lugaresConUbicacion, abiertas])
+  // Pestaña Luminarias: el estado sale de TODAS las OT abiertas (los filtros de la otra pestaña no cuentan).
+  const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
+  const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
+  const luminariasEnMapa = useMemo(() => filtrarPorEstado(luminarias, ocultos), [luminarias, ocultos])
 
   const ordenados = ordenarResumenes(enMapa)
   const enLista = soloVisibles && zonaVisible
@@ -201,8 +234,26 @@ function PaginaMapa({ params, onNavegar }) {
     requestAnimationFrame(() => document.getElementById('titulo-panel-lugar')?.focus())
   }
 
+  // Cambiar de pestaña. Si el lugar elegido no es una luminaria, se cierra su ficha (no está en el mapa de luminarias).
+  function cambiarPestana(nueva) {
+    if (nueva === pestana) return
+    setPestana(nueva)
+    if (nueva === 'luminarias' && resumenActivo && !esLuminaria(resumenActivo.lugar)) {
+      setLugarActivoId(null)
+      setFichaAbierta(false)
+    }
+  }
+
   const verHistoria = (lugarId) => onNavegar('ficha', { lugarId })
-  const nuevaOrden = (lugarId) => onNavegar('ordenes', { lugarId, desde: 'mapa' })
+  // Desde la pestaña Luminarias la OT arranca como "Alumbrado" y "Volver al mapa" vuelve a esta pestaña.
+  const nuevaOrden = (lugarId) => onNavegar('ordenes', pestana === 'luminarias'
+    ? { lugarId, desde: 'mapa', tipo: 'ALUMBRADO', pestana: 'luminarias' }
+    : { lugarId, desde: 'mapa' })
+
+  // Se cambió el estado de una luminaria desde su ficha: se reemplaza el lugar y el mapa se redibuja.
+  function alActualizarLugar(actualizado) {
+    setLugares((anteriores) => anteriores.map((lugar) => (lugar.id === actualizado.id ? actualizado : lugar)))
+  }
 
   function verTodos() {
     setFiltrosLugares(FILTROS_LUGARES_VACIOS)
@@ -235,11 +286,12 @@ function PaginaMapa({ params, onNavegar }) {
   let clase = 'pantalla-mapa'
   if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}${agregando ? ' agregando-lugar' : ''}`
   else if (resumenActivo || agregando) clase += ' pantalla-mapa-con-ficha'
+  if (pestana === 'luminarias') clase += ' pantalla-mapa-luminarias'
 
   return (
     <div className={clase}>
       {/* En el celular, mientras se ve el mapa, la lista (con su título) está escondida: el título queda para lectores */}
-      {angosta && vistaAngosta === 'mapa' && <h1 className="solo-lectores">Mapa de lugares</h1>}
+      {angosta && vistaAngosta === 'mapa' && <h1 className="solo-lectores">{pestana === 'luminarias' ? 'Mapa de luminarias' : 'Mapa de lugares'}</h1>}
       {cargando || error ? (
         <section className="columna-lugares" aria-labelledby="titulo-lugares" aria-busy={cargando}>
           <div className="lugares-encabezado">
@@ -258,6 +310,11 @@ function PaginaMapa({ params, onNavegar }) {
             </div>
           )}
         </section>
+      ) : pestana === 'luminarias' ? (
+        <PanelLuminarias items={luminarias} totales={totalesLuminarias} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista}
+          zonaElegida={zonaElegida?.clave ?? null}
+          onAgregarAFuturo={puedeCargarLuminariaAFuturo(usuario) ? () => empezarAgregar(true) : undefined}
+          onElegirZona={(zona) => { setZonaElegida(zona); if (angosta && zona) setVistaAngosta('mapa') }} />
       ) : (
         <ListaLugares resumenes={enLista} total={resumenes.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
@@ -285,12 +342,34 @@ function PaginaMapa({ params, onNavegar }) {
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo}
-          hojaAbajo={angosta ? hojaLugarNuevo : null} />
+          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche} />
+
+        {/* Pestañas arriba del mapa: todos los lugares o solo las luminarias */}
+        {!cargando && !error && (
+          <div className="pestanas-mapa" role="tablist" aria-label="Qué mostrar en el mapa">
+            <button type="button" role="tab" aria-selected={pestana === 'todo'}
+              className={pestana === 'todo' ? 'pestana-mapa pestana-mapa-activa' : 'pestana-mapa'} onClick={() => cambiarPestana('todo')}>
+              <Icono nombre="mapa" />Todo el pueblo
+            </button>
+            <button type="button" role="tab" aria-selected={pestana === 'luminarias'}
+              className={pestana === 'luminarias' ? 'pestana-mapa pestana-mapa-activa' : 'pestana-mapa'} onClick={() => cambiarPestana('luminarias')}>
+              <Icono nombre="luminaria" />Luminarias
+            </button>
+          </div>
+        )}
+
+        {/* Pestaña Luminarias: modo noche (mapa oscuro; las que funcionan tiran luz) */}
+        {pestana === 'luminarias' && !cargando && !error && (
+          <button type="button" className={puedeAgregar ? 'boton-modo-noche' : 'boton-modo-noche boton-modo-noche-arriba'}
+            aria-pressed={noche} onClick={() => setNoche((anterior) => !anterior)}>
+            <Icono nombre={noche ? 'sol' : 'luna'} />{noche ? 'Modo día' : 'Modo noche'}
+          </button>
+        )}
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
         {puedeAgregar && !agregando && !cargando && !error && (
           <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={empezarAgregar}>
-            <Icono nombre="agregar" />Agregar lugar
+            <Icono nombre="agregar" />{pestana === 'luminarias' ? 'Agregar luminaria' : 'Agregar lugar'}
           </button>
         )}
 
@@ -301,49 +380,71 @@ function PaginaMapa({ params, onNavegar }) {
         {/* Celular y tablet: botoncitos arriba del mapa (se deslizan de costado) y "Ver como lista" */}
         {angosta && (
           <>
-            <BotoncitosLugares filtros={filtrosLugares} onCambiar={setFiltrosLugares} className="botoncitos-sobre-mapa" />
+            {pestana === 'todo' && <BotoncitosLugares filtros={filtrosLugares} onCambiar={setFiltrosLugares} className="botoncitos-sobre-mapa" />}
             <button type="button" className="boton-flotante boton-ver-lista" onClick={() => setVistaAngosta('lista')}>
-              <Icono nombre="lista" />Ver como lista
+              <Icono nombre="lista" />{pestana === 'luminarias' ? 'Ver resumen' : 'Ver como lista'}
             </button>
           </>
         )}
 
-        {/* Leyenda sobre el mapa: qué significa cada color y, si se quiere, colorear por estado */}
-        <div className="leyenda-flotante">
-          <fieldset className="opciones-radio">
-            <legend>Colorear por</legend>
-            <label>
-              <input type="radio" name="modo-color" value="prioridad" checked={modoColor === 'prioridad'}
-                onChange={() => setModoColor('prioridad')} />
-              Prioridad
-            </label>
-            <label>
-              <input type="radio" name="modo-color" value="estado" checked={modoColor === 'estado'}
-                onChange={() => setModoColor('estado')} />
-              Estado
-            </label>
-          </fieldset>
-          <ul className="leyenda" aria-label="Significado de los colores del mapa">
-            {modoColor === 'prioridad'
-              ? PRIORIDADES_DE_MAYOR_A_MENOR.map((prioridad) => (
-                <li key={prioridad.valor}>
-                  <span className="leyenda-color" style={{ background: COLORES_PRIORIDAD[prioridad.valor] }} aria-hidden="true" />
-                  {prioridad.etiqueta}
-                </li>
-              ))
-              : estadosAbiertos.map((estado) => (
-                <li key={estado.id}>
-                  <span className="leyenda-color" style={{ background: estado.color }} aria-hidden="true" />
-                  {estado.nombre}
-                </li>
-              ))}
-            <li>
-              <span className="leyenda-color" style={{ background: COLOR_SIN_TRABAJOS }} aria-hidden="true" />
-              Sin trabajos
-            </li>
-          </ul>
-          {modoColor === 'prioridad' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
-        </div>
+        {/* Leyenda sobre el mapa. Pestaña Luminarias: el dibujo de cada estado. Si no: qué significa cada color. */}
+        {pestana === 'luminarias' ? (
+          <div className="leyenda-flotante leyenda-luminarias">
+            {/* La leyenda también filtra: destildar un estado lo saca del mapa (los conteos no cambian) */}
+            <fieldset className="leyenda-filtro">
+              <legend className="leyenda-titulo">Mostrar en el mapa</legend>
+              <ul className="leyenda">
+                {ESTADOS_LUMINARIA.map((estado) => (
+                  <li key={estado.clave}>
+                    <label className="leyenda-casilla" title={estado.descripcion}>
+                      <input type="checkbox" checked={!ocultos[estado.clave]}
+                        onChange={(evento) => setOcultos((anteriores) => ({ ...anteriores, [estado.clave]: !evento.target.checked }))} />
+                      <MuestraPoste estado={estado.clave} />
+                      {estado.nombre} <span className="leyenda-cantidad">({totalesLuminarias.cuenta[estado.clave]})</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+            <p className="leyenda-ayuda">Se actualiza solo con las OT de cada luminaria.</p>
+          </div>
+        ) : (
+          <div className="leyenda-flotante">
+            <fieldset className="opciones-radio">
+              <legend>Colorear por</legend>
+              <label>
+                <input type="radio" name="modo-color" value="prioridad" checked={modoColor === 'prioridad'}
+                  onChange={() => setModoColor('prioridad')} />
+                Prioridad
+              </label>
+              <label>
+                <input type="radio" name="modo-color" value="estado" checked={modoColor === 'estado'}
+                  onChange={() => setModoColor('estado')} />
+                Estado
+              </label>
+            </fieldset>
+            <ul className="leyenda" aria-label="Significado de los colores del mapa">
+              {modoColor === 'prioridad'
+                ? PRIORIDADES_DE_MAYOR_A_MENOR.map((prioridad) => (
+                  <li key={prioridad.valor}>
+                    <span className="leyenda-color" style={{ background: COLORES_PRIORIDAD[prioridad.valor] }} aria-hidden="true" />
+                    {prioridad.etiqueta}
+                  </li>
+                ))
+                : estadosAbiertos.map((estado) => (
+                  <li key={estado.id}>
+                    <span className="leyenda-color" style={{ background: estado.color }} aria-hidden="true" />
+                    {estado.nombre}
+                  </li>
+                ))}
+              <li>
+                <span className="leyenda-color" style={{ background: COLOR_SIN_TRABAJOS }} aria-hidden="true" />
+                Sin trabajos
+              </li>
+            </ul>
+            {modoColor === 'prioridad' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
+          </div>
+        )}
       </section>
 
       {angosta && vistaAngosta === 'lista' && (
@@ -355,7 +456,10 @@ function PaginaMapa({ params, onNavegar }) {
       {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
-          <FormularioLugarMapa punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar} />
+          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
+          <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
+            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')}
+            permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>
       )}
 
@@ -368,7 +472,8 @@ function PaginaMapa({ params, onNavegar }) {
       {mostrarPanel && (
         <PanelLugar key={resumenActivo.lugar.id} resumen={resumenActivo}
           onCerrar={cerrarFicha} onVerHistoria={verHistoria} onNuevaOrden={nuevaOrden}
-          asignacion={{ estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada: alAsignar }} />
+          asignacion={{ estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada: alAsignar }}
+          onLugarActualizado={alActualizarLugar} />
       )}
     </div>
   )

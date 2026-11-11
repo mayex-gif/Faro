@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react'
 import { actualizarPunto, crearPunto } from '../api/infraestructura'
 import Icono from './Icono'
+import { TIPOS_LUGAR, estadoParaGuardar, tiposDeCategoria } from '../utils/lugares'
 
 // Valores con los que arranca el formulario cuando se crea un punto nuevo.
+// El tipo arranca en el primero de la pantalla (ver formularioVacio).
 const FORMULARIO_VACIO = {
   nombre: '',
   tipo: 'LUMINARIA',
   datosTecnicos: '',
   estadoOperativo: true,
+  instalada: true, // solo luminarias: false = luminaria a futuro (la planificó el intendente, todavía no se puso)
   latitud: '',
   longitud: '',
+}
+
+function formularioVacio(tipos) {
+  return { ...FORMULARIO_VACIO, tipo: tipos[0] }
 }
 
 function puntoAFormulario(punto) {
@@ -20,16 +27,23 @@ function puntoAFormulario(punto) {
     tipo: punto.tipo ?? 'LUMINARIA',
     datosTecnicos: punto.datosTecnicos ?? '',
     estadoOperativo: punto.estadoOperativo ?? true,
+    instalada: punto.instalada !== false,
     latitud: String(latitud),
     longitud: String(longitud),
   }
 }
 
-function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
+// tipos: los tipos de lugar que se pueden cargar en esta pantalla (Infraestructura: espacios verdes y calles;
+// Luminarias: solo luminarias). Con un solo tipo, no se muestra la lista "Tipo de lugar".
+function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposDeCategoria() }) {
   const editando = puntoEditando != null
+  const soloLuminarias = tipos.length === 1 && tipos[0] === 'LUMINARIA'
+  const cosa = soloLuminarias ? 'luminaria' : 'lugar'
   // Las líneas y polígonos conservan su geometría original.
   const ubicacionCompleja = editando && puntoEditando.ubicacion?.type !== 'Point'
-  const [datos, setDatos] = useState(() => (editando ? puntoAFormulario(puntoEditando) : FORMULARIO_VACIO))
+  const [datos, setDatos] = useState(() => (editando ? puntoAFormulario(puntoEditando) : formularioVacio(tipos)))
+  const esLuminaria = datos.tipo === 'LUMINARIA'
+  const sinInstalar = esLuminaria && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
 
@@ -65,7 +79,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
       nombre: datos.nombre.trim(),
       tipo: datos.tipo,
       datosTecnicos: datos.datosTecnicos.trim(),
-      estadoOperativo: datos.estadoOperativo,
+      ...estadoParaGuardar(datos),
       ubicacion: ubicacionCompleja
         ? puntoEditando.ubicacion
         : { type: 'Point', coordinates: [Number(datos.longitud), Number(datos.latitud)] },
@@ -78,12 +92,13 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
         await actualizarPunto(puntoEditando.id, punto)
       } else {
         await crearPunto(punto)
-        setDatos(FORMULARIO_VACIO)
+        setDatos(formularioVacio(tipos))
       }
-      onGuardado(editando ? 'Los cambios se guardaron correctamente.' : 'El lugar se registró correctamente.')
+      onGuardado(editando ? 'Los cambios se guardaron correctamente.' : `${soloLuminarias ? 'La luminaria' : 'El lugar'} se registró correctamente.`)
     } catch (e) {
       console.error(e)
-      setError('No pudimos guardar el lugar. Revisá la conexión e intentá nuevamente. Tus datos siguen en el formulario.')
+      setError(e?.estado === 400 && e.message ? e.message
+        : `No pudimos guardar ${soloLuminarias ? 'la luminaria' : 'el lugar'}. Revisá la conexión e intentá nuevamente. Tus datos siguen en el formulario.`)
     } finally {
       setGuardando(false)
     }
@@ -96,38 +111,44 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
         <div className="titulo-con-icono">
           <span className="icono-panel"><Icono nombre={editando ? 'editar' : 'agregar'} /></span>
           <div>
-            <h2 id="titulo-formulario">{editando ? 'Editar lugar' : 'Registrar un lugar'}</h2>
-            <p>{editando ? `Estás modificando: ${puntoEditando.nombre}` : 'Completá los datos para incorporar un punto de infraestructura.'}</p>
+            <h2 id="titulo-formulario">{editando ? `Editar ${cosa}` : `Registrar ${soloLuminarias ? 'una luminaria' : 'un lugar'}`}</h2>
+            <p>{editando ? `Estás modificando: ${puntoEditando.nombre}`
+              : soloLuminarias ? 'Completá los datos para incorporar una luminaria del alumbrado público.'
+                : 'Completá los datos para incorporar un espacio verde o una calle.'}</p>
           </div>
         </div>
         {editando && <span className="etiqueta-edicion">En edición</span>}
       </div>
 
       <fieldset className="formulario-cuerpo" disabled={guardando}>
-        <legend className="solo-lectores">Datos del lugar</legend>
+        <legend className="solo-lectores">{soloLuminarias ? 'Datos de la luminaria' : 'Datos del lugar'}</legend>
         <div className="formulario-secciones">
           <section className="seccion-formulario" aria-labelledby="titulo-identificacion">
-            <h3 id="titulo-identificacion">Información del lugar</h3>
+            <h3 id="titulo-identificacion">{soloLuminarias ? 'Información de la luminaria' : 'Información del lugar'}</h3>
             <div className="campos">
               <div className="campo campo-nombre">
                 <label htmlFor="nombre">Nombre <span aria-hidden="true">*</span></label>
                 <input id="nombre" name="nombre" value={datos.nombre} onChange={cambiar}
                   required aria-describedby="ayuda-nombre" />
-                <p className="ayuda-campo" id="ayuda-nombre">Usá un nombre fácil de reconocer. Ej.: Plaza San Martín.</p>
+                <p className="ayuda-campo" id="ayuda-nombre">
+                  Usá un nombre fácil de reconocer. Ej.: {soloLuminarias ? 'Luminaria San Martín y Belgrano' : 'Plaza San Martín'}.
+                </p>
               </div>
-              <div className="campo">
-                <label htmlFor="tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
-                <select id="tipo" name="tipo" value={datos.tipo} onChange={cambiar} required>
-                  <option value="LUMINARIA">Luminaria</option>
-                  <option value="ESPACIO_VERDE">Espacio verde</option>
-                  <option value="CALLE">Calle</option>
-                </select>
-              </div>
+              {tipos.length > 1 && (
+                <div className="campo">
+                  <label htmlFor="tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
+                  <select id="tipo" name="tipo" value={datos.tipo} onChange={cambiar} required>
+                    {tipos.map((tipo) => <option key={tipo} value={tipo}>{TIPOS_LUGAR[tipo]}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="campo campo-ancho">
                 <label htmlFor="datos-tecnicos">Datos técnicos <span className="opcional">(opcional)</span></label>
                 <textarea id="datos-tecnicos" name="datosTecnicos" value={datos.datosTecnicos}
                   onChange={cambiar} rows={3} aria-describedby="ayuda-datos" />
-                <p className="ayuda-campo" id="ayuda-datos">Por ejemplo: potencia de la luminaria, altura del poste o características del espacio.</p>
+                <p className="ayuda-campo" id="ayuda-datos">
+                  {soloLuminarias ? 'Por ejemplo: potencia, tipo de lámpara o altura del poste.' : 'Por ejemplo: superficie, tipo de calzada o características del espacio.'}
+                </p>
               </div>
             </div>
           </section>
@@ -149,9 +170,19 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
                   required={!ubicacionCompleja} aria-describedby="ayuda-coordenadas" placeholder="Ej: -64.1441"/>
               </div>
             </div>
+            {esLuminaria && (
+              <label className="campo-check" htmlFor="instalada">
+                <input id="instalada" name="instalada" type="checkbox" checked={!datos.instalada}
+                  onChange={(evento) => setDatos({ ...datos, instalada: !evento.target.checked })} aria-describedby="ayuda-instalada" />
+                <span>
+                  <strong>Luminaria a futuro</strong>
+                  <span id="ayuda-instalada">Planificada por el intendente, todavía no se puso. No se le pueden asignar OT hasta marcarla como instalada.</span>
+                </span>
+              </label>
+            )}
             <label className="campo-check" htmlFor="estado-operativo">
-              <input id="estado-operativo" name="estadoOperativo" type="checkbox"
-                checked={datos.estadoOperativo} onChange={cambiar} aria-describedby="ayuda-estado" />
+              <input id="estado-operativo" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
+                checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} aria-describedby="ayuda-estado" />
               <span>
                 <strong>Funciona correctamente</strong>
                 <span id="ayuda-estado">Desmarcá esta opción si está fuera de servicio.</span>
@@ -177,7 +208,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar }) {
           )}
           <button type="submit" className="boton boton-primario" disabled={guardando}>
             <Icono nombre="guardar" />
-            {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Registrar lugar'}
+            {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : soloLuminarias ? 'Registrar luminaria' : 'Registrar lugar'}
           </button>
         </div>
       </div>

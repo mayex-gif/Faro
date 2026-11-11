@@ -29,7 +29,7 @@ function TarjetaLugar({ resumen, onCerrar, onVerFicha, onNuevaOrden }) {
         </button>
       </div>
       <div className="tarjeta-lugar-botones">
-        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
+        {puedeCrearOrden(usuario) && lugar.instalada !== false && <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
         </button>}
         <button type="button" className="boton boton-secundario" onClick={onVerFicha}>

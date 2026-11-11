@@ -67,6 +67,7 @@ public class ReglaMantenimientoService {
         validarFechas(request.fechaInicio(), request.fechaFin());
 
         PuntoInfraestructura lugar = buscarLugar(request.lugarId());
+        PuntoInfraestructuraService.validarQueAdmiteTrabajos(lugar); // sin mantenimiento para luminarias a futuro
         Cuadrilla cuadrilla = null;
         if (request.cuadrillaId() != null) {
             cuadrilla = buscarCuadrilla(request.cuadrillaId());
@@ -106,6 +107,7 @@ public class ReglaMantenimientoService {
         validarFechas(request.fechaInicio(), request.fechaFin());
 
         PuntoInfraestructura lugar = buscarLugar(request.lugarId());
+        PuntoInfraestructuraService.validarQueAdmiteTrabajos(lugar); // sin mantenimiento para luminarias a futuro
         Cuadrilla cuadrilla = null;
         if (request.cuadrillaId() != null) {
             cuadrilla = buscarCuadrilla(request.cuadrillaId());

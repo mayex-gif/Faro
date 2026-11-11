@@ -135,10 +135,31 @@ public class OrdenTrabajoService {
         } else if (actual != null && actual.isCierre()) {
             orden.setFechaFinalizacion(null);
         }
+        // Pestaña Luminarias: si se terminó el trabajo de una luminaria, vuelve sola a "Funciona".
+        // Si la OT se canceló, la luminaria queda como estaba.
+        if (nuevo.isCierre() && !esCancelacion(nuevo)) {
+            dejarLuminariaFuncionando(orden.getLugar());
+        }
         OrdenTrabajo guardada = ordenRepository.save(orden);
         // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
         eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
         return convertirADto(guardada);
+    }
+
+    // Los estados son configurables: "Cancelada" se reconoce por el nombre (igual que en los reportes).
+    private static boolean esCancelacion(EstadoOrden estado) {
+        return estado.getNombre() != null && estado.getNombre().trim().toLowerCase().startsWith("cancel");
+    }
+
+    // El lugar lo trajo Hibernate junto con la OT: al cambiarle los datos acá, se guarda solo al terminar
+    // la transacción (y el cambio queda en la Auditoría).
+    // Una luminaria a futuro no tiene OT, así que acá nunca se la marca como instalada: eso lo hace el encargado.
+    private static void dejarLuminariaFuncionando(PuntoInfraestructura lugar) {
+        if (lugar == null || !PuntoInfraestructuraService.TIPO_LUMINARIA.equals(lugar.getTipo())
+                || Boolean.FALSE.equals(lugar.getInstalada())) {
+            return;
+        }
+        lugar.setEstadoOperativo(true);
     }
 
     /**
@@ -293,6 +314,7 @@ public class OrdenTrabajoService {
     private void copiarDatos(OrdenTrabajoRequestDTO request, OrdenTrabajo orden) {
         PuntoInfraestructura lugar = lugarRepository.findById(request.lugarId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Lugar no encontrado"));
+        PuntoInfraestructuraService.validarQueAdmiteTrabajos(lugar); // las luminarias a futuro no llevan OT
 
         orden.setDescripcion(request.descripcion().trim());
         orden.setTipo(request.tipo());

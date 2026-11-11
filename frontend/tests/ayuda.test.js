@@ -38,3 +38,11 @@ test('los items se devuelven como texto, listos para mostrar', () => {
     }
   }
 })
+
+test('la ayuda del mapa explica la pestaña Luminarias, y lo de luminarias a futuro solo le aparece al encargado', () => {
+  const textos = (rol) => ayudaPara('mapa', rol).secciones.flatMap((s) => s.items).join(' ')
+  assert.match(textos('CAPATAZ_CUADRILLA'), /¿Dónde falta luz\?/)
+  assert.match(textos('ENCARGADO_CORRALON'), /Marcar como instalada/)
+  assert.doesNotMatch(textos('MESA_ENTRADAS'), /Marcar como instalada/)
+  assert.doesNotMatch(textos('CAPATAZ_CUADRILLA'), /Agregar luminaria/)
+})

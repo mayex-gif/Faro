@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { obtenerHistoria } from '../api/infraestructura'
 import AsignarCuadrilla from './AsignarCuadrilla'
+import EstadoLuminaria from './EstadoLuminaria'
 import Icono from './Icono'
 import { esperaCuadrilla } from '../utils/asignacion'
 import { lineaNovedad, tituloEvento, ultimasNovedades } from '../utils/historia'
-import { describirUbicacion, etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { claseEstadoLugar, describirUbicacion, etiquetaTipoLugar, textoEstadoLugar } from '../utils/lugares'
 import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 import { useSesion } from '../context/useSesion'
-import { puedeAsignar, puedeCrearOrden } from '../utils/permisos'
+import { esLuminaria } from '../utils/luminarias'
+import { puedeAsignar, puedeCambiarEstadoLuminaria, puedeCrearOrden } from '../utils/permisos'
 
 // Ficha del lugar elegido, en el panel derecho de la pantalla Mapa (no en otra página).
 // Muestra los datos del lugar, sus trabajos abiertos y las últimas novedades de su historia.
@@ -18,8 +20,9 @@ import { puedeAsignar, puedeCrearOrden } from '../utils/permisos'
 // - onNuevaOrden(lugarId): "+ Nueva OT acá" (abre el formulario de OT con este lugar ya elegido)
 // - asignacion: { estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada(ordenActualizada) }
 //   para "Asignar cuadrilla" en los trabajos pendientes que todavía no tienen cuadrilla
+// - onLugarActualizado(lugar): se cambió el estado de la luminaria desde la ficha (la página actualiza el mapa)
 // La página lo dibuja con key={lugar.id}: al cambiar de lugar, el panel arranca de cero.
-function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion }) {
+function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion, onLugarActualizado }) {
   const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
   const [historia, setHistoria] = useState(null)
@@ -65,9 +68,9 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
           <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)}</p>
           <h2 id="titulo-panel-lugar" tabIndex={-1}>{lugar.nombre}</h2>
           <p className="panel-lugar-estado">
-            <span className={lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
+            <span className={claseEstadoLugar(lugar)}>
               <span className="estado-punto" aria-hidden="true" />
-              {textoEstadoOperativo(lugar.estadoOperativo)}
+              {textoEstadoLugar(lugar)}
             </span>
             <span className="ubicacion-tabla">{describirUbicacion(lugar.ubicacion)}</span>
           </p>
@@ -75,10 +78,18 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
         </button>
-        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
+        {/* Las luminarias a futuro no llevan OT (el backend también lo controla) */}
+        {puedeCrearOrden(usuario) && lugar.instalada !== false && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
         </button>}
       </div>
+
+      {/* Luminarias: cómo está y, para el encargado, cambiarla ahí mismo (Funciona / Apagada, o marcar como instalada) */}
+      {esLuminaria(lugar) && (
+        <EstadoLuminaria resumen={resumen} puedeCambiar={puedeCambiarEstadoLuminaria(usuario)} puedeCrearOT={puedeCrearOrden(usuario)}
+          onCambiado={(actualizado) => { onLugarActualizado?.(actualizado); setIntento((anterior) => anterior + 1) }}
+          onNuevaOrden={onNuevaOrden} />
+      )}
 
       <section className="panel-lugar-seccion" aria-labelledby="titulo-trabajos-abiertos">
         <h3 id="titulo-trabajos-abiertos">Trabajos abiertos ({ordenes.length})</h3>
