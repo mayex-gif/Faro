@@ -50,10 +50,11 @@ function crearEtiquetaLuminaria(resumen, estado) {
 // - pestana: 'todo' (todos los lugares, como siempre) o 'luminarias' (solo las luminarias, dibujadas como postes)
 // - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
 // - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
+// - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
 function MapaLugares({
   resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null,
-  pestana = 'todo', luminarias = [], zonaResaltada = null,
+  pestana = 'todo', luminarias = [], zonaResaltada = null, noche = false,
 }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
@@ -236,6 +237,11 @@ function MapaLugares({
   useEffect(() => {
     contenedor.current?.classList.toggle('mapa-agregando', agregando)
   }, [agregando])
+
+  // Modo noche: el oscurecido de los mosaicos y los halos son puro CSS (estilos-luminarias.css), sin pedir otro mapa.
+  useEffect(() => {
+    contenedor.current?.classList.toggle('mapa-noche', noche && pestana === 'luminarias')
+  }, [noche, pestana])
 
   return (
     <>

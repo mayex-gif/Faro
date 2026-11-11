@@ -32,6 +32,16 @@ import '../estilos-luminarias.css'
 const PRIORIDADES_DE_MAYOR_A_MENOR = [...PRIORIDADES].reverse()
 
 // Pantalla principal de FARO (propuesta A "El mapa primero").
+// Modo noche de la pestaña Luminarias: se recuerda en este navegador (si el navegador no deja guardar, dura la visita).
+const CLAVE_NOCHE = 'faro-mapa-noche'
+function leerModoNoche() {
+  try {
+    return window.localStorage.getItem(CLAVE_NOCHE) === '1'
+  } catch {
+    return false
+  }
+}
+
 // En la compu, tres columnas: a la izquierda la lista de lugares con sus filtros, en el centro el mapa y,
 // a la derecha, la ficha del lugar elegido. La lista y el mapa muestran los mismos lugares.
 // En el celular y la tablet (usePantallaAngosta): el mapa ocupa todo, los botoncitos van arriba,
@@ -53,6 +63,7 @@ function PaginaMapa({ params, onNavegar }) {
   const [pestana, setPestana] = useState(params?.pestana === 'luminarias' ? 'luminarias' : 'todo')
   const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
   const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
+  const [noche, setNoche] = useState(leerModoNoche) // modo noche (pestaña Luminarias)
   const [soloVisibles, setSoloVisibles] = useState(false)
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
   const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
@@ -124,6 +135,14 @@ function PaginaMapa({ params, onNavegar }) {
     document.addEventListener('keydown', alApretarTecla)
     return () => document.removeEventListener('keydown', alApretarTecla)
   }, [agregando])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CLAVE_NOCHE, noche ? '1' : '0')
+    } catch {
+      // sin almacenamiento (modo privado, permisos): el modo noche dura solo esta visita
+    }
+  }, [noche])
 
   // El aviso de "Se registró..." desaparece solo.
   useEffect(() => {
@@ -323,7 +342,7 @@ function PaginaMapa({ params, onNavegar }) {
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo}
-          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} />
+          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche} />
 
         {/* Pestañas arriba del mapa: todos los lugares o solo las luminarias */}
         {!cargando && !error && (
@@ -337,6 +356,14 @@ function PaginaMapa({ params, onNavegar }) {
               <Icono nombre="luminaria" />Luminarias
             </button>
           </div>
+        )}
+
+        {/* Pestaña Luminarias: modo noche (mapa oscuro; las que funcionan tiran luz) */}
+        {pestana === 'luminarias' && !cargando && !error && (
+          <button type="button" className={puedeAgregar ? 'boton-modo-noche' : 'boton-modo-noche boton-modo-noche-arriba'}
+            aria-pressed={noche} onClick={() => setNoche((anterior) => !anterior)}>
+            <Icono nombre={noche ? 'sol' : 'luna'} />{noche ? 'Modo día' : 'Modo noche'}
+          </button>
         )}
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}

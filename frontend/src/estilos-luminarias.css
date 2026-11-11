@@ -110,3 +110,30 @@
 .zona-luz-texto { color: var(--texto-secundario); font-size: 0.8125rem; }
 .luminarias-accion { margin: 2px 0 6px; }
 .estado-luminaria .boton-primario { align-self: stretch; }
+
+/* ---- Modo noche (pestaña Luminarias) ---- */
+.boton-modo-noche { position: absolute; top: 72px; right: 16px; z-index: 2; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; background: var(--lateral); color: var(--blanco); font: inherit; font-size: 0.875rem; font-weight: 650; box-shadow: 0 2px 8px rgb(20 61 72 / 25%); cursor: pointer; }
+.boton-modo-noche-arriba { top: 16px; }
+.boton-modo-noche .icono { width: 18px; height: 18px; color: #FFD27A; }
+.boton-modo-noche[aria-pressed="true"] { background: var(--blanco); color: var(--texto); }
+.boton-modo-noche[aria-pressed="true"] .icono { color: var(--marca-naranja); }
+.boton-modo-noche:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* El mapa de siempre, "de noche": se oscurecen solo los mosaicos (calles y manzanas), no los postes */
+.leaflet-container.mapa-noche { background: #0E1A21; }
+.mapa-noche .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(0.95) saturate(0.5); }
+/* Las que funcionan tiran luz: un halo cálido alrededor de la base del poste, y el cono más fuerte */
+.mapa-noche .poste-funciona::before { content: ""; position: absolute; top: 72%; left: 50%; z-index: -1; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 206 110 / 55%) 0%, rgb(255 190 80 / 22%) 38%, rgb(255 180 60 / 0%) 70%); transform: translate(-50%, -50%); pointer-events: none; }
+.mapa-noche .poste-funciona .poste-cono { opacity: 1; }
+.mapa-noche .poste-apagada .poste-base { stroke: #FF8A80; }
+/* El marco de "¿Dónde falta luz?" se tiene que ver sobre el fondo oscuro */
+.mapa-noche .leaflet-overlay-pane path { stroke: #5FC0D8; }
+@media (prefers-reduced-motion: no-preference) {
+  .mapa .leaflet-tile-pane { transition: filter 0.3s ease; }
+}
+
+@media (max-width: 1050px) {
+  /* Celular: debajo de "Ver resumen" */
+  .pantalla-mapa-angosta .boton-modo-noche { top: 122px; right: 12px; }
+  .pantalla-mapa-angosta .boton-modo-noche-arriba { top: 68px; }
+}
