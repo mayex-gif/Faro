@@ -80,7 +80,8 @@ function PaginaMapa({ params, onNavegar }) {
   // Agregar un lugar tocando el mapa (encargado y mesa de entradas)
   const puedeAgregar = puedeAgregarLugar(usuario)
   const [agregando, setAgregando] = useState(false)
-  const [puntoNuevo, setPuntoNuevo] = useState(null) // { latitud, longitud } del pin
+  const [tipoNuevo, setTipoNuevo] = useState('ESPACIO_VERDE')
+  const [puntosNuevo, setPuntosNuevo] = useState([]) // vértices tocados sobre el mapa
   const [agregandoAFuturo, setAgregandoAFuturo] = useState(false) // "Agregar luminaria a futuro" (panel de Luminarias)
   const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
   const hojaLugarNuevo = useRef(null) // celular: la hoja del formulario, para que el mapa no deje el pin debajo
@@ -156,24 +157,45 @@ function PaginaMapa({ params, onNavegar }) {
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
-    setPuntoNuevo(null)
+    setTipoNuevo(aFuturo || pestana === 'luminarias' ? 'LUMINARIA' : tiposDeCategoria('infraestructura')[0])
+    setPuntosNuevo([])
     setAviso('')
     setAgregando(true)
   }
 
   function cancelarAgregar() {
     setAgregando(false)
-    setPuntoNuevo(null)
+    setPuntosNuevo([])
   }
 
   // El backend registró el lugar: se suma a la lista, se elige y el mapa va hacia él.
   function alGuardarLugar(creado) {
     setAgregando(false)
-    setPuntoNuevo(null)
+    setPuntosNuevo([])
     setLugares((anteriores) => [...anteriores, creado].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')))
     setLugarActivoId(creado.id)
     setSeleccion((anterior) => ({ lugarId: creado.id, vez: (anterior?.vez ?? 0) + 1 }))
     setAviso(`Se registró "${creado.nombre}".`)
+  }
+
+  function alCambiarTipoNuevo(tipo) {
+    setTipoNuevo(tipo)
+    setPuntosNuevo([])
+  }
+
+  function agregarVerticeNuevo(punto) {
+    setPuntosNuevo((anteriores) => tipoNuevo === 'LUMINARIA' ? [punto] : [...anteriores, punto])
+  }
+
+  function geometriaNueva() {
+    const coords = puntosNuevo.map(({ latitud, longitud }) => [longitud, latitud])
+    if (tipoNuevo === 'LUMINARIA' && coords.length === 1) return { type: 'Point', coordinates: coords[0] }
+    if (tipoNuevo === 'CALLE' && coords.length >= 2) return { type: 'LineString', coordinates: coords }
+    if (tipoNuevo === 'ESPACIO_VERDE' && coords.length >= 3) {
+      const anillo = [...coords, coords[0]]
+      return { type: 'Polygon', coordinates: [anillo] }
+    }
+    return null
   }
 
   // Se asignó una cuadrilla desde la ficha: reemplazamos esa OT (cambió de estado y de cuadrilla)
@@ -341,7 +363,7 @@ function PaginaMapa({ params, onNavegar }) {
       <section className="columna-mapa" aria-label="Mapa de Estación General Paz">
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
-          agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo}
+          agregando={agregando} tipoNuevo={tipoNuevo} puntosNuevo={puntosNuevo} onElegirPunto={agregarVerticeNuevo}
           hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche} />
 
         {/* Pestañas arriba del mapa: todos los lugares o solo las luminarias */}
@@ -457,7 +479,10 @@ function PaginaMapa({ params, onNavegar }) {
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
           {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
-          <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
+          <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} tipo={tipoNuevo} puntos={puntosNuevo}
+            geometria={geometriaNueva()} onCambiarTipo={alCambiarTipoNuevo}
+            onDeshacerPunto={() => setPuntosNuevo((anteriores) => anteriores.slice(0, -1))}
+            onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
             tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')}
             permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>

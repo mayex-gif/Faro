@@ -43,7 +43,7 @@ function crearEtiquetaLuminaria(resumen, estado) {
 // - onLimites(zona): el mapa se movió; zona = { sur, oeste, norte, este } de lo que se ve
 // Para agregar un lugar nuevo tocando el mapa:
 // - agregando: true mientras se está eligiendo dónde va (el cursor cambia y tocar un lugar no abre su ficha)
-// - puntoNuevo: { latitud, longitud } donde va el pin del lugar nuevo (o null)
+// - puntosNuevo: coordenadas de la geometría temporal que se está dibujando
 // - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
 // - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Pestaña Luminarias:
@@ -53,7 +53,7 @@ function crearEtiquetaLuminaria(resumen, estado) {
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
 function MapaLugares({
-  resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null,
+  resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, tipoNuevo = 'LUMINARIA', puntosNuevo = [], onElegirPunto, hojaAbajo = null,
   pestana = 'todo', luminarias = [], zonaResaltada = null, noche = false,
 }) {
   const contenedor = useRef(null)
@@ -63,6 +63,7 @@ function MapaLugares({
   const avisos = useRef({})
   const pinNuevo = useRef(null)
   const marcoZona = useRef(null)
+  const dibujoNuevo = useRef(null)
 
   // Los avisos siempre apuntan a las funciones y datos más nuevos de la página.
   useEffect(() => {
@@ -112,6 +113,7 @@ function MapaLugares({
       grupo.current = null
       pinNuevo.current = null
       marcoZona.current = null
+      dibujoNuevo.current = null
       capas.clear()
     }
   }, [])
@@ -203,18 +205,18 @@ function MapaLugares({
     capa.openTooltip()
   }, [seleccion])
 
-  // El pin del lugar nuevo: se puede arrastrar para ajustar la posición (también con el teclado, con las flechas).
+  // Vista previa de la geometría nueva: pin, línea o área dibujada con toques.
   useEffect(() => {
     if (!mapa.current) return
-    if (!puntoNuevo) {
-      pinNuevo.current?.remove()
-      pinNuevo.current = null
-      return
-    }
-    const posicion = [puntoNuevo.latitud, puntoNuevo.longitud]
-    if (pinNuevo.current) {
-      pinNuevo.current.setLatLng(posicion)
-    } else {
+    pinNuevo.current?.remove()
+    pinNuevo.current = null
+    dibujoNuevo.current?.remove()
+    dibujoNuevo.current = null
+    if (!puntosNuevo.length) return
+
+    if (tipoNuevo === 'LUMINARIA') {
+      const punto = puntosNuevo[0]
+      const posicion = [punto.latitud, punto.longitud]
       // El dibujo del pin es fijo (no lleva datos de usuarios), por eso puede ir como HTML.
       const icono = L.divIcon({ className: 'pin-nuevo', html: '<span></span>', iconSize: [30, 30], iconAnchor: [15, 30] })
       pinNuevo.current = L.marker(posicion, { icon: icono, draggable: true, title: 'Lugar nuevo: arrastralo para ajustar', alt: 'Lugar nuevo' })
@@ -223,14 +225,24 @@ function MapaLugares({
           avisos.current.onElegirPunto?.({ latitud: lat, longitud: lng })
         })
         .addTo(mapa.current)
+      const altoTapado = hojaAbajo?.current?.offsetHeight ?? 0
+      if (altoTapado > 0) mapa.current.panInside(posicion, { paddingTopLeft: [0, 40], paddingBottomRight: [0, altoTapado + 16] })
+      return
     }
-    // En el celular el formulario sube desde abajo y tapa parte del mapa: si el pin quedó debajo,
-    // corremos el mapa lo justo para que se vea arriba de la hoja (40 px arriba: el alto del pin y un margen).
-    const altoTapado = hojaAbajo?.current?.offsetHeight ?? 0
-    if (altoTapado > 0) {
-      mapa.current.panInside(posicion, { paddingTopLeft: [0, 40], paddingBottomRight: [0, altoTapado + 16] })
+
+    const grupoDibujo = L.layerGroup().addTo(mapa.current)
+    dibujoNuevo.current = grupoDibujo
+    const posiciones = puntosNuevo.map((punto) => [punto.latitud, punto.longitud])
+    posiciones.forEach((posicion) => L.circleMarker(posicion, {
+      radius: 5, color: '#FFFFFF', weight: 2, fillColor: '#EA6A25', fillOpacity: 1, interactive: false,
+    }).addTo(grupoDibujo))
+    if (tipoNuevo === 'CALLE' && posiciones.length >= 2) {
+      L.polyline(posiciones, { color: '#EA6A25', weight: 5, opacity: 0.9, interactive: false }).addTo(grupoDibujo)
     }
-  }, [puntoNuevo, hojaAbajo])
+    if (tipoNuevo === 'ESPACIO_VERDE' && posiciones.length >= 2) {
+      L.polygon(posiciones, { color: '#EA6A25', weight: 3, fillColor: '#EA6A25', fillOpacity: 0.2, interactive: false }).addTo(grupoDibujo)
+    }
+  }, [tipoNuevo, puntosNuevo, hojaAbajo])
 
   // Mientras se agrega un lugar, el cursor es una cruz. Se usa classList (y no className) porque
   // Leaflet le agrega sus propias clases a este mismo div y React las borraría al cambiar className.

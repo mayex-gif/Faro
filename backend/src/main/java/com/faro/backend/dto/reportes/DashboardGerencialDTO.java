@@ -23,6 +23,7 @@ public record DashboardGerencialDTO(
         List<OtsPorTipoTrabajoDTO>  otsPorTipoTrabajo,
         List<OtsPorCuadrillaDTO>    otsPorCuadrilla,
         List<OtsPorPeriodoDTO>      otsPorPeriodo,  // serie temporal
+        List<MontoPorPeriodoDTO>    montoPorPeriodo,
 
         // ── Desvíos (solo PLAN_MANTENIMIENTO) ──
         ResumenDesviosGlobalDTO resumenDesvios,
@@ -34,6 +35,6 @@ public record DashboardGerencialDTO(
                                  List<OtsPorCuadrillaDTO> otsPorCuadrilla, List<OtsPorPeriodoDTO> otsPorPeriodo,
                                  ResumenDesviosGlobalDTO resumenDesvios) {
         this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado,
-                otsPorTipoTrabajo, otsPorCuadrilla, otsPorPeriodo, resumenDesvios, BigDecimal.ZERO);
+                otsPorTipoTrabajo, otsPorCuadrilla, otsPorPeriodo, List.of(), resumenDesvios, BigDecimal.ZERO);
     }
 }

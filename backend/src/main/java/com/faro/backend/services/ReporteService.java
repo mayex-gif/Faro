@@ -82,6 +82,8 @@ public class ReporteService {
         List<OtsPorCuadrillaDTO>   porCuadrilla   = construirPorCuadrilla(desdeTs, hastaTs);
         List<OtsPorPeriodoDTO>     porPeriodo     = construirSerieTemporal(
                 desdeTs, hastaTs, granularidadEfectiva);
+        List<MontoPorPeriodoDTO> montoPorPeriodo = construirSerieMontos(
+                desdeTs, hastaTs, granularidadEfectiva);
 
         // Resumen de desvíos (solo PLAN_MANTENIMIENTO)
         ResumenDesviosGlobalDTO resumenDesvios = construirResumenDesvios(desdeEfectivo, hastaEfectivo);
@@ -97,10 +99,24 @@ public class ReporteService {
                 porTipoTrabajo,
                 porCuadrilla,
                 porPeriodo,
+                montoPorPeriodo,
                 resumenDesvios,
                 java.util.Optional.ofNullable(reporteRepository.sumarMontosAproximados(desdeTs, hastaTs))
                         .orElse(BigDecimal.ZERO)
         );
+    }
+
+    private List<MontoPorPeriodoDTO> construirSerieMontos(LocalDateTime desde, LocalDateTime hasta,
+                                                           GranularidadPeriodo granularidad) {
+        List<Object[]> filas = switch (granularidad) {
+            case DIA -> reporteRepository.sumarMontosPorDia(desde, hasta);
+            case SEMANA -> reporteRepository.sumarMontosPorSemana(desde, hasta);
+            case MES -> reporteRepository.sumarMontosPorMes(desde, hasta);
+        };
+        return filas.stream()
+                .map(fila -> new MontoPorPeriodoDTO((String) fila[0],
+                        fila[1] instanceof BigDecimal monto ? monto : new BigDecimal(fila[1].toString())))
+                .toList();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

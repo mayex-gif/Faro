@@ -30,6 +30,9 @@
 .campo input:hover, .campo select:hover, .campo textarea:hover { border-color: var(--enlace); }
 .campo input:focus, .campo select:focus, .campo textarea:focus { outline: 2px solid var(--foco); outline-offset: 2px; border-color: var(--foco); }
 .campo input:disabled { background: var(--fondo); color: var(--texto-secundario); cursor: not-allowed; }
+.entrada-con-prefijo { display: flex; align-items: stretch; }
+.entrada-con-prefijo > span { display: grid; place-items: center; min-width: 42px; border: 1px solid var(--borde-campo); border-right: 0; border-radius: 7px 0 0 7px; background: var(--fondo); color: var(--texto-secundario); font-weight: 650; }
+.campo .entrada-con-prefijo input { border-radius: 0 7px 7px 0; }
 .ayuda-campo { margin-top: 7px; color: var(--texto-secundario); font-size: 0.75rem; line-height: 1.5; }
 .ayuda-seccion { margin: -6px 0 16px; color: var(--texto-secundario); font-size: 0.8125rem; }
 .coordenadas { grid-template-columns: 1fr 1fr; }

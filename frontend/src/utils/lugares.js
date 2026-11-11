@@ -2,7 +2,7 @@
 // Los valores de "tipo" son los que guarda el backend.
 
 export const TIPOS_LUGAR = {
-  ESPACIO_VERDE: 'Espacio verde',
+  ESPACIO_VERDE: 'Área',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }
