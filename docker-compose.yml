@@ -27,9 +27,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-faro}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-faro}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-faro}
+      # La demo apunta a su rama Neon; cada persona configura sus credenciales en su .env local.
+      SPRING_DATASOURCE_URL: ${NEON_DB_URL:-jdbc:postgresql://ep-red-salad-b8w7xlae-pooler.c-14.us-east-1.aws.neon.tech:5432/neondb?sslmode=require&channel_binding=require}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DB_USERNAME:-owner}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DB_PASSWORD:-}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       TZ: America/Argentina/Buenos_Aires
       # Clave de las sesiones (obligatoria: sin ella el backend no arranca). Sale del archivo .env
