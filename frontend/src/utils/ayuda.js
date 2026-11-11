@@ -124,14 +124,37 @@ export const AYUDA = {
     ],
   },
 
+  luminarias: {
+    titulo: 'Luminarias',
+    resumen: 'El registro del alumbrado público: cada luminaria del pueblo, sus datos técnicos, si funciona y cuáles faltan poner.',
+    secciones: [
+      {
+        titulo: 'Registrar una luminaria',
+        items: [
+          'Completá el nombre (por ejemplo "Luminaria San Martín y Belgrano") y los datos técnicos (potencia, altura del poste, tipo de lámpara…).',
+          'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448). También podés agregarla tocando el mapa: Mapa → pestaña Luminarias → "Agregar luminaria".',
+          'Si está apagada, desmarcá "Funciona correctamente". Si está planificada pero todavía no se puso, marcá "Todavía no está instalada". Después tocá "Registrar luminaria".',
+        ],
+      },
+      {
+        titulo: 'Consultar y modificar',
+        items: [
+          'Filtrá por nombre, datos técnicos o estado: Funciona, Fuera de servicio o Falta poner.',
+          '"Editar" carga la luminaria en el formulario; "Ficha" abre su historia; "Borrar" la elimina (si tiene órdenes de trabajo, FARO no deja borrarla).',
+          'Para ver cómo está todo el alumbrado de un vistazo, entrá al Mapa → pestaña Luminarias. Ahí también podés cambiar el estado de una luminaria tocándola.',
+        ],
+      },
+    ],
+  },
+
   infraestructura: {
     titulo: 'Infraestructura',
-    resumen: 'El registro de todos los lugares del pueblo que mantiene el corralón: luminarias, espacios verdes y calles, con sus datos y si funcionan o no.',
+    resumen: 'El registro de los espacios verdes y las calles que mantiene el corralón, con sus datos y si están en condiciones o no. Las luminarias están aparte, en Más → Luminarias.',
     secciones: [
       {
         titulo: 'Registrar un lugar',
         items: [
-          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (potencia, altura del poste, características…).',
+          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (superficie, características…).',
           'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448).',
           'Si el lugar está fuera de servicio, desmarcá "Funciona correctamente". Después tocá "Registrar lugar".',
         ],

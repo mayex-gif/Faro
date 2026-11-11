@@ -5,7 +5,7 @@ import EstadoLuminaria from './EstadoLuminaria'
 import Icono from './Icono'
 import { esperaCuadrilla } from '../utils/asignacion'
 import { lineaNovedad, tituloEvento, ultimasNovedades } from '../utils/historia'
-import { describirUbicacion, etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { claseEstadoLugar, describirUbicacion, etiquetaTipoLugar, textoEstadoLugar } from '../utils/lugares'
 import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 import { useSesion } from '../context/useSesion'
 import { esLuminaria } from '../utils/luminarias'
@@ -68,9 +68,9 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
           <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)}</p>
           <h2 id="titulo-panel-lugar" tabIndex={-1}>{lugar.nombre}</h2>
           <p className="panel-lugar-estado">
-            <span className={lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
+            <span className={claseEstadoLugar(lugar)}>
               <span className="estado-punto" aria-hidden="true" />
-              {textoEstadoOperativo(lugar.estadoOperativo)}
+              {textoEstadoLugar(lugar)}
             </span>
             <span className="ubicacion-tabla">{describirUbicacion(lugar.ubicacion)}</span>
           </p>

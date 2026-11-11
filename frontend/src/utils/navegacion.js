@@ -16,6 +16,7 @@ export const SECCIONES = [
 // (cada capataz va a entrar directo a sus tareas).
 export const MAS = [
   { clave: 'infraestructura', titulo: 'Infraestructura', icono: 'infraestructura' },
+  { clave: 'luminarias', titulo: 'Luminarias', icono: 'luminaria' },
   { clave: 'tareas', titulo: 'Mis tareas', icono: 'tareas' },
   { clave: 'usuarios', titulo: 'Usuarios', icono: 'usuario' },
   { clave: 'mantenimiento', titulo: 'Mantenimiento periódico', icono: 'mantenimiento' },
@@ -34,6 +35,7 @@ export const FUERA_DEL_MENU = [
 export const NUEVO = [
   { clave: 'ordenes', titulo: 'Nueva orden de trabajo', icono: 'orden' },
   { clave: 'infraestructura', titulo: 'Nuevo lugar', icono: 'lugar' },
+  { clave: 'luminarias', titulo: 'Nueva luminaria', icono: 'luminaria' },
 ]
 
 // ¿La pantalla está dentro de "Más"? (para marcar "Más" como la sección actual)

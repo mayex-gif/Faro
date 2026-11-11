@@ -22,6 +22,7 @@ import {
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
+import { tiposDeCategoria } from '../utils/lugares'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
@@ -333,7 +334,7 @@ function PaginaMapa({ params, onNavegar }) {
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
         {puedeAgregar && !agregando && !cargando && !error && (
           <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={empezarAgregar}>
-            <Icono nombre="agregar" />Agregar lugar
+            <Icono nombre="agregar" />{pestana === 'luminarias' ? 'Agregar luminaria' : 'Agregar lugar'}
           </button>
         )}
 
@@ -413,7 +414,9 @@ function PaginaMapa({ params, onNavegar }) {
       {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
-          <FormularioLugarMapa punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar} />
+          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
+          <FormularioLugarMapa key={pestana} punto={puntoNuevo} onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
+            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')} />
         </div>
       )}
 

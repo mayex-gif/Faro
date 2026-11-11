@@ -86,3 +86,6 @@
 .estado-luminaria .boton { align-self: flex-start; }
 .estado-luminaria-aviso { margin: 0; color: var(--exito); font-size: 0.8125rem; font-weight: 600; }
 .estado-luminaria-aviso:empty { display: none; }
+
+/* Estado "Falta poner" en las listas (Más → Luminarias, ficha del lugar): gris, como la base punteada del poste */
+.estado-pendiente { color: #3A464C; background: #ECEFF0; }

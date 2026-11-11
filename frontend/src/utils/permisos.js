@@ -9,7 +9,7 @@ export const NOMBRES_ROL = {
 }
 
 const VISTAS_POR_ROL = {
-  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
+  [ENCARGADO]: ['mapa', 'ordenes', 'asignacion', 'infraestructura', 'luminarias', 'ficha', 'tareas', 'usuarios', 'mantenimiento', 'auditoria', 'reportes'],
   [MESA]: ['mapa', 'ordenes', 'ficha', 'usuarios'],
   [CAPATAZ]: ['tareas', 'mapa', 'ficha'],
 }

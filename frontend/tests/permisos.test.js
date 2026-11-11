@@ -77,3 +77,9 @@ test('solo el encargado cambia el estado de una luminaria desde el mapa (como en
   assert.equal(puedeCambiarEstadoLuminaria(capataz), false)
   assert.equal(puedeCambiarEstadoLuminaria(null), false)
 })
+
+test('la sección Luminarias (Más → Luminarias) es del encargado, como Infraestructura', () => {
+  assert.equal(puedeVer(encargado, 'luminarias'), true)
+  assert.equal(puedeVer(mesa, 'luminarias'), false)
+  assert.equal(puedeVer(capataz, 'luminarias'), false)
+})
