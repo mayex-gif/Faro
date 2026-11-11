@@ -207,7 +207,8 @@ public class MotorMantenimientoService {
                 cuadrilla != null ? cuadrilla.getNombre() : null,
                 orden.getFechaPlanificada(),
                 orden.getFechaFinalizacion(),
-                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null
+                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
+                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado()
         );
     }
 }

@@ -59,12 +59,16 @@ export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Dat
   }
 }
 
-// "Cargué una OT nueva". datos = lo mismo que el alta normal: { descripcion, tipo, origen, prioridad, lugarId }.
+// "Cargué una OT nueva". Copia los campos conocidos del alta normal, incluidos los opcionales añadidos después.
 export function crearAltaOrden(usuario, datos, lugarNombre, { ahora = new Date(), numero = nuevoNumero() } = {}) {
   const { descripcion, tipo, origen, prioridad, lugarId } = datos
+  const orden = { descripcion, tipo, origen, prioridad, lugarId }
+  for (const campo of ['calleEntre1', 'calleEntre2', 'altura', 'montoAproximado']) {
+    if (Object.hasOwn(datos, campo)) orden[campo] = datos[campo]
+  }
   return {
     ...base(usuario, ALTA_ORDEN, ahora, numero),
-    orden: { descripcion, tipo, origen, prioridad, lugarId },
+    orden,
     descripcion,
     lugarNombre,
   }

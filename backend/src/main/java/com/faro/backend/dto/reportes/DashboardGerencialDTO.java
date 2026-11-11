@@ -2,6 +2,7 @@ package com.faro.backend.dto.reportes;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * Respuesta completa del dashboard gerencial de reportes.
@@ -24,6 +25,15 @@ public record DashboardGerencialDTO(
         List<OtsPorPeriodoDTO>      otsPorPeriodo,  // serie temporal
 
         // ── Desvíos (solo PLAN_MANTENIMIENTO) ──
-        ResumenDesviosGlobalDTO resumenDesvios
+        ResumenDesviosGlobalDTO resumenDesvios,
+        BigDecimal montoAproximadoTotal
 ) {
+    public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
+                                 long totalOts, long otsCerradas, long otsPendientes,
+                                 List<OtsPorEstadoDTO> otsPorEstado, List<OtsPorTipoTrabajoDTO> otsPorTipoTrabajo,
+                                 List<OtsPorCuadrillaDTO> otsPorCuadrilla, List<OtsPorPeriodoDTO> otsPorPeriodo,
+                                 ResumenDesviosGlobalDTO resumenDesvios) {
+        this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado,
+                otsPorTipoTrabajo, otsPorCuadrilla, otsPorPeriodo, resumenDesvios, BigDecimal.ZERO);
+    }
 }

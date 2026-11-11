@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * Consultas JPQL agrupadas para el Panel de Reportes e Indicadores.
@@ -29,6 +30,11 @@ public interface ReporteRepository extends JpaRepository<OrdenTrabajo, Long> {
     """)
     long contarTotalOts(@Param("desde") LocalDateTime desde,
                         @Param("hasta") LocalDateTime hasta);
+
+    /** Suma los montos aproximados informados para las OTs creadas en el período. */
+    @Query("SELECT COALESCE(SUM(o.montoAproximado), 0) FROM OrdenTrabajo o WHERE o.fechaCreacion BETWEEN :desde AND :hasta")
+    BigDecimal sumarMontosAproximados(@Param("desde") LocalDateTime desde,
+                                      @Param("hasta") LocalDateTime hasta);
 
     /** OTs en estados de cierre (finalizadas, canceladas) creadas en el período. */
     @Query("""

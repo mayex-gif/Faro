@@ -6,6 +6,7 @@ import com.faro.backend.dto.OrdenTrabajoRequestDTO;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.exceptions.SinPermisoException;
+import com.faro.backend.exceptions.DatoInvalidoException;
 import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.EventoOrden;
@@ -298,6 +299,21 @@ public class OrdenTrabajoService {
         orden.setOrigen(request.origen());
         orden.setPrioridad(request.prioridad());
         orden.setLugar(lugar);
+        boolean entreCalles = request.calleEntre1() != null && !request.calleEntre1().isBlank()
+                && request.calleEntre2() != null && !request.calleEntre2().isBlank();
+        boolean conAltura = request.altura() != null && !request.altura().isBlank();
+        if ((request.calleEntre1() != null && !request.calleEntre1().isBlank())
+                != (request.calleEntre2() != null && !request.calleEntre2().isBlank())) {
+            throw new DatoInvalidoException("calleEntre1", "Completá las dos calles para indicar el tramo");
+        }
+        if (entreCalles && conAltura) throw new DatoInvalidoException("altura", "Elegí un tramo entre calles o una altura");
+        if ((entreCalles || conAltura) && !"CALLE".equalsIgnoreCase(lugar.getTipo())) {
+            throw new DatoInvalidoException("lugarId", "El detalle de altura o tramo solo se puede indicar para una infraestructura de tipo calle");
+        }
+        orden.setCalleEntre1(entreCalles ? request.calleEntre1().trim() : null);
+        orden.setCalleEntre2(entreCalles ? request.calleEntre2().trim() : null);
+        orden.setAltura(conAltura ? request.altura().trim() : null);
+        orden.setMontoAproximado(request.montoAproximado());
     }
 
     private OrdenTrabajoDTO convertirADto(OrdenTrabajo orden) {
@@ -319,7 +335,8 @@ public class OrdenTrabajoService {
                 cuadrilla != null ? cuadrilla.getNombre() : null,
                 orden.getFechaPlanificada(),
                 orden.getFechaFinalizacion(),
-                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null
+                orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
+                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado()
         );
     }
 }
