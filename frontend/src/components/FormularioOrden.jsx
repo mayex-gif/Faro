@@ -85,6 +85,7 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
   const lugarSeleccionado = lugares.find((lugar) => String(lugar.id) === String(datos.lugarId))
   const esLugarCalle = lugarSeleccionado?.tipo === 'CALLE'
   const modoUbicacion = esLugarCalle ? datos.modoUbicacion : 'NINGUNA'
+  const callesParaTramo = lugares.filter((lugar) => lugar.tipo === 'CALLE' && String(lugar.id) !== String(datos.lugarId))
 
   // Al editar, o si ya viene el lugar elegido, el cursor arranca en la descripción
   useEffect(() => {
@@ -124,8 +125,9 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
     if (!datos.prioridad) encontrados.prioridad = 'Elegí la prioridad.'
     if (!datos.lugarId) encontrados.lugarId = 'Elegí el lugar donde se va a trabajar.'
     if (modoUbicacion === 'ENTRE_CALLES') {
-      if (!datos.calleEntre1.trim()) encontrados.calleEntre1 = 'Indicá la primera calle.'
-      if (!datos.calleEntre2.trim()) encontrados.calleEntre2 = 'Indicá la segunda calle.'
+      if (!datos.calleEntre1) encontrados.calleEntre1 = 'Elegí la primera calle.'
+      if (!datos.calleEntre2) encontrados.calleEntre2 = 'Elegí la segunda calle.'
+      if (datos.calleEntre1 && datos.calleEntre1 === datos.calleEntre2) encontrados.calleEntre2 = 'Elegí una calle distinta.'
     }
     if (modoUbicacion === 'ALTURA') {
       if (!datos.altura.trim()) encontrados.altura = 'Indicá la altura.'
@@ -157,8 +159,8 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
       origen: datos.origen,
       prioridad: datos.prioridad,
       lugarId: Number(datos.lugarId),
-      calleEntre1: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre1.trim() : null,
-      calleEntre2: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre2.trim() : null,
+      calleEntre1: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre1 : null,
+      calleEntre2: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre2 : null,
       altura: modoUbicacion === 'ALTURA' ? datos.altura.trim() : null,
       montoAproximado: datos.montoAproximado === '' ? null : Number(datos.montoAproximado),
     }
@@ -324,10 +326,16 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
               </div>}
               {esLugarCalle && datos.modoUbicacion === 'ENTRE_CALLES' && <>
                 <div className="campo"><label htmlFor="calleEntre1">Entre calle <span aria-hidden="true">*</span></label>
-                  <input id="calleEntre1" name="calleEntre1" maxLength={120} value={datos.calleEntre1} onChange={cambiar} {...accesibilidad('calleEntre1')} />
+                  <select id="calleEntre1" name="calleEntre1" value={datos.calleEntre1} onChange={cambiar} {...accesibilidad('calleEntre1')}>
+                    <option value="">Elegí una calle…</option>
+                    {callesParaTramo.map((calle) => <option key={calle.id} value={calle.nombre}>{calle.nombre}</option>)}
+                  </select>
                   {mensajeCampo('calleEntre1')}</div>
                 <div className="campo"><label htmlFor="calleEntre2">Y calle <span aria-hidden="true">*</span></label>
-                  <input id="calleEntre2" name="calleEntre2" maxLength={120} value={datos.calleEntre2} onChange={cambiar} {...accesibilidad('calleEntre2')} />
+                  <select id="calleEntre2" name="calleEntre2" value={datos.calleEntre2} onChange={cambiar} {...accesibilidad('calleEntre2')}>
+                    <option value="">Elegí una calle…</option>
+                    {callesParaTramo.filter((calle) => calle.nombre !== datos.calleEntre1).map((calle) => <option key={calle.id} value={calle.nombre}>{calle.nombre}</option>)}
+                  </select>
                   {mensajeCampo('calleEntre2')}</div>
               </>}
               {esLugarCalle && datos.modoUbicacion === 'ALTURA' && <div className="campo">
@@ -336,8 +344,11 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
                 {mensajeCampo('altura')}</div>}
               <div className="campo">
                 <label htmlFor="montoAproximado">Monto aproximado gastado</label>
-                <input id="montoAproximado" name="montoAproximado" type="number" min="0" step="0.01"
-                  value={datos.montoAproximado} onChange={cambiar} {...accesibilidad('montoAproximado')} />
+                <div className="entrada-con-prefijo">
+                  <span aria-hidden="true">$</span>
+                  <input id="montoAproximado" name="montoAproximado" type="number" min="0" step="0.01"
+                    value={datos.montoAproximado} onChange={cambiar} {...accesibilidad('montoAproximado')} />
+                </div>
                 {mensajeCampo('montoAproximado', null, 'Opcional. Se incluye en los reportes como estimación.')}
               </div>
 

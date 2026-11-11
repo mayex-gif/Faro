@@ -1,44 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { crearPunto } from '../api/infraestructura'
 import Icono from './Icono'
-import { TIPOS_LUGAR, estadoParaGuardar, tiposDeCategoria } from '../utils/lugares'
-import { puntoEnLaZona, redondearCoordenada, ubicacionDelPunto } from '../utils/zona'
+import { TIPOS_LUGAR, estadoParaGuardar } from '../utils/lugares'
+import { puntoEnLaZona, redondearCoordenada } from '../utils/zona'
 
-// Formulario corto para registrar un lugar marcado en el mapa (pantalla Mapa).
-// La ubicación sale del pin: no hace falta escribir coordenadas. Va en el panel de la derecha (compu)
-// o en la hoja de abajo (celular).
-// Props:
-// - punto: { latitud, longitud } del pin, o null mientras todavía no se tocó el mapa
-// - onGuardado(lugarCreado): el backend registró el lugar (responde el lugar con su id)
-// - onCancelar(): salir sin guardar
-// - tipos: qué se puede registrar (pestaña "Todo el pueblo": espacios verdes y calles; pestaña Luminarias: luminarias)
-// - permitirAFuturo: se puede cargar una luminaria a futuro (solo el encargado; ver utils/permisos.js)
-// - aFuturo: arranca como luminaria a futuro ("Agregar luminaria a futuro" del panel de Luminarias)
-function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCategoria(), permitirAFuturo = false, aFuturo = false }) {
-  const [datos, setDatos] = useState({
-    nombre: '', tipo: tipos[0], datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !(aFuturo && permitirAFuturo),
-  })
+function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshacerPunto, onGuardado, onCancelar,
+  tipos, permitirAFuturo = false, aFuturo = false }) {
+  const [datos, setDatos] = useState(() => ({
+    nombre: '', tipo, datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo,
+  }))
   const soloLuminarias = tipos.length === 1 && tipos[0] === 'LUMINARIA'
   const sinInstalar = datos.tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const campoNombre = useRef(null)
-  const hayPunto = punto != null
-  const dentro = hayPunto && puntoEnLaZona(punto.latitud, punto.longitud)
+  const dentro = puntos.length > 0 && puntos.every((punto) => puntoEnLaZona(punto.latitud, punto.longitud))
+  const geometriaLista = Boolean(geometria) && dentro
+  const instruccion = tipo === 'LUMINARIA'
+    ? 'Tocá el mapa donde está la luminaria.'
+    : tipo === 'CALLE'
+      ? 'Tocá varios puntos siguiendo el recorrido de la calle.'
+      : 'Tocá al menos tres puntos para marcar el contorno del área.'
 
-  // Cuando aparece el pin, el cursor va al nombre (lo primero que hay que completar).
   useEffect(() => {
-    if (hayPunto) campoNombre.current?.focus({ preventScroll: true })
-  }, [hayPunto])
+    setDatos((anterior) => ({ ...anterior, tipo }))
+  }, [tipo])
 
   function cambiar(evento) {
     const { name, value, type, checked } = evento.target
-    setDatos({ ...datos, [name]: type === 'checkbox' ? checked : value })
+    setDatos((anterior) => ({ ...anterior, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  function elegirTipo(evento) {
+    const nuevoTipo = evento.target.value
+    setDatos((anterior) => ({ ...anterior, tipo: nuevoTipo }))
+    onCambiarTipo(nuevoTipo)
   }
 
   async function enviar(evento) {
     evento.preventDefault()
-    if (!dentro) return
+    if (!geometriaLista) return
     if (datos.nombre.trim() === '') {
       setError(soloLuminarias ? 'Escribí el nombre de la luminaria.' : 'Escribí el nombre del lugar.')
       campoNombre.current?.focus()
@@ -49,10 +50,10 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCat
     try {
       const creado = await crearPunto({
         nombre: datos.nombre.trim(),
-        tipo: datos.tipo,
+        tipo,
         datosTecnicos: datos.datosTecnicos.trim(),
         ...estadoParaGuardar(datos),
-        ubicacion: ubicacionDelPunto(punto),
+        ubicacion: geometria,
       })
       onGuardado(creado)
     } catch (e) {
@@ -71,68 +72,63 @@ function FormularioLugarMapa({ punto, onGuardado, onCancelar, tipos = tiposDeCat
           <p className="panel-lugar-tipo">{soloLuminarias ? 'Agregar una luminaria' : 'Agregar un lugar'}</p>
           <h2 id="titulo-lugar-nuevo">{soloLuminarias ? 'Luminaria nueva' : 'Lugar nuevo'}</h2>
         </div>
-        <button type="button" className="boton-cerrar" onClick={onCancelar} disabled={guardando} aria-label={soloLuminarias ? 'Cancelar y no agregar la luminaria' : 'Cancelar y no agregar el lugar'}>
+        <button type="button" className="boton-cerrar" onClick={onCancelar} disabled={guardando}
+          aria-label={soloLuminarias ? 'Cancelar y no agregar la luminaria' : 'Cancelar y no agregar el lugar'}>
           <Icono nombre="cerrar" />
         </button>
       </div>
 
-      {!hayPunto ? (
-        <div className="panel-lugar-seccion">
-          <p className="paso-agregar"><Icono nombre="lugar" />Tocá el mapa donde está {soloLuminarias ? 'la luminaria' : 'el lugar'}.</p>
-          <p className="panel-lugar-vacio">Solo se pueden agregar lugares dentro de Estación General Paz.</p>
+      <form className="panel-lugar-seccion" onSubmit={enviar} noValidate aria-busy={guardando}>
+        {tipos.length > 1 && <div className="campo">
+          <label htmlFor="lugar-nuevo-tipo">¿Qué querés registrar?</label>
+          <select id="lugar-nuevo-tipo" value={tipo} onChange={elegirTipo} disabled={guardando}>
+            {tipos.map((valor) => <option key={valor} value={valor}>{TIPOS_LUGAR[valor]}</option>)}
+          </select>
+        </div>}
+
+        <p className="paso-agregar"><Icono nombre="lugar" />{instruccion}</p>
+        <div className={dentro ? 'ubicacion-elegida' : 'ubicacion-elegida ubicacion-fuera'} aria-live="polite">
+          <strong>{!puntos.length ? 'Todavía no marcaste la forma' : !dentro ? 'Hay puntos fuera del pueblo' : `${puntos.length} ${puntos.length === 1 ? 'punto marcado' : 'puntos marcados'}`}</strong>
+          {tipo === 'LUMINARIA' && puntos[0] && <span>{redondearCoordenada(puntos[0].latitud).toFixed(5)}, {redondearCoordenada(puntos[0].longitud).toFixed(5)}</span>}
+          <span>{dentro ? 'La forma debe quedar dentro de Estación General Paz.' : 'Solo se aceptan formas dentro de Estación General Paz.'}</span>
         </div>
-      ) : (
-        <form className="panel-lugar-seccion" onSubmit={enviar} noValidate aria-busy={guardando}>
-          <div className={dentro ? 'ubicacion-elegida' : 'ubicacion-elegida ubicacion-fuera'} aria-live="polite">
-            <strong>{dentro ? 'Ubicación marcada' : 'Ese punto queda fuera del pueblo'}</strong>
-            <span>{redondearCoordenada(punto.latitud).toFixed(5)}, {redondearCoordenada(punto.longitud).toFixed(5)}</span>
-            <span>{dentro ? 'Si no quedó justo, arrastrá el pin o tocá otro punto.' : 'Tocá un punto dentro de Estación General Paz.'}</span>
+
+        {tipo !== 'LUMINARIA' && <div className="botones botones-dibujo-mapa">
+          <button type="button" className="boton boton-secundario" onClick={onDeshacerPunto} disabled={guardando || puntos.length === 0}>Deshacer punto</button>
+        </div>}
+
+        <fieldset className="campos-lugar-mapa" disabled={guardando}>
+          <legend className="solo-lectores">{soloLuminarias ? 'Datos de la luminaria nueva' : 'Datos del lugar nuevo'}</legend>
+          <div className="campo">
+            <label htmlFor="lugar-nuevo-nombre">Nombre <span aria-hidden="true">*</span></label>
+            <input id="lugar-nuevo-nombre" name="nombre" ref={campoNombre} value={datos.nombre} onChange={cambiar}
+              required aria-describedby="ayuda-lugar-nuevo-nombre" aria-invalid={error !== '' && datos.nombre.trim() === ''} />
+            <p className="ayuda-campo" id="ayuda-lugar-nuevo-nombre">Ej.: {soloLuminarias ? 'Luminaria San Martín y Belgrano' : 'Plaza San Martín'}.</p>
           </div>
-
-          <fieldset className="campos-lugar-mapa" disabled={guardando}>
-            <legend className="solo-lectores">{soloLuminarias ? 'Datos de la luminaria nueva' : 'Datos del lugar nuevo'}</legend>
-            <div className="campo">
-              <label htmlFor="lugar-nuevo-nombre">Nombre <span aria-hidden="true">*</span></label>
-              <input id="lugar-nuevo-nombre" name="nombre" ref={campoNombre} value={datos.nombre} onChange={cambiar}
-                required aria-describedby="ayuda-lugar-nuevo-nombre" aria-invalid={error !== '' && datos.nombre.trim() === ''} />
-              <p className="ayuda-campo" id="ayuda-lugar-nuevo-nombre">Ej.: {soloLuminarias ? 'Luminaria San Martín y Belgrano' : 'Plaza San Martín'}.</p>
-            </div>
-            {tipos.length > 1 && (
-              <div className="campo">
-                <label htmlFor="lugar-nuevo-tipo">Tipo de lugar <span aria-hidden="true">*</span></label>
-                <select id="lugar-nuevo-tipo" name="tipo" value={datos.tipo} onChange={cambiar}>
-                  {tipos.map((tipo) => <option key={tipo} value={tipo}>{TIPOS_LUGAR[tipo]}</option>)}
-                </select>
-              </div>
-            )}
-            <div className="campo">
-              <label htmlFor="lugar-nuevo-datos">Datos técnicos <span className="opcional">(opcional)</span></label>
-              <textarea id="lugar-nuevo-datos" name="datosTecnicos" rows={2} value={datos.datosTecnicos} onChange={cambiar} />
-            </div>
-            {datos.tipo === 'LUMINARIA' && permitirAFuturo && (
-              <label className="campo-check" htmlFor="lugar-nuevo-instalada">
-                <input id="lugar-nuevo-instalada" type="checkbox" checked={!datos.instalada}
-                  onChange={(evento) => setDatos({ ...datos, instalada: !evento.target.checked })} />
-                <span><strong>Luminaria a futuro</strong><span>Planificada por el intendente, todavía no se puso. No lleva OT hasta marcarla como instalada.</span></span>
-              </label>
-            )}
-            <label className="campo-check" htmlFor="lugar-nuevo-funciona">
-              <input id="lugar-nuevo-funciona" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
-                checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} />
-              <span><strong>Funciona correctamente</strong><span>Desmarcala si está fuera de servicio.</span></span>
-            </label>
-          </fieldset>
-
-          {error && <p className="mensaje mensaje-error" role="alert">{error}</p>}
-
-          <div className="botones">
-            <button type="button" className="boton boton-secundario" onClick={onCancelar} disabled={guardando}>Cancelar</button>
-            <button type="submit" className="boton boton-primario" disabled={guardando || !dentro}>
-              <Icono nombre="guardar" />{guardando ? 'Guardando…' : soloLuminarias ? 'Registrar luminaria' : 'Registrar lugar'}
-            </button>
+          <div className="campo">
+            <label htmlFor="lugar-nuevo-datos">Datos técnicos <span className="opcional">(opcional)</span></label>
+            <textarea id="lugar-nuevo-datos" name="datosTecnicos" rows={2} value={datos.datosTecnicos} onChange={cambiar} />
           </div>
-        </form>
-      )}
+          {tipo === 'LUMINARIA' && permitirAFuturo && <label className="campo-check" htmlFor="lugar-nuevo-instalada">
+            <input id="lugar-nuevo-instalada" type="checkbox" checked={!datos.instalada}
+              onChange={(evento) => setDatos((anterior) => ({ ...anterior, instalada: !evento.target.checked, estadoOperativo: evento.target.checked }))} />
+            <span><strong>Luminaria a futuro</strong><span>Planificada por el intendente, todavía no se puso. No lleva OT hasta marcarla como instalada.</span></span>
+          </label>}
+          <label className="campo-check" htmlFor="lugar-nuevo-funciona">
+            <input id="lugar-nuevo-funciona" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
+              checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} />
+            <span><strong>Funciona correctamente</strong><span>Desmarcala si está fuera de servicio.</span></span>
+          </label>
+        </fieldset>
+
+        {error && <p className="mensaje mensaje-error" role="alert">{error}</p>}
+        <div className="botones">
+          <button type="button" className="boton boton-secundario" onClick={onCancelar} disabled={guardando}>Cancelar</button>
+          <button type="submit" className="boton boton-primario" disabled={guardando || !geometriaLista}>
+            <Icono nombre="guardar" />{guardando ? 'Guardando…' : soloLuminarias ? 'Registrar luminaria' : 'Registrar lugar'}
+          </button>
+        </div>
+      </form>
     </section>
   )
 }

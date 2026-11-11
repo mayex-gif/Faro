@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../api/reportes'
 import SelectorPeriodo from '../components/SelectorPeriodo'
 import GraficoEvolucion from '../components/GraficoEvolucion'
+import GraficoMontos from '../components/GraficoMontos'
 import GraficoBarras from '../components/GraficoBarras'
 import GraficoDona from '../components/GraficoDona'
 import Icono from '../components/Icono'
@@ -160,7 +161,7 @@ function PaginaReportes() {
                   <span className="indicador-detalle">pendientes, asignadas o en curso</span>
                 </li>
                 <li>
-                  <span className="indicador-nombre">Monto aproximado</span>
+                  <span className="indicador-nombre">Monto aproximado de OTs finalizadas</span>
                   <strong className="indicador-valor">{Number(tablero.montoAproximadoTotal ?? 0).toLocaleString('es-AR', {
                     style: 'currency', currency: 'ARS', maximumFractionDigits: 2,
                   })}</strong>
@@ -184,6 +185,13 @@ function PaginaReportes() {
                 </div>
               </div>
               <GraficoEvolucion serie={tablero.otsPorPeriodo ?? []} />
+            </section>
+
+            <section className="panel panel-reporte" aria-labelledby="titulo-montos">
+              <div className="panel-encabezado">
+                <div><h2 id="titulo-montos">Monto aproximado gastado</h2><p>Suma de los montos de las órdenes finalizadas en cada día, semana o mes.</p></div>
+              </div>
+              <GraficoMontos serie={tablero.montoPorPeriodo ?? []} />
             </section>
 
             <div className="reportes-columnas">
