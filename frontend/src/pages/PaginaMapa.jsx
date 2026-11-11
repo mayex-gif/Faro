@@ -21,7 +21,7 @@ import {
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
-import { ESTADOS_LUMINARIA, esLuminaria, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
+import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
 import { tiposDeCategoria } from '../utils/lugares'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeVer } from '../utils/permisos'
@@ -51,6 +51,8 @@ function PaginaMapa({ params, onNavegar }) {
   const [modoColor, setModoColor] = useState('prioridad') // 'prioridad' o 'estado' (RNF11)
   // Pestaña del mapa: 'todo' (todos los lugares) o 'luminarias' (solo luminarias y su estado: lo pidió el intendente)
   const [pestana, setPestana] = useState(params?.pestana === 'luminarias' ? 'luminarias' : 'todo')
+  const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
+  const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
   const [soloVisibles, setSoloVisibles] = useState(false)
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
   const [lugarActivoId, setLugarActivoId] = useState(params?.lugarId ?? null) // el lugar elegido: su ficha se ve a la derecha
@@ -173,6 +175,7 @@ function PaginaMapa({ params, onNavegar }) {
   // Pestaña Luminarias: el estado sale de TODAS las OT abiertas (los filtros de la otra pestaña no cuentan).
   const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
   const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
+  const luminariasEnMapa = useMemo(() => filtrarPorEstado(luminarias, ocultos), [luminarias, ocultos])
 
   const ordenados = ordenarResumenes(enMapa)
   const enLista = soloVisibles && zonaVisible
@@ -287,7 +290,9 @@ function PaginaMapa({ params, onNavegar }) {
           )}
         </section>
       ) : pestana === 'luminarias' ? (
-        <PanelLuminarias items={luminarias} totales={totalesLuminarias} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} />
+        <PanelLuminarias items={luminarias} totales={totalesLuminarias} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista}
+          zonaElegida={zonaElegida?.clave ?? null}
+          onElegirZona={(zona) => { setZonaElegida(zona); if (angosta && zona) setVistaAngosta('mapa') }} />
       ) : (
         <ListaLugares resumenes={enLista} total={resumenes.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
@@ -315,7 +320,7 @@ function PaginaMapa({ params, onNavegar }) {
         <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} puntoNuevo={puntoNuevo} onElegirPunto={setPuntoNuevo}
-          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminarias} />
+          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} />
 
         {/* Pestañas arriba del mapa: todos los lugares o solo las luminarias */}
         {!cargando && !error && (
@@ -355,15 +360,22 @@ function PaginaMapa({ params, onNavegar }) {
         {/* Leyenda sobre el mapa. Pestaña Luminarias: el dibujo de cada estado. Si no: qué significa cada color. */}
         {pestana === 'luminarias' ? (
           <div className="leyenda-flotante leyenda-luminarias">
-            <p className="leyenda-titulo">Estado de la luminaria</p>
-            <ul className="leyenda" aria-label="Significado de los dibujos del mapa">
-              {ESTADOS_LUMINARIA.map((estado) => (
-                <li key={estado.clave} title={estado.descripcion}>
-                  <MuestraPoste estado={estado.clave} />
-                  {estado.nombre}
-                </li>
-              ))}
-            </ul>
+            {/* La leyenda también filtra: destildar un estado lo saca del mapa (los conteos no cambian) */}
+            <fieldset className="leyenda-filtro">
+              <legend className="leyenda-titulo">Mostrar en el mapa</legend>
+              <ul className="leyenda">
+                {ESTADOS_LUMINARIA.map((estado) => (
+                  <li key={estado.clave}>
+                    <label className="leyenda-casilla" title={estado.descripcion}>
+                      <input type="checkbox" checked={!ocultos[estado.clave]}
+                        onChange={(evento) => setOcultos((anteriores) => ({ ...anteriores, [estado.clave]: !evento.target.checked }))} />
+                      <MuestraPoste estado={estado.clave} />
+                      {estado.nombre} <span className="leyenda-cantidad">({totalesLuminarias.cuenta[estado.clave]})</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
             <p className="leyenda-ayuda">Se actualiza solo con las OT de cada luminaria.</p>
           </div>
         ) : (

@@ -89,3 +89,22 @@
 
 /* Estado "Falta poner" en las listas (Más → Luminarias, ficha del lugar): gris, como la base punteada del poste */
 .estado-pendiente { color: #3A464C; background: #ECEFF0; }
+
+/* ---- Leyenda que filtra ("Mostrar en el mapa") ---- */
+.leyenda-filtro { margin: 0; padding: 0; border: 0; }
+.leyenda-filtro .leyenda-titulo { padding: 0; }
+.leyenda-casilla { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; }
+.leyenda-casilla input { width: 16px; height: 16px; margin: 0; accent-color: var(--lateral); }
+.leyenda-casilla:has(input:not(:checked)) .muestra-poste { opacity: 0.35; }
+.leyenda-cantidad { color: var(--texto-secundario); }
+
+/* ---- "¿Dónde falta luz?" (zonas del pueblo) ---- */
+.luminarias-zonas { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+.zona-luz { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--blanco); color: var(--texto); font: inherit; text-align: left; cursor: pointer; }
+.zona-luz:hover { border-color: var(--borde-campo); }
+.zona-luz:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.zona-luz-activa { border: 2px solid var(--enlace); background: #EAF6F9; }
+.zona-luz-titulo { display: flex; justify-content: space-between; font-size: 0.9375rem; }
+.zona-luz-barra { display: block; height: 8px; overflow: hidden; border-radius: 4px; background: #FBE4E2; }
+.zona-luz-barra span { display: block; height: 100%; background: #2F9E5B; }
+.zona-luz-texto { color: var(--texto-secundario); font-size: 0.8125rem; }

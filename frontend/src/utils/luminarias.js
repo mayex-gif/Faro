@@ -161,3 +161,9 @@ export function pedidoParaEstado(lugar, clave) {
   const { nombre, tipo, datosTecnicos, ubicacion } = lugar
   return { nombre, tipo, datosTecnicos, ubicacion, ...cambios }
 }
+
+// ---------- Mostrar / ocultar estados en el mapa ----------
+// ocultos: { apagada: true, ... } = los estados que se destildaron en la leyenda. Los conteos no cambian.
+export function filtrarPorEstado(items, ocultos = {}) {
+  return items.filter((item) => !ocultos[item.estado])
+}

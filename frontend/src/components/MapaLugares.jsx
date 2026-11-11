@@ -48,11 +48,12 @@ function crearEtiquetaLuminaria(resumen, estado) {
 // - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Pestaña Luminarias:
 // - pestana: 'todo' (todos los lugares, como siempre) o 'luminarias' (solo las luminarias, dibujadas como postes)
-// - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado)
+// - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
+// - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
 function MapaLugares({
   resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null,
-  pestana = 'todo', luminarias = [],
+  pestana = 'todo', luminarias = [], zonaResaltada = null,
 }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
@@ -60,6 +61,7 @@ function MapaLugares({
   const capasPorLugar = useRef(new Map())
   const avisos = useRef({})
   const pinNuevo = useRef(null)
+  const marcoZona = useRef(null)
 
   // Los avisos siempre apuntan a las funciones y datos más nuevos de la página.
   useEffect(() => {
@@ -108,6 +110,7 @@ function MapaLugares({
       mapa.current = null
       grupo.current = null
       pinNuevo.current = null
+      marcoZona.current = null
       capas.clear()
     }
   }, [])
@@ -157,6 +160,21 @@ function MapaLugares({
       capasPorLugar.current.set(resumen.lugar.id, capa)
     }
   }, [resumenes, modoColor, pestana, luminarias])
+
+  // "¿Dónde falta luz?": un rectángulo punteado sobre la zona elegida, y el mapa la encuadra.
+  useEffect(() => {
+    if (!mapa.current) return
+    marcoZona.current?.remove()
+    marcoZona.current = null
+    if (pestana !== 'luminarias' || !zonaResaltada) return
+    const { sur, oeste, norte, este } = zonaResaltada.limites
+    const caja = [[sur, oeste], [norte, este]]
+    marcoZona.current = L.rectangle(caja, {
+      color: '#086C80', weight: 2, dashArray: '6 6', fillColor: '#1B9FB5', fillOpacity: 0.08, interactive: false,
+    }).addTo(mapa.current)
+    const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    mapa.current.fitBounds(caja, { padding: [48, 48], maxZoom: 17, animate: animar })
+  }, [zonaResaltada, pestana])
 
   // Encuadrar todos los lugares cuando llegan (o cambian).
   useEffect(() => {

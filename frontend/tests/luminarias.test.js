@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, luminariaEnZona, luminariasConEstado,
+  ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, filtrarPorEstado, luminariaEnZona, luminariasConEstado,
   luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, textoDeZona, zonasDeLuminarias,
 } from '../src/utils/luminarias.js'
 
@@ -139,4 +139,12 @@ test('el pedido lleva el lugar entero con el estado nuevo', () => {
   assert.deepEqual(pedidoParaEstado(lugar, 'falta'), { ...pedidoParaEstado(lugar, 'apagada'), instalada: false })
   assert.equal(pedidoParaEstado(lugar, 'funciona').estadoOperativo, true)
   assert.throws(() => pedidoParaEstado(lugar, 'arreglo'))
+})
+
+test('las casillas de la leyenda ocultan estados del mapa', () => {
+  const items = luminariasConEstado([resumen(1), resumen(2, { estadoOperativo: false }), resumen(3, { instalada: false })])
+  assert.deepEqual(filtrarPorEstado(items, { funciona: true }).map((i) => i.estado), ['apagada', 'falta'])
+  assert.deepEqual(filtrarPorEstado(items, { funciona: true, falta: true }).map((i) => i.estado), ['apagada'])
+  assert.equal(filtrarPorEstado(items).length, 3)
+  assert.equal(filtrarPorEstado(items, { funciona: false }).length, 3)
 })
