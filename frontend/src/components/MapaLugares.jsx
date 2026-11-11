@@ -3,7 +3,10 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { colorDelResumen, radioDelResumen } from '../utils/mapa'
 import { contarTrabajos } from '../utils/listaLugares'
+import { datosDelEstado, puntoDe } from '../utils/luminarias'
+import { ANCLA_POSTE, TAMANO_POSTE, htmlPoste } from '../utils/poste'
 import { CENTRO_PUEBLO, ZONA_PUEBLO } from '../utils/zona'
+import DefinicionesPoste from './DefinicionesPoste'
 
 // RNF10: el mapa lo da un servicio externo. Se usa OpenStreetMap con Leaflet: es gratuito y no pide clave.
 // Los mosaicos públicos de OSM son para un uso moderado: si el uso crece, hay que pasar a un proveedor propio.
@@ -24,6 +27,13 @@ function crearEtiqueta(resumen) {
   return texto
 }
 
+// Pestaña Luminarias: "Luminaria San Martín · Apagada"
+function crearEtiquetaLuminaria(resumen, estado) {
+  const texto = document.createElement('span')
+  texto.textContent = `${resumen.lugar.nombre} · ${datosDelEstado(estado)?.nombre ?? ''}`
+  return texto
+}
+
 // Props:
 // - resumenes: lo que se dibuja, un elemento por lugar (ver agruparPorLugar en utils/mapa.js)
 // - modoColor: 'prioridad' o 'estado'
@@ -36,8 +46,14 @@ function crearEtiqueta(resumen) {
 // - puntoNuevo: { latitud, longitud } donde va el pin del lugar nuevo (o null)
 // - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
 // - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
+// Pestaña Luminarias:
+// - pestana: 'todo' (todos los lugares, como siempre) o 'luminarias' (solo las luminarias, dibujadas como postes)
+// - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado)
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
-function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null }) {
+function MapaLugares({
+  resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, puntoNuevo = null, onElegirPunto, hojaAbajo = null,
+  pestana = 'todo', luminarias = [],
+}) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const grupo = useRef(null)
@@ -96,11 +112,30 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     }
   }, [])
 
-  // Dibujar los lugares cada vez que cambian los datos o el criterio de color.
+  // Dibujar los lugares cada vez que cambian los datos, el criterio de color o la pestaña.
   useEffect(() => {
     if (!grupo.current) return
     grupo.current.clearLayers()
     capasPorLugar.current.clear()
+
+    // Pestaña Luminarias: un poste por luminaria. El dibujo dice el estado (base de color, lámpara prendida
+    // o apagada, insignia); el nombre va en la etiqueta, que se arma con textContent.
+    if (pestana === 'luminarias') {
+      for (const { resumen, estado } of luminarias) {
+        const punto = puntoDe(resumen.lugar.ubicacion)
+        if (!punto) continue
+        const icono = L.divIcon({ className: 'marca-poste', html: htmlPoste(estado), iconSize: TAMANO_POSTE, iconAnchor: ANCLA_POSTE })
+        // keyboard: false, como el resto de las marcas: la lista de la izquierda tiene los mismos datos
+        const capa = L.marker([punto[1], punto[0]], { icon: icono, keyboard: false, riseOnHover: true })
+        capa.bindTooltip(crearEtiquetaLuminaria(resumen, estado), { direction: 'top', offset: [0, -40], className: 'etiqueta-lugar' })
+        capa.on('click', () => {
+          if (!avisos.current.agregando) avisos.current.onSeleccionar?.(resumen.lugar.id)
+        })
+        capa.addTo(grupo.current)
+        capasPorLugar.current.set(resumen.lugar.id, capa)
+      }
+      return
+    }
 
     for (const resumen of resumenes) {
       const color = colorDelResumen(resumen, modoColor)
@@ -121,7 +156,7 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
       capa.addTo(grupo.current)
       capasPorLugar.current.set(resumen.lugar.id, capa)
     }
-  }, [resumenes, modoColor])
+  }, [resumenes, modoColor, pestana, luminarias])
 
   // Encuadrar todos los lugares cuando llegan (o cambian).
   useEffect(() => {
@@ -139,7 +174,8 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
     // se mide antes de centrar, así el lugar queda en el medio de lo que se ve.
     mapa.current.invalidateSize({ pan: false })
     const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const zona = capa.getBounds()
+    // Un poste (marker) tiene un punto; los demás lugares, una caja.
+    const zona = capa.getBounds ? capa.getBounds() : L.latLngBounds(capa.getLatLng(), capa.getLatLng())
     if (zona.getSouthWest().equals(zona.getNorthEast())) {
       mapa.current.setView(zona.getCenter(), Math.max(mapa.current.getZoom(), 17), { animate: animar })
     } else {
@@ -184,8 +220,13 @@ function MapaLugares({ resumenes, modoColor, limites, seleccion, onSeleccionar, 
   }, [agregando])
 
   return (
-    <div id="mapa-lugares" ref={contenedor} className="mapa" role="region"
-      aria-label="Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto." />
+    <>
+      <DefinicionesPoste />
+      <div id="mapa-lugares" ref={contenedor} className="mapa" role="region"
+        aria-label={pestana === 'luminarias'
+          ? 'Mapa de luminarias y su estado. El panel que está junto al mapa tiene los mismos datos en texto.'
+          : 'Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.'} />
+    </>
   )
 }
 

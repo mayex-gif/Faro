@@ -1,0 +1,73 @@
+/* Pestaña "Luminarias" del mapa: pestañas, postes de luz, leyenda y panel de la izquierda.
+   Colores de los estados (utils/luminarias.js): funciona #2F9E5B · apagada #B3261E · en arreglo #F2B01E · falta poner #4F5D65 */
+
+/* ---- Pestañas arriba del mapa ---- */
+.pestanas-mapa { position: absolute; top: 16px; left: 16px; z-index: 2; display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--blanco); box-shadow: 0 2px 8px rgb(20 61 72 / 25%); }
+.pestana-mapa { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--texto-secundario); font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.pestana-mapa:hover { background: var(--fondo); color: var(--texto); }
+.pestana-mapa .icono { width: 18px; height: 18px; }
+.pestana-mapa-activa, .pestana-mapa-activa:hover { background: var(--lateral); color: var(--blanco); }
+.pestana-mapa-activa .icono { color: #FFD27A; }
+.pestana-mapa:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+/* Los +/− de Leaflet (arriba a la izquierda) bajan para no quedar debajo de las pestañas */
+.columna-mapa .leaflet-top.leaflet-left { top: 64px; }
+
+/* ---- El poste (utils/poste.js) ---- */
+.marca-poste { background: none; border: 0; }
+.poste { position: relative; display: block; width: 100%; height: 100%; }
+.poste-dibujo { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); }
+.poste-base { fill: #2F9E5B; stroke: #FFFFFF; stroke-width: 1.2; }
+.poste-foco { fill: url(#faro-poste-luz); }
+.poste-cono { display: none; }
+.poste-funciona .poste-cono { display: inline; opacity: 0.55; }
+.poste-apagada .poste-base { fill: #B3261E; }
+.poste-apagada .poste-foco { fill: #2A3338; }
+.poste-arreglo .poste-base { fill: #F2B01E; }
+.poste-arreglo .poste-foco { fill: #F2B01E; }
+.poste-falta .poste-base { fill: #FFFFFF; stroke: #4F5D65; stroke-dasharray: 2 1.6; }
+.poste-falta .poste-cuerpo { opacity: 0.4; }
+.poste-falta .poste-foco { fill: #C9D1D5; }
+.poste-insignia { position: absolute; top: -4px; left: -6px; display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1.5px solid #FFFFFF; border-radius: 50%; box-shadow: 0 1px 2px rgb(0 0 0 / 35%); }
+.poste-insignia svg { width: 70%; height: 70%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.poste-insignia-apagada { background: #B3261E; }
+.poste-insignia-apagada svg { stroke: #FFFFFF; stroke-width: 1.8; }
+.poste-insignia-arreglo { background: #F2B01E; }
+.poste-insignia-arreglo svg { stroke: #1C2B33; stroke-width: 3; }
+/* Las que hay que mirar quedan arriba de las que funcionan */
+.marca-poste:has(.poste-apagada), .marca-poste:has(.poste-arreglo) { z-index: 500 !important; }
+
+/* El poste chiquito de la leyenda, los conteos y las listas */
+.muestra-poste { display: inline-block; flex: none; width: 16px; height: 28px; }
+.muestra-poste .poste-insignia { top: -2px; left: -5px; width: 11px; height: 11px; }
+
+/* ---- Leyenda de la pestaña ---- */
+.leyenda-luminarias .leyenda li { gap: 6px; }
+.leyenda-titulo { margin: 4px 0 2px; font-size: 0.8125rem; font-weight: 700; }
+
+/* ---- Panel de la izquierda ---- */
+.luminarias-porcentaje { margin: 8px 0 6px; font-size: 0.9375rem; }
+.luminarias-porcentaje strong { font-size: 1.75rem; color: var(--exito); }
+.luminarias-barra { display: flex; height: 10px; margin-bottom: 12px; overflow: hidden; border-radius: 5px; background: var(--borde); }
+.luminarias-conteos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 4px; padding: 0; list-style: none; }
+.luminarias-conteos li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 10px; background: var(--blanco); font-size: 0.8125rem; }
+.luminarias-conteos strong { font-size: 1.25rem; }
+.luminarias-listas { display: flex; flex-direction: column; gap: 4px; padding-bottom: 16px; overflow-y: auto; }
+.luminarias-seccion { padding: 12px 16px 0; }
+.luminarias-seccion h2 { margin: 0; font-size: 1rem; }
+.luminarias-cantidad { color: var(--texto-secundario); font-weight: 400; }
+.luminarias-ayuda, .luminarias-vacio { margin: 2px 0 6px; color: var(--texto-secundario); font-size: 0.8125rem; }
+.luminarias-seccion .filas-lugares { margin: 4px -16px 0; }
+
+/* ---- Celular y tablet (mismo ancho que usePantallaAngosta) ---- */
+@media (max-width: 1050px) {
+  .pestanas-mapa { top: 12px; right: 12px; left: 12px; }
+  .pestana-mapa { flex: 1; justify-content: center; min-height: 44px; }
+  /* Debajo de las pestañas van los botoncitos (solo en "Todo el pueblo"), "Ver como lista" y "Agregar lugar" */
+  .pantalla-mapa-angosta .botoncitos-sobre-mapa { top: 68px; }
+  .pantalla-mapa-angosta .boton-ver-lista, .pantalla-mapa-angosta .boton-agregar-lugar { top: 122px; }
+  .pantalla-mapa-angosta .leaflet-top, .pantalla-mapa-angosta .columna-mapa .leaflet-top.leaflet-left { top: 176px; }
+  /* En la pestaña Luminarias no hay botoncitos: todo sube una fila */
+  .pantalla-mapa-angosta.pantalla-mapa-luminarias .boton-ver-lista,
+  .pantalla-mapa-angosta.pantalla-mapa-luminarias .boton-agregar-lugar { top: 68px; }
+  .pantalla-mapa-angosta.pantalla-mapa-luminarias .leaflet-top { top: 122px; }
+}
