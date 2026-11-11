@@ -40,7 +40,7 @@ export const AYUDA = {
 
   mapa: {
     titulo: 'Mapa',
-    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos.',
+    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está.',
     secciones: [
       {
         titulo: 'Qué ves',
@@ -60,7 +60,21 @@ export const AYUDA = {
           'Con el buscador de arriba encontrás un lugar, una calle o un trabajo escribiendo al menos 2 letras.',
           { texto: '"Nueva OT acá" crea una orden de trabajo para ese lugar, con el lugar ya elegido.', roles: [ENCARGADO, MESA] },
           { texto: 'En la ficha, los trabajos que esperan cuadrilla se pueden asignar ahí mismo: elegí la cuadrilla y tocá "Asignar".', roles: [ENCARGADO] },
-          { texto: '"Agregar lugar": tocá el mapa donde está el lugar, completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar lugar": tocá el mapa donde está el lugar (un espacio verde o una calle), completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+        ],
+      },
+      {
+        titulo: 'Pestaña Luminarias',
+        items: [
+          'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: cada luminaria es un poste y se ve cómo está. "Todo el pueblo" vuelve al mapa de siempre.',
+          'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
+          'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
+          '"¿Dónde falta luz?" ordena las zonas del pueblo de la que tiene menos luminarias andando a la que tiene más. Tocá una para marcarla en el mapa y ver solo sus luminarias.',
+          'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Los números no cambian.',
+          '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
+          { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Cuando esa OT se finaliza, la luminaria vuelve sola a "Funciona".', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando.', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
         ],
       },
     ],
