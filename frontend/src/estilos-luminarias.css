@@ -71,3 +71,18 @@
   .pantalla-mapa-angosta.pantalla-mapa-luminarias .boton-agregar-lugar { top: 68px; }
   .pantalla-mapa-angosta.pantalla-mapa-luminarias .leaflet-top { top: 122px; }
 }
+
+/* ---- Ficha de la luminaria: "Estado de la luminaria" (components/EstadoLuminaria.jsx) ---- */
+.estado-luminaria { display: flex; flex-direction: column; gap: 10px; }
+.estado-luminaria-actual { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 0.875rem; }
+.opciones-estado-luminaria { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
+.opciones-estado-luminaria legend { margin-bottom: 6px; padding: 0; color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 650; }
+.opcion-estado-luminaria { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; border: 1px solid var(--borde); border-radius: 10px; background: var(--blanco); font-size: 0.8125rem; font-weight: 600; text-align: center; cursor: pointer; }
+.opcion-estado-luminaria:hover { border-color: var(--borde-campo); }
+.opcion-estado-luminaria input { position: absolute; opacity: 0; pointer-events: none; }
+.opcion-estado-luminaria:has(input:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+.opcion-estado-luminaria-marcada { border: 2px solid var(--lateral); background: var(--fondo); }
+.opciones-estado-luminaria:disabled .opcion-estado-luminaria { cursor: wait; opacity: 0.7; }
+.estado-luminaria .boton { align-self: flex-start; }
+.estado-luminaria-aviso { margin: 0; color: var(--exito); font-size: 0.8125rem; font-weight: 600; }
+.estado-luminaria-aviso:empty { display: none; }

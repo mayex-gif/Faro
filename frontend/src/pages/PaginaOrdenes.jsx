@@ -24,6 +24,8 @@ function horaDe(fecha) {
 
 // params.lugarId llega con "+ Nueva OT acá" (ficha del lugar en el mapa): el formulario arranca con ese lugar.
 // params.desde === 'mapa': se muestra "Volver al mapa" para seguir donde estaba.
+// params.tipo (ej. 'ALUMBRADO', desde la pestaña Luminarias): el formulario arranca con ese tipo de trabajo.
+// params.pestana: la pestaña del mapa a la que vuelve "Volver al mapa".
 function PaginaOrdenes({ params, onNavegar }) {
   const { usuario } = useSesion()
   const puedeGestionar = puedeAsignar(usuario)
@@ -175,7 +177,7 @@ function PaginaOrdenes({ params, onNavegar }) {
             Nueva orden para <strong>{lugares.find((lugar) => lugar.id === lugarInicial)?.nombre ?? 'el lugar elegido'}</strong>.
             Cuando la registres, podés volver al mapa.
           </p>
-          <button type="button" className="boton boton-secundario" onClick={() => onNavegar('mapa', { lugarId: lugarInicial })}>
+          <button type="button" className="boton boton-secundario" onClick={() => onNavegar('mapa', { lugarId: lugarInicial, pestana: params?.pestana })}>
             <Icono nombre="volver" />Volver al mapa
           </button>
         </div>
@@ -190,6 +192,7 @@ function PaginaOrdenes({ params, onNavegar }) {
         onGuardado={alGuardar}
         onCancelar={() => setOrdenEditando(null)}
         lugarInicial={lugarInicial}
+        tipoInicial={params?.tipo}
         programarInicial={params?.programar}
         onVerProgramaciones={() => onNavegar('mantenimiento')}
       />

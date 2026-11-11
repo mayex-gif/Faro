@@ -220,7 +220,15 @@ function PaginaMapa({ params, onNavegar }) {
   }
 
   const verHistoria = (lugarId) => onNavegar('ficha', { lugarId })
-  const nuevaOrden = (lugarId) => onNavegar('ordenes', { lugarId, desde: 'mapa' })
+  // Desde la pestaña Luminarias la OT arranca como "Alumbrado" y "Volver al mapa" vuelve a esta pestaña.
+  const nuevaOrden = (lugarId) => onNavegar('ordenes', pestana === 'luminarias'
+    ? { lugarId, desde: 'mapa', tipo: 'ALUMBRADO', pestana: 'luminarias' }
+    : { lugarId, desde: 'mapa' })
+
+  // Se cambió el estado de una luminaria desde su ficha: se reemplaza el lugar y el mapa se redibuja.
+  function alActualizarLugar(actualizado) {
+    setLugares((anteriores) => anteriores.map((lugar) => (lugar.id === actualizado.id ? actualizado : lugar)))
+  }
 
   function verTodos() {
     setFiltrosLugares(FILTROS_LUGARES_VACIOS)
@@ -418,7 +426,8 @@ function PaginaMapa({ params, onNavegar }) {
       {mostrarPanel && (
         <PanelLugar key={resumenActivo.lugar.id} resumen={resumenActivo}
           onCerrar={cerrarFicha} onVerHistoria={verHistoria} onNuevaOrden={nuevaOrden}
-          asignacion={{ estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada: alAsignar }} />
+          asignacion={{ estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada: alAsignar }}
+          onLugarActualizado={alActualizarLugar} />
       )}
     </div>
   )

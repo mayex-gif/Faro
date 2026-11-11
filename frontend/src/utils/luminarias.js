@@ -135,3 +135,29 @@ export function textoDeZona(zona) {
   if (arreglo > 0) partes.push(`${arreglo} en arreglo`)
   return partes.join(' · ')
 }
+
+// ---------- Cambiar el estado desde el mapa (ficha de la luminaria) ----------
+// Se elige a mano entre tres: Funciona, Apagada o Falta poner. "En arreglo" NO se elige: sale de tener una OT
+// abierta (desde la ficha se crea con "Crear OT de arreglo") y, al finalizar esa OT, el backend la deja funcionando.
+export const ESTADOS_A_MANO = ['funciona', 'apagada', 'falta']
+
+const DATOS_A_MANO = {
+  funciona: { estadoOperativo: true, instalada: true },
+  apagada: { estadoOperativo: false, instalada: true },
+  falta: { estadoOperativo: false, instalada: false },
+}
+
+// Cuál de los tres está marcado hoy (sin mirar las OT: "en arreglo" se ve como "apagada")
+export function estadoAMano(lugar) {
+  if (lugar.instalada === false) return 'falta'
+  return lugar.estadoOperativo === false ? 'apagada' : 'funciona'
+}
+
+// Lo que se manda al backend (PUT /api/infraestructura/{id}) para dejar la luminaria en ese estado.
+// Va el lugar entero (el backend pide todos los datos), con el estado nuevo.
+export function pedidoParaEstado(lugar, clave) {
+  const cambios = DATOS_A_MANO[clave]
+  if (!cambios) throw new Error(`Estado desconocido: ${clave}`)
+  const { nombre, tipo, datosTecnicos, ubicacion } = lugar
+  return { nombre, tipo, datosTecnicos, ubicacion, ...cambios }
+}

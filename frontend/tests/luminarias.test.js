@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoLuminaria, luminariaEnZona, luminariasConEstado,
-  luminariasDelEstado, puntoDe, resumirLuminarias, textoDeZona, zonasDeLuminarias,
+  ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, luminariaEnZona, luminariasConEstado,
+  luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, textoDeZona, zonasDeLuminarias,
 } from '../src/utils/luminarias.js'
 
 // Solo datos en memoria: no se modifica la base.
@@ -120,4 +120,23 @@ test('se puede saber si una luminaria cae en una zona', () => {
 test('el texto de la zona dice cuántas apagadas y, si hay, cuántas en arreglo', () => {
   assert.equal(textoDeZona({ cuenta: { apagada: 1, arreglo: 0 } }), '1 apagada')
   assert.equal(textoDeZona({ cuenta: { apagada: 0, arreglo: 2 } }), '0 apagadas · 2 en arreglo')
+})
+
+test('a mano se eligen tres estados; "en arreglo" sale de las OT', () => {
+  assert.deepEqual(ESTADOS_A_MANO, ['funciona', 'apagada', 'falta'])
+  assert.equal(estadoAMano({ estadoOperativo: true, instalada: true }), 'funciona')
+  assert.equal(estadoAMano({ estadoOperativo: false, instalada: true }), 'apagada')
+  assert.equal(estadoAMano({ estadoOperativo: false, instalada: false }), 'falta')
+  assert.equal(estadoAMano({ estadoOperativo: true }), 'funciona') // sin el dato instalada
+})
+
+test('el pedido lleva el lugar entero con el estado nuevo', () => {
+  const lugar = { id: 7, nombre: 'Luminaria 7', tipo: 'LUMINARIA', datosTecnicos: 'LED', estadoOperativo: true, instalada: true,
+    ubicacion: { type: 'Point', coordinates: [-64.14, -31.13] } }
+  assert.deepEqual(pedidoParaEstado(lugar, 'apagada'), {
+    nombre: 'Luminaria 7', tipo: 'LUMINARIA', datosTecnicos: 'LED', ubicacion: lugar.ubicacion, estadoOperativo: false, instalada: true,
+  })
+  assert.deepEqual(pedidoParaEstado(lugar, 'falta'), { ...pedidoParaEstado(lugar, 'apagada'), instalada: false })
+  assert.equal(pedidoParaEstado(lugar, 'funciona').estadoOperativo, true)
+  assert.throws(() => pedidoParaEstado(lugar, 'arreglo'))
 })

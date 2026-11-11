@@ -134,10 +134,30 @@ public class OrdenTrabajoService {
         } else if (actual != null && actual.isCierre()) {
             orden.setFechaFinalizacion(null);
         }
+        // Pestaña Luminarias: si se terminó el trabajo de una luminaria, vuelve sola a "Funciona"
+        // (y si "faltaba poner", queda instalada). Si la OT se canceló, la luminaria queda como estaba.
+        if (nuevo.isCierre() && !esCancelacion(nuevo)) {
+            dejarLuminariaFuncionando(orden.getLugar());
+        }
         OrdenTrabajo guardada = ordenRepository.save(orden);
         // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
         eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
         return convertirADto(guardada);
+    }
+
+    // Los estados son configurables: "Cancelada" se reconoce por el nombre (igual que en los reportes).
+    private static boolean esCancelacion(EstadoOrden estado) {
+        return estado.getNombre() != null && estado.getNombre().trim().toLowerCase().startsWith("cancel");
+    }
+
+    // El lugar lo trajo Hibernate junto con la OT: al cambiarle los datos acá, se guarda solo al terminar
+    // la transacción (y el cambio queda en la Auditoría).
+    private static void dejarLuminariaFuncionando(PuntoInfraestructura lugar) {
+        if (lugar == null || !PuntoInfraestructuraService.TIPO_LUMINARIA.equals(lugar.getTipo())) {
+            return;
+        }
+        lugar.setEstadoOperativo(true);
+        lugar.setInstalada(true);
     }
 
     /**
