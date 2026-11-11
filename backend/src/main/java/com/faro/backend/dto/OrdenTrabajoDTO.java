@@ -48,4 +48,16 @@ public record OrdenTrabajoDTO(
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
                 estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre, null, null, null, null, null, null, null);
     }
+
+    /** Compatibilidad con el constructor canónico anterior a los campos de ubicación vial y gasto. */
+    public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                           PrioridadOrden prioridad, Long lugarId, String lugarNombre,
+                           LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
+                           String estadoColor, Long cuadrillaId, String cuadrillaNombre,
+                           LocalDate fechaPlanificada, LocalDateTime fechaFinalizacion,
+                           Long reglaMantenimientoId) {
+        this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
+                estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre,
+                fechaPlanificada, fechaFinalizacion, reglaMantenimientoId, null, null, null, null);
+    }
 }
