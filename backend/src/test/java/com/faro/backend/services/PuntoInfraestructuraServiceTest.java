@@ -1,4 +1,5 @@
 package com.faro.backend.services;
+import com.faro.backend.exceptions.DatoInvalidoException;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.repositories.OrdenTrabajoRepository;
@@ -161,6 +162,98 @@ class PuntoInfraestructuraServiceTest {
         assertEquals("Lugar no encontrado", error.getMessage());
         // y NUNCA tiene que haber intentado guardar
         verify(repository, never()).save(any());
+    }
+
+    // ===================== INSTALADA ("Falta poner") =====================
+
+    /** save() devuelve lo mismo que recibe (como si la base lo hubiera guardado). */
+    private void saveDevuelveLoRecibido() {
+        when(repository.save(any(PuntoInfraestructura.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+    }
+
+    @Test
+    void crearLugar_sinInstalada_quedaInstalada() {
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO pedido = new PuntoInfraestructuraRequestDTO(
+                "Luminaria #201", "LUMINARIA", "", true, punto(-58.40, -34.61));
+
+        PuntoInfraestructuraDTO resultado = service.crearLugar(pedido);
+
+        assertTrue(resultado.instalada());
+    }
+
+    @Test
+    void crearLugar_luminariaQueFaltaPoner_seGuardaComoNoInstalada() {
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO pedido = new PuntoInfraestructuraRequestDTO(
+                "Luminaria nueva", "LUMINARIA", "", false, punto(-58.40, -34.61), false);
+
+        PuntoInfraestructuraDTO resultado = service.crearLugar(pedido);
+
+        assertFalse(resultado.instalada());
+    }
+
+    @Test
+    void crearLugar_calleQueFaltaPoner_lanzaDatoInvalidoYNoGuarda() {
+        PuntoInfraestructuraRequestDTO pedido = new PuntoInfraestructuraRequestDTO(
+                "Calle Belgrano", "CALLE", "", true, punto(-58.40, -34.61), false);
+
+        DatoInvalidoException error = assertThrows(DatoInvalidoException.class, () -> service.crearLugar(pedido));
+
+        assertEquals("instalada", error.getCampo());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modificarLugar_sinInstalada_dejaComoEstaba() {
+        PuntoInfraestructura existente = lugar(6L, "Luminaria #300", "LUMINARIA", false);
+        existente.setInstalada(false);
+        when(repository.findById(6L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+        // un pedido "viejo", sin el campo instalada (ej: una pantalla que todavía no lo conoce)
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Luminaria #300", "LUMINARIA", "Cambio de datos", false, punto(-58.50, -34.70));
+
+        PuntoInfraestructuraDTO resultado = service.modificarLugar(6L, cambios);
+
+        assertFalse(resultado.instalada());
+    }
+
+    @Test
+    void modificarLugar_marcarComoInstalada_laActualiza() {
+        PuntoInfraestructura existente = lugar(6L, "Luminaria #300", "LUMINARIA", false);
+        existente.setInstalada(false);
+        when(repository.findById(6L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Luminaria #300", "LUMINARIA", "", true, punto(-58.50, -34.70), true);
+
+        PuntoInfraestructuraDTO resultado = service.modificarLugar(6L, cambios);
+
+        assertTrue(resultado.instalada());
+        assertTrue(resultado.estadoOperativo());
+    }
+
+    @Test
+    void modificarLugar_pasarAOtroTipoSinInstalar_lanzaDatoInvalido() {
+        PuntoInfraestructura existente = lugar(6L, "Luminaria #300", "LUMINARIA", true);
+        existente.setInstalada(false);
+        when(repository.findById(6L)).thenReturn(Optional.of(existente));
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Ahora es una calle", "CALLE", "", true, punto(-58.50, -34.70));
+
+        assertThrows(DatoInvalidoException.class, () -> service.modificarLugar(6L, cambios));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void obtenerTodos_lugarViejoSinInstalada_llegaComoInstalado() {
+        // los lugares cargados antes del campo tienen instalada = null en la base
+        when(repository.findAll()).thenReturn(List.of(lugar(1L, "Luminaria #102", "LUMINARIA", true)));
+
+        List<PuntoInfraestructuraDTO> resultado = service.obtenerTodos();
+
+        assertTrue(resultado.get(0).instalada());
     }
 
     // ===================== BAJA =====================
