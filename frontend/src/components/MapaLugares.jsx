@@ -34,6 +34,46 @@ function crearEtiquetaLuminaria(resumen, estado) {
   return texto
 }
 
+// Calles: se dibujan como en un mapa de rutas, con un borde blanco debajo y la línea de color encima.
+// Así se distinguen de los bordes de los espacios verdes y se ven sobre cualquier fondo.
+// El borde también agranda la zona que se puede tocar con el dedo.
+const ANCHO_CALLE = { conTrabajos: 7, sinTrabajos: 4 }
+const BORDE_CALLE = 4
+
+function esLinea(geometria) {
+  return geometria?.type === 'LineString' || geometria?.type === 'MultiLineString'
+}
+
+// Una capa por lugar. Las calles son un grupo de dos líneas (borde y color); el resto, una capa GeoJSON.
+function crearCapaLugar(resumen, modoColor) {
+  const color = colorDelResumen(resumen, modoColor)
+  const sinTrabajos = !resumen.principal
+  const geometria = resumen.lugar.ubicacion
+  if (esLinea(geometria)) {
+    // MultiLineString: una calle cortada en varios tramos (así vienen algunas de OpenStreetMap)
+    const posiciones = L.GeoJSON.coordsToLatLngs(geometria.coordinates, geometria.type === 'MultiLineString' ? 1 : 0)
+    const ancho = sinTrabajos ? ANCHO_CALLE.sinTrabajos : ANCHO_CALLE.conTrabajos
+    return L.featureGroup([
+      L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }),
+      L.polyline(posiciones, { color, weight: ancho, opacity: sinTrabajos ? 0.8 : 1, lineCap: 'round', lineJoin: 'round' }),
+    ])
+  }
+  return L.geoJSON({ type: 'Feature', properties: {}, geometry: geometria }, {
+    // Puntos (luminarias): círculo. El tamaño crece con la prioridad.
+    pointToLayer: (_, posicion) => L.circleMarker(posicion, {
+      radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, fillColor: color, fillOpacity: sinTrabajos ? 0.7 : 1,
+    }),
+    // Polígonos (lugares con área: plazas, espacios verdes)
+    style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
+  })
+}
+
+const ETIQUETAS_MAPA = {
+  todo: 'Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.',
+  luminarias: 'Mapa de luminarias y su estado. El panel que está junto al mapa tiene los mismos datos en texto.',
+  calles: 'Mapa de calles y sus trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.',
+}
+
 // Props:
 // - resumenes: lo que se dibuja, un elemento por lugar (ver agruparPorLugar en utils/mapa.js)
 // - modoColor: 'prioridad' o 'estado'
@@ -47,7 +87,8 @@ function crearEtiquetaLuminaria(resumen, estado) {
 // - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
 // - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Pestaña Luminarias:
-// - pestana: 'todo' (todos los lugares, como siempre) o 'luminarias' (solo las luminarias, dibujadas como postes)
+// - pestana: 'todo' (todos los lugares, como siempre), 'luminarias' (solo las luminarias, dibujadas como postes)
+//   o 'calles' (la página pasa en "resumenes" solo las calles; se dibujan igual que en "Todo el pueblo")
 // - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
 // - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
@@ -144,16 +185,7 @@ function MapaLugares({
     }
 
     for (const resumen of resumenes) {
-      const color = colorDelResumen(resumen, modoColor)
-      const sinTrabajos = !resumen.principal
-      const capa = L.geoJSON({ type: 'Feature', properties: {}, geometry: resumen.lugar.ubicacion }, {
-        // Puntos (luminarias): círculo. El tamaño crece con la prioridad.
-        pointToLayer: (_, posicion) => L.circleMarker(posicion, {
-          radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, fillColor: color, fillOpacity: sinTrabajos ? 0.7 : 1,
-        }),
-        // Líneas (calles) y polígonos (espacios verdes)
-        style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
-      })
+      const capa = crearCapaLugar(resumen, modoColor)
       capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
       // Mientras se agrega un lugar, tocar uno existente no abre su ficha: el toque sigue al mapa y pone el pin ahí.
       capa.on('click', () => {
@@ -259,9 +291,7 @@ function MapaLugares({
     <>
       <DefinicionesPoste />
       <div id="mapa-lugares" ref={contenedor} className="mapa" role="region"
-        aria-label={pestana === 'luminarias'
-          ? 'Mapa de luminarias y su estado. El panel que está junto al mapa tiene los mismos datos en texto.'
-          : 'Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.'} />
+        aria-label={ETIQUETAS_MAPA[pestana] ?? ETIQUETAS_MAPA.todo} />
     </>
   )
 }

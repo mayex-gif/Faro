@@ -37,8 +37,8 @@ test('alternarTipo prende y apaga un tipo sin cambiar los filtros que recibe', (
   assert.deepEqual(FILTROS_LUGARES_VACIOS.tipos, [])
 })
 
-test('los botoncitos de tipo son Luminarias, Espacios verdes y Calles', () => {
-  assert.deepEqual(FILTROS_TIPO.map((f) => f.etiqueta), ['Luminarias', 'Espacios verdes', 'Calles'])
+test('los botoncitos de tipo son Luminarias, Otros lugares y Calles', () => {
+  assert.deepEqual(FILTROS_TIPO.map((f) => f.etiqueta), ['Luminarias', 'Otros lugares', 'Calles'])
 })
 
 test('contarTrabajos usa singular, plural y "Sin trabajos abiertos"', () => {
@@ -54,6 +54,6 @@ test('textoTrabajos agrega cuántos son urgentes, solo si hay', () => {
 })
 
 test('subtituloLugar dice el tipo, si está fuera de servicio y cuántos trabajos tiene', () => {
-  assert.equal(subtituloLugar(plaza), 'Espacio verde · 2 trabajos abiertos')
+  assert.equal(subtituloLugar(plaza), 'Lugar · 2 trabajos abiertos')
   assert.equal(subtituloLugar(luminaria), 'Luminaria · Fuera de servicio · Sin trabajos abiertos')
 })

@@ -4,7 +4,7 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta } from './ordenesTrabajo
 
 // Los tipos de lugar, con el texto que ve el usuario
 const NOMBRES_TIPO_LUGAR = {
-  ESPACIO_VERDE: 'Espacio verde',
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }

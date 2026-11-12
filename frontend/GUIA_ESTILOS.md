@@ -151,7 +151,7 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
 - **Celular (≤ 760 px):** las secciones bajan a una barra fija abajo; arriba quedan la marca y "+ Nuevo", y el
   buscador en su propio renglón.
 - **Pantalla Mapa** (inicio de FARO), sin márgenes ni pie de página, en tres columnas:
-  1. **Lugares:** botoncitos para filtrar ("Con trabajos abiertos", Luminarias, Espacios verdes, Calles;
+  1. **Lugares:** botoncitos para filtrar ("Con trabajos abiertos", Luminarias, Otros lugares, Calles;
      prendido = fondo oscuro y tilde ✓, con `aria-pressed`), "Más filtros" plegado (los filtros de órdenes) y una
      fila por lugar: icono del tipo, nombre, "tipo · N trabajos abiertos" y la prioridad más alta (color y palabra).
      La lista y el mapa muestran los mismos lugares.
