@@ -75,7 +75,7 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
               <span className="estado-punto" aria-hidden="true" />
               {textoEstadoLugar(lugar)}
             </span>
-            <span className="ubicacion-tabla">{describirUbicacion(lugar.ubicacion)}</span>
+            <span className="ubicacion-tabla">{lugar.ubicacion?.type === 'Polygon' ? 'Lugar' : describirUbicacion(lugar.ubicacion)}</span>
           </p>
         </div>
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>

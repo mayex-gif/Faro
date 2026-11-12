@@ -5,7 +5,8 @@
 
 /* Barra superior */
 .barra-superior { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; min-height: 64px; padding: 10px 24px; background: var(--lateral); color: var(--blanco); }
-.marca { display: flex; align-items: center; gap: 10px; }
+.marca { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.marca:focus-visible { outline: 2px solid var(--marca-celeste); outline-offset: 4px; border-radius: 6px; }
 .marca-logo { display: block; width: 40px; height: 40px; border-radius: 50%; background: var(--blanco); }
 .marca-nombre { display: block; color: var(--marca-naranja); font-size: 1.25rem; font-weight: 750; letter-spacing: 1px; line-height: 1.1; }
 .marca-lugar { display: block; color: var(--marca-celeste); font-size: 0.75rem; line-height: 1.3; }
