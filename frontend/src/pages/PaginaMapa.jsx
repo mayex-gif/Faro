@@ -16,7 +16,7 @@ import usePantallaAngosta from '../hooks/usePantallaAngosta'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes } from '../utils/filtrosOrdenes'
 import { FILTROS_LUGARES_VACIOS, filtrarLugares } from '../utils/listaLugares'
 import {
-  COLORES_PRIORIDAD, COLOR_SIN_TRABAJOS, agruparPorLugar, geometriaEnLimites,
+  COLORES_PRIORIDAD, COLOR_SIN_TRABAJOS, colorEstadoEnMapa, agruparPorLugar, geometriaEnLimites,
   limitesDe, ordenarResumenes, ordenesAbiertas,
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
@@ -455,7 +455,7 @@ function PaginaMapa({ params, onNavegar }) {
                 ))
                 : estadosAbiertos.map((estado) => (
                   <li key={estado.id}>
-                    <span className="leyenda-color" style={{ background: estado.color }} aria-hidden="true" />
+                    <span className="leyenda-color" style={{ background: colorEstadoEnMapa(estado) }} aria-hidden="true" />
                     {estado.nombre}
                   </li>
                 ))}
@@ -464,7 +464,11 @@ function PaginaMapa({ params, onNavegar }) {
                 Sin trabajos
               </li>
             </ul>
-            {modoColor === 'prioridad' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
+            <p className="leyenda-ayuda">
+              {modoColor === 'prioridad'
+                ? 'Cuanto más urgente, más grande es la marca.'
+                : 'El color indica el estado actual del trabajo abierto.'}
+            </p>
           </div>
         )}
       </section>
