@@ -9,10 +9,13 @@ import {
   entreCallesDe,
   esTodaLaCalle,
   largoDe,
+  pedidoDeTramo,
   pegarAEsquina,
   proyectar,
   puntoEn,
+  textoDePunto,
   textoTramo,
+  tocarTramo,
   tramoEntre,
 } from '../src/utils/tramos.js'
 
@@ -175,6 +178,52 @@ test('textoTramo describe el tramo para la ficha y la historia', () => {
   assert.equal(texto(120, 170), 'Buenos Aires, parte de la cuadra entre Catamarca y La Rioja')
   assert.equal(texto(0, 100), 'Buenos Aires, desde el comienzo de la calle hasta Catamarca')
   assert.equal(texto(390, 395), 'Buenos Aires, parte de la cuadra pasando Ituzaingó')
+})
+
+test('textoDePunto describe un solo punto (para "Desde" y "Hasta" mientras se marca)', () => {
+  assert.equal(textoDePunto(buenosAires, cruces, 100), 'Catamarca')
+  assert.equal(textoDePunto(buenosAires, cruces, 150), 'mitad de cuadra (entre Catamarca y La Rioja)')
+  assert.equal(textoDePunto(buenosAires, cruces, 0), 'el comienzo de la calle')
+  assert.equal(textoDePunto(lejana, [], 200), 'mitad de cuadra')
+})
+
+test('tocarTramo: primer toque = inicio, segundo = fin, cerca de una esquina se pega', () => {
+  const uno = tocarTramo(buenosAires, cruces, [], enGrados(110, 6)) // a 10 m de Catamarca y 6 m de la calle
+  assert.equal(uno.aviso, '')
+  assert.equal(uno.toques[0].esquina, 'Catamarca')
+  cerca(uno.toques[0].distancia, 100)
+  const dos = tocarTramo(buenosAires, cruces, uno.toques, enGrados(250, -3)) // mitad de cuadra
+  assert.equal(dos.toques.length, 2)
+  assert.equal(dos.toques[1].esquina, null)
+  cerca(dos.toques[1].distancia, 250)
+})
+
+test('tocarTramo: lejos de la calle no cuenta; el fin no puede ser el inicio; un tercer toque empieza de nuevo', () => {
+  const lejos = tocarTramo(buenosAires, cruces, [], enGrados(150, 40))
+  assert.deepEqual(lejos.toques, [])
+  assert.equal(lejos.aviso, 'Tocá sobre Buenos Aires (la calle resaltada).')
+  const inicio = tocarTramo(buenosAires, cruces, [], enGrados(100, 0)).toques
+  const igual = tocarTramo(buenosAires, cruces, inicio, enGrados(105, 0)) // se pega a la misma esquina
+  assert.equal(igual.toques.length, 1)
+  assert.equal(igual.aviso, 'El final tiene que estar en otro lugar de la calle.')
+  const dos = tocarTramo(buenosAires, cruces, inicio, enGrados(200, 0)).toques
+  const tres = tocarTramo(buenosAires, cruces, dos, enGrados(300, 0))
+  assert.equal(tres.toques.length, 1)
+  assert.equal(tres.toques[0].esquina, 'Jujuy')
+  assert.match(tres.aviso, /Empezaste otra vez/)
+})
+
+test('pedidoDeTramo arma lo que recibe el formulario de OT', () => {
+  const esquinaA = { distancia: esquina('Catamarca').distancia, esquina: 'Catamarca' }
+  assert.equal(pedidoDeTramo(buenosAires, cruces, [esquinaA]), null)
+  const pedido = pedidoDeTramo(buenosAires, cruces, [{ distancia: 250, esquina: null }, esquinaA]) // al revés
+  assert.equal(pedido.tramo.type, 'LineString')
+  assert.equal(pedido.calleEntre1, 'Catamarca')
+  assert.equal(pedido.calleEntre2, 'Jujuy')
+  assert.equal(pedido.texto, 'Buenos Aires, desde Catamarca hasta mitad de cuadra (entre La Rioja y Jujuy)')
+  // de punta a punta = toda la calle
+  assert.deepEqual(pedidoDeTramo(buenosAires, cruces, [{ distancia: 0 }, { distancia: 400 }]),
+    { tramo: null, calleEntre1: '', calleEntre2: '', texto: 'Buenos Aires, toda la calle' })
 })
 
 // ===== Con las calles reales del pueblo (las 24 que carga el backend desde OpenStreetMap) =====

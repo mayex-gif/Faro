@@ -316,6 +316,11 @@ function textoDePosicion(cruces, distancia, largo) {
   return { esquina: false, texto: 'mitad de cuadra' }
 }
 
+/** Cómo se dice un punto de la calle: "La Rioja" (esquina) o "mitad de cuadra (entre Catamarca y Jujuy)". */
+export function textoDePunto(calle, cruces, distancia) {
+  return textoDePosicion(cruces ?? [], distancia, largoDe(calle)).texto
+}
+
 /**
  * El texto del tramo para la ficha, la tarjeta y la historia.
  * "Buenos Aires, toda la calle" · "Buenos Aires, entre Catamarca y La Rioja" ·
@@ -334,4 +339,44 @@ export function textoTramo(calle, cruces, tramo) {
     return `${nombre}, parte de la ${inicio.texto.replace('mitad de cuadra (', 'cuadra ').replace(/\)$/, '')}`
   }
   return `${nombre}, desde ${inicio.texto} hasta ${fin.texto}`
+}
+
+// ===================== Marcar el tramo tocando el mapa (dos toques) =====================
+
+// Un toque a más de esto de la calle no cuenta (se tocó otra cosa).
+export const SEPARACION_MAXIMA_M = 25
+
+/**
+ * Qué pasa con un toque sobre el mapa mientras se marca el tramo.
+ * toques: [{ distancia, esquina }] (0, 1 o 2). punto: [long, lat] tocado.
+ * Primer toque = inicio, segundo = fin; un tercero empieza de nuevo. Cerca de una esquina se pega a ella.
+ * @returns {{ toques: Array, aviso: string }} aviso = '' si el toque se aceptó tal cual
+ */
+export function tocarTramo(calle, cruces, toques, punto) {
+  const proyectado = proyectar(punto, calle)
+  if (!proyectado || proyectado.separacion > SEPARACION_MAXIMA_M) {
+    return { toques, aviso: `Tocá sobre ${calle?.nombre ?? 'la calle'} (la calle resaltada).` }
+  }
+  const pegado = pegarAEsquina(proyectado.distancia, cruces)
+  const toque = { distancia: pegado.distancia, esquina: pegado.esquina?.calle.nombre ?? null }
+  if (toques.length >= 2) return { toques: [toque], aviso: 'Empezaste otra vez: ahora tocá dónde termina el trabajo.' }
+  if (toques.length === 1 && Math.abs(toques[0].distancia - toque.distancia) < 1) {
+    return { toques, aviso: 'El final tiene que estar en otro lugar de la calle.' }
+  }
+  return { toques: [...toques, toque], aviso: '' }
+}
+
+/**
+ * Lo que el mapa le pasa al formulario de OT cuando se aprieta "Seguir".
+ * Si el tramo va de punta a punta, la OT es de toda la calle (tramo null, sin "entre calles").
+ * @returns {{ tramo, calleEntre1, calleEntre2, texto } | null} null si todavía no hay dos toques
+ */
+export function pedidoDeTramo(calle, cruces, toques) {
+  if (!toques || toques.length < 2) return null
+  const tramo = cortar(calle, toques[0].distancia, toques[1].distancia)
+  if (!tramo || esTodaLaCalle(calle, tramo)) {
+    return { tramo: null, calleEntre1: '', calleEntre2: '', texto: textoTramo(calle, cruces, null) }
+  }
+  const { desde, hasta } = distanciasDelTramo(calle, tramo)
+  return { tramo, ...entreCallesDe(callesQueLimitan(cruces, desde, hasta)), texto: textoTramo(calle, cruces, tramo) }
 }

@@ -45,8 +45,10 @@ function esLinea(geometria) {
 }
 
 // Una capa por lugar. Las calles son un grupo de dos líneas (borde y color); el resto, una capa GeoJSON.
-function crearCapaLugar(resumen, modoColor) {
+// atenuada: mientras se marca el tramo de otra calle, el resto del mapa queda clarito (no distrae).
+function crearCapaLugar(resumen, modoColor, atenuada = false) {
   const color = colorDelResumen(resumen, modoColor)
+  const factor = atenuada ? 0.3 : 1
   const sinTrabajos = !resumen.principal
   const geometria = resumen.lugar.ubicacion
   if (esLinea(geometria)) {
@@ -54,17 +56,58 @@ function crearCapaLugar(resumen, modoColor) {
     const posiciones = L.GeoJSON.coordsToLatLngs(geometria.coordinates, geometria.type === 'MultiLineString' ? 1 : 0)
     const ancho = sinTrabajos ? ANCHO_CALLE.sinTrabajos : ANCHO_CALLE.conTrabajos
     return L.featureGroup([
-      L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }),
-      L.polyline(posiciones, { color, weight: ancho, opacity: sinTrabajos ? 0.8 : 1, lineCap: 'round', lineJoin: 'round' }),
+      L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95 * factor, lineCap: 'round', lineJoin: 'round' }),
+      L.polyline(posiciones, { color, weight: ancho, opacity: (sinTrabajos ? 0.8 : 1) * factor, lineCap: 'round', lineJoin: 'round' }),
     ])
   }
   return L.geoJSON({ type: 'Feature', properties: {}, geometry: geometria }, {
     // Puntos (luminarias): círculo. El tamaño crece con la prioridad.
     pointToLayer: (_, posicion) => L.circleMarker(posicion, {
-      radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, fillColor: color, fillOpacity: sinTrabajos ? 0.7 : 1,
+      radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, opacity: factor, fillColor: color, fillOpacity: (sinTrabajos ? 0.7 : 1) * factor,
     }),
     // Polígonos (lugares con área: plazas, espacios verdes)
-    style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
+    style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: (sinTrabajos ? 0.7 : 0.95) * factor, fillColor: color, fillOpacity: 0.35 * factor }),
+  })
+}
+
+// Marcar el tramo de una OT: colores fijos del dibujo (la calle elegida, las esquinas y el tramo en naranja)
+const COLOR_CALLE_ELEGIDA = '#086C80'
+const COLOR_TRAMO = '#EA6A25'
+const ANCHO_FRANJA_TOQUE = 36 // franja invisible sobre la calle: más fácil de tocar con el dedo
+const ZOOM_MINIMO_TRAMO = 16 // más lejos, las esquinas se amontonan y es difícil tocar donde se quiere
+
+// Etiqueta con el nombre de la calle que cruza (textContent: los nombres los escriben usuarios)
+function crearEtiquetaEsquina(texto) {
+  const etiqueta = document.createElement('span')
+  etiqueta.textContent = texto
+  return etiqueta
+}
+
+// Todo lo que se dibuja mientras se marca el tramo, encima de los lugares.
+function dibujarTramo(grupoTramo, { calle, cruces, toques, vistaPrevia }) {
+  const posiciones = L.GeoJSON.coordsToLatLngs(calle.ubicacion.coordinates, 0)
+  L.polyline(posiciones, { color: '#000000', weight: ANCHO_FRANJA_TOQUE, opacity: 0.001, className: 'franja-tramo' }).addTo(grupoTramo)
+  L.polyline(posiciones, { color: '#FFFFFF', weight: 12, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(grupoTramo)
+  L.polyline(posiciones, { color: COLOR_CALLE_ELEGIDA, weight: 7, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(grupoTramo)
+  if (vistaPrevia) {
+    const tramo = L.GeoJSON.coordsToLatLngs(vistaPrevia.coordinates, 0)
+    L.polyline(tramo, { color: '#FFFFFF', weight: 15, opacity: 1, lineCap: 'round', interactive: false }).addTo(grupoTramo)
+    L.polyline(tramo, { color: COLOR_TRAMO, weight: 10, opacity: 1, lineCap: 'round', interactive: false }).addTo(grupoTramo)
+  }
+  for (const cruce of cruces) {
+    L.circleMarker([cruce.punto[1], cruce.punto[0]], {
+      radius: 5, color: COLOR_CALLE_ELEGIDA, weight: 2, fillColor: '#FFFFFF', fillOpacity: 1, interactive: false,
+    }).bindTooltip(crearEtiquetaEsquina(cruce.calle.nombre), {
+      permanent: true, direction: 'top', offset: [0, -6], className: 'etiqueta-esquina',
+    }).addTo(grupoTramo)
+  }
+  toques.forEach((toque, indice) => {
+    if (!toque.punto) return
+    L.circleMarker([toque.punto[1], toque.punto[0]], {
+      radius: 9, color: '#FFFFFF', weight: 3, fillColor: COLOR_TRAMO, fillOpacity: 1, interactive: false,
+    }).bindTooltip(crearEtiquetaEsquina(indice === 0 ? 'Desde' : 'Hasta'), {
+      permanent: true, direction: 'right', offset: [10, 0], className: 'etiqueta-toque',
+    }).addTo(grupoTramo)
   })
 }
 
@@ -92,10 +135,15 @@ const ETIQUETAS_MAPA = {
 // - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
 // - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
+// Marcar el tramo de una OT en una calle (ver components/ElegirTramo.jsx):
+// - tramo: null o { calle, cruces, modo, toques: [{ distancia, punto }], vistaPrevia } (vistaPrevia = LineString o null).
+//   Mientras hay tramo: la calle se resalta, el resto se atenúa, las esquinas llevan su nombre y tocar
+//   un lugar no abre su ficha.
+// - onTocarTramo(punto): se tocó el mapa; punto = [longitud, latitud] (la página decide si cae sobre la calle)
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
 function MapaLugares({
   resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, tipoNuevo = 'LUMINARIA', puntosNuevo = [], onElegirPunto, hojaAbajo = null,
-  pestana = 'todo', luminarias = [], zonaResaltada = null, noche = false,
+  pestana = 'todo', luminarias = [], zonaResaltada = null, noche = false, tramo = null, onTocarTramo,
 }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
@@ -105,10 +153,15 @@ function MapaLugares({
   const pinNuevo = useRef(null)
   const marcoZona = useRef(null)
   const dibujoNuevo = useRef(null)
+  const grupoTramo = useRef(null)
+  const calleDelTramo = tramo?.calle ?? null
+  const modoDelTramo = tramo?.modo ?? null // al pasar de "¿Dónde es el trabajo?" a marcar, la hoja del celular cambia de alto
 
   // Los avisos siempre apuntan a las funciones y datos más nuevos de la página.
   useEffect(() => {
-    avisos.current = { onSeleccionar, onLimites, onElegirPunto, agregando }
+    // ocupado: se está agregando un lugar o marcando un tramo (tocar un lugar no abre su ficha)
+    avisos.current = { onSeleccionar, onLimites, onElegirPunto, agregando, onTocarTramo, eligiendoTramo: Boolean(tramo),
+      ocupado: agregando || Boolean(tramo) }
   })
 
   // Crear el mapa una sola vez.
@@ -134,7 +187,12 @@ function MapaLugares({
     avisarZona()
 
     // Agregar un lugar: tocar el mapa elige el punto (solo mientras se está agregando).
+    // Marcar un tramo: tocar el mapa elige el inicio o el fin (la página lo lleva a la calle).
     instancia.on('click', (evento) => {
+      if (avisos.current.eligiendoTramo) {
+        avisos.current.onTocarTramo?.([evento.latlng.lng, evento.latlng.lat])
+        return
+      }
       if (!avisos.current.agregando) return
       avisos.current.onElegirPunto?.({ latitud: evento.latlng.lat, longitud: evento.latlng.lng })
     })
@@ -152,6 +210,7 @@ function MapaLugares({
       instancia.remove()
       mapa.current = null
       grupo.current = null
+      grupoTramo.current = null
       pinNuevo.current = null
       marcoZona.current = null
       dibujoNuevo.current = null
@@ -176,7 +235,7 @@ function MapaLugares({
         const capa = L.marker([punto[1], punto[0]], { icon: icono, keyboard: false, riseOnHover: true })
         capa.bindTooltip(crearEtiquetaLuminaria(resumen, estado), { direction: 'top', offset: [0, -40], className: 'etiqueta-lugar' })
         capa.on('click', () => {
-          if (!avisos.current.agregando) avisos.current.onSeleccionar?.(resumen.lugar.id)
+          if (!avisos.current.ocupado) avisos.current.onSeleccionar?.(resumen.lugar.id)
         })
         capa.addTo(grupo.current)
         capasPorLugar.current.set(resumen.lugar.id, capa)
@@ -185,16 +244,42 @@ function MapaLugares({
     }
 
     for (const resumen of resumenes) {
-      const capa = crearCapaLugar(resumen, modoColor)
+      const capa = crearCapaLugar(resumen, modoColor, calleDelTramo != null && resumen.lugar.id !== calleDelTramo.id)
       capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
-      // Mientras se agrega un lugar, tocar uno existente no abre su ficha: el toque sigue al mapa y pone el pin ahí.
+      // Mientras se agrega un lugar (o se marca un tramo), tocar uno existente no abre su ficha:
+      // el toque sigue al mapa y pone el pin (o el inicio / fin del tramo) ahí.
       capa.on('click', () => {
-        if (!avisos.current.agregando) avisos.current.onSeleccionar?.(resumen.lugar.id)
+        if (!avisos.current.ocupado) avisos.current.onSeleccionar?.(resumen.lugar.id)
       })
       capa.addTo(grupo.current)
       capasPorLugar.current.set(resumen.lugar.id, capa)
     }
-  }, [resumenes, modoColor, pestana, luminarias])
+  }, [resumenes, modoColor, pestana, luminarias, calleDelTramo])
+
+  // Marcar el tramo: la calle resaltada, sus esquinas, los toques y la vista previa en naranja.
+  useEffect(() => {
+    if (!mapa.current) return
+    grupoTramo.current?.remove()
+    grupoTramo.current = null
+    if (!tramo) return
+    grupoTramo.current = L.layerGroup().addTo(mapa.current)
+    dibujarTramo(grupoTramo.current, tramo)
+  }, [tramo])
+
+  // Al empezar a marcar el tramo, el mapa encuadra la calle (en el celular, por encima de la hoja de abajo).
+  // Si una calle larga no entra de cerca (celular), queda en un zoom cómodo para tocar y se arrastra para recorrerla.
+  useEffect(() => {
+    if (!mapa.current || !calleDelTramo) return
+    const caja = L.latLngBounds(L.GeoJSON.coordsToLatLngs(calleDelTramo.ubicacion.coordinates, 0))
+    const arriba = 70 // las pestañas del mapa
+    const abajo = (hojaAbajo?.current?.offsetHeight ?? 0) + 30
+    mapa.current.invalidateSize({ pan: false })
+    const zoomQueEntra = mapa.current.getBoundsZoom(caja, false, L.point(80, arriba + abajo))
+    const zoom = Math.min(18, Math.max(zoomQueEntra, ZOOM_MINIMO_TRAMO))
+    mapa.current.setView(caja.getCenter(), zoom, { animate: false })
+    // el centro de la calle queda en el medio de lo que se ve (entre las pestañas y la hoja de abajo)
+    mapa.current.panBy([0, (abajo - arriba) / 2], { animate: false })
+  }, [calleDelTramo, modoDelTramo, hojaAbajo])
 
   // "¿Dónde falta luz?": un rectángulo punteado sobre la zona elegida, y el mapa la encuadra.
   useEffect(() => {
@@ -279,8 +364,8 @@ function MapaLugares({
   // Mientras se agrega un lugar, el cursor es una cruz. Se usa classList (y no className) porque
   // Leaflet le agrega sus propias clases a este mismo div y React las borraría al cambiar className.
   useEffect(() => {
-    contenedor.current?.classList.toggle('mapa-agregando', agregando)
-  }, [agregando])
+    contenedor.current?.classList.toggle('mapa-agregando', agregando || Boolean(calleDelTramo))
+  }, [agregando, calleDelTramo])
 
   // Modo noche: el oscurecido de los mosaicos y los halos son puro CSS (estilos-luminarias.css), sin pedir otro mapa.
   useEffect(() => {
