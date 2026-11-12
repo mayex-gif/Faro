@@ -56,7 +56,7 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 - **Ficha de la luminaria** (`components/EstadoLuminaria.jsx`, dentro de `PanelLugar`): Funciona / Apagada (guarda en el momento
   con `PUT /api/infraestructura/{id}`), "Crear OT de arreglo" (la OT arranca con tipo Alumbrado y "Volver al mapa" vuelve a esta
   pestaña) y, si es a futuro, "Marcar como instalada" (queda Funciona). Una luminaria a futuro no muestra "Nueva OT acá".
-- **Agregar**: "Agregar luminaria" en la pestaña Luminarias, "Agregar lugar" (espacio verde o calle) en "Todo el pueblo",
+- **Agregar**: "Agregar luminaria" en la pestaña Luminarias, "Agregar lugar" (Lugar, Calle o Luminaria; al elegir Luminaria pasa a esta pestaña) en "Todo el pueblo",
   y "Agregar luminaria a futuro" en la sección "A futuro" del panel.
 - **Más → Luminarias** (`pages/PaginaLuminarias.jsx` = `PaginaInfraestructura` con `categoria="luminarias"`): sin columna ni
   filtro de tipo, filtro por "A futuro", casilla "Luminaria a futuro" (apaga "Funciona correctamente").

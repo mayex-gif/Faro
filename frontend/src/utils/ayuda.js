@@ -40,7 +40,7 @@ export const AYUDA = {
 
   mapa: {
     titulo: 'Mapa',
-    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está.',
+    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, plazas y espacios verdes, y calles) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está; la pestaña Calles, solo las calles y sus trabajos.',
     secciones: [
       {
         titulo: 'Qué ves',
@@ -75,6 +75,16 @@ export const AYUDA = {
           { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Cuando esa OT se finaliza, la luminaria vuelve sola a "Funciona".', roles: [ENCARGADO] },
           { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando.', roles: [ENCARGADO] },
           { texto: '"Agregar luminaria": tocá el mapa donde está y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
+        ],
+      },
+      {
+        titulo: 'Pestaña Calles',
+        items: [
+          'Arriba del mapa, "Calles" muestra solo las calles del pueblo, dibujadas con un borde blanco. El color es el del trabajo abierto más urgente de cada calle; gris, sin trabajos.',
+          'A la izquierda (en el celular, "Ver como lista"): cuántas calles tienen trabajos abiertos, la lista de las que tienen (las más urgentes arriba) y la de las que no. Con "Buscar una calle" la encontrás escribiendo parte del nombre, con o sin tildes.',
+          'Las calles del pueblo ya vienen cargadas (se tomaron de OpenStreetMap): no hace falta dibujarlas una por una.',
+          { texto: 'Tocá una calle para ver su ficha y "Nueva OT acá" para crearle una orden (por ejemplo, un bacheo). "Volver al mapa" te trae de nuevo a esta pestaña.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar calle": tocá varios puntos siguiendo el recorrido de la calle y registrala. Sirve para calles nuevas o que no estaban en la carga inicial.', roles: [ENCARGADO, MESA] },
         ],
       },
     ],
@@ -164,7 +174,7 @@ export const AYUDA = {
 
   infraestructura: {
     titulo: 'Infraestructura',
-    resumen: 'El registro de los espacios verdes y las calles que mantiene el corralón, con sus datos y si están en condiciones o no. Las luminarias están aparte, en Más → Luminarias.',
+    resumen: 'El registro de los lugares (plazas y espacios verdes) y las calles que mantiene el corralón, con sus datos y si están en condiciones o no. Las luminarias están aparte, en Más → Luminarias.',
     secciones: [
       {
         titulo: 'Registrar un lugar',
