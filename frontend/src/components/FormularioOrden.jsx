@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { actualizarOrden } from '../api/ordenesTrabajo'
 import { crearRegla } from '../api/mantenimiento'
 import { enviarOperacion } from '../api/sincronizacion'
@@ -9,8 +9,11 @@ import { guardarOperacion } from '../offline/cola'
 import { REINTENTAR, clasificarError, crearAltaOrden } from '../offline/datosCola'
 import { puedeGestionarMantenimiento } from '../utils/permisos'
 import { fechaProgramada, pedidoDeProgramacion, recurrenciaInicial, validarProgramacion } from '../utils/recurrencia'
+import { textoTramo, tramoEntre } from '../utils/tramos'
+import { MODOS_UBICACION, callesOfrecidas, crucesDeLaCalle, pedidoDeUbicacion, ubicacionInicial, validarUbicacion } from '../utils/ubicacionEnCalle'
 import SeccionRecurrencia from './SeccionRecurrencia'
 import '../estilos-mantenimiento.css'
+import '../estilos-calles.css'
 
 // Valores con los que arranca el formulario al crear una OT.
 // Tipo, origen y lugar arrancan vacíos para obligar a elegirlos; la prioridad arranca en "Media".
@@ -24,8 +27,12 @@ const FORMULARIO_VACIO = {
   calleEntre1: '',
   calleEntre2: '',
   altura: '',
+  tramo: null, // solo calles: la parte de la calle (GeoJSON LineString); null = toda la calle
   montoAproximado: '',
 }
+
+// Al cambiar de lugar se borra la ubicación dentro de la calle (era de la calle anterior)
+const SIN_UBICACION = { modoUbicacion: 'NINGUNA', calleEntre1: '', calleEntre2: '', altura: '', tramo: null }
 
 // Convierte una OT que viene del backend en los valores del formulario
 function ordenAFormulario(orden) {
@@ -35,10 +42,7 @@ function ordenAFormulario(orden) {
     origen: orden.origen,
     prioridad: orden.prioridad,
     lugarId: String(orden.lugarId), // los <select> trabajan con texto
-    modoUbicacion: orden.altura ? 'ALTURA' : (orden.calleEntre1 ? 'ENTRE_CALLES' : 'NINGUNA'),
-    calleEntre1: orden.calleEntre1 ?? '',
-    calleEntre2: orden.calleEntre2 ?? '',
-    altura: orden.altura ?? '',
+    ...ubicacionInicial(orden), // modoUbicacion, calleEntre1, calleEntre2, altura y tramo
     montoAproximado: orden.montoAproximado ?? '',
   }
 }
@@ -50,14 +54,17 @@ function ordenAFormulario(orden) {
 // - onGuardado(texto, { sinSenal, programacion }): avisa si quedó en el celular o si se guardó solo una programación
 // - onCancelar: se llama al cancelar la edición
 // - lugarInicial: id del lugar con el que arranca una OT nueva ("+ Nueva OT acá" en la ficha del mapa); puede faltar
+// - ubicacionDelMapa: { tramo, calleEntre1, calleEntre2 } si en el mapa se marcó un tramo de la calle; puede faltar
 // - programarInicial: abre la opción periódica al llegar desde Mantenimiento
 // - onVerProgramaciones: permite revisar las reglas si no se pudo confirmar un alta
-function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial, tipoInicial, programarInicial, onVerProgramaciones }) {
+function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onCancelar, lugarInicial, ubicacionDelMapa, tipoInicial, programarInicial, onVerProgramaciones }) {
   const { usuario } = useSesion()
   const editando = ordenEditando != null
   const [datos, setDatos] = useState(() => {
     if (editando) return ordenAFormulario(ordenEditando)
-    const inicial = lugarInicial != null ? { ...FORMULARIO_VACIO, lugarId: String(lugarInicial) } : FORMULARIO_VACIO
+    let inicial = lugarInicial != null ? { ...FORMULARIO_VACIO, lugarId: String(lugarInicial) } : FORMULARIO_VACIO
+    // Tramo marcado en el mapa: arranca en "Tramo marcado" con las calles que lo limitan ya elegidas
+    if (lugarInicial != null && ubicacionDelMapa?.tramo) inicial = { ...inicial, ...ubicacionInicial(ubicacionDelMapa) }
     // Desde la pestaña Luminarias del mapa, el tipo arranca en "Alumbrado" (se puede cambiar)
     return tipoInicial ? { ...inicial, tipo: tipoInicial } : inicial
   })
@@ -85,7 +92,14 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
   const lugarSeleccionado = lugares.find((lugar) => String(lugar.id) === String(datos.lugarId))
   const esLugarCalle = lugarSeleccionado?.tipo === 'CALLE'
   const modoUbicacion = esLugarCalle ? datos.modoUbicacion : 'NINGUNA'
-  const callesParaTramo = lugares.filter((lugar) => lugar.tipo === 'CALLE' && String(lugar.id) !== String(datos.lugarId))
+  // Las esquinas de la calle elegida y las calles "lógicas" para "Entre calles" (utils/ubicacionEnCalle.js)
+  const cruces = useMemo(() => crucesDeLaCalle(lugarSeleccionado, lugares), [lugarSeleccionado, lugares])
+  const callesParaTramo = callesOfrecidas({
+    calle: lugarSeleccionado, cruces, modo: modoUbicacion, tramo: datos.tramo, elegidas: [datos.calleEntre1, datos.calleEntre2],
+  })
+  const conTramo = modoUbicacion === MODOS_UBICACION.TRAMO && datos.tramo
+  const tramoDeLasCalles = modoUbicacion === MODOS_UBICACION.ENTRE_CALLES && datos.calleEntre1 && datos.calleEntre2
+    ? tramoEntre(lugarSeleccionado, cruces, datos.calleEntre1, datos.calleEntre2) : null
 
   // Al editar, o si ya viene el lugar elegido, el cursor arranca en la descripción
   useEffect(() => {
@@ -95,12 +109,7 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
   function cambiar(evento) {
     const { name, value } = evento.target
     setDatos((anterior) => {
-      if (name === 'lugarId') {
-        const lugarNuevo = lugares.find((lugar) => String(lugar.id) === value)
-        return lugarNuevo?.tipo === 'CALLE'
-          ? { ...anterior, lugarId: value }
-          : { ...anterior, lugarId: value, modoUbicacion: 'NINGUNA', calleEntre1: '', calleEntre2: '', altura: '' }
-      }
+      if (name === 'lugarId') return { ...anterior, ...SIN_UBICACION, lugarId: value }
       return { ...anterior, [name]: value }
     })
     // Si el campo tenía un error y el usuario lo está corrigiendo, lo sacamos
@@ -124,14 +133,7 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
     if (!repite && !datos.origen) encontrados.origen = 'Elegí de dónde surge la orden.'
     if (!datos.prioridad) encontrados.prioridad = 'Elegí la prioridad.'
     if (!datos.lugarId) encontrados.lugarId = 'Elegí el lugar donde se va a trabajar.'
-    if (modoUbicacion === 'ENTRE_CALLES') {
-      if (!datos.calleEntre1) encontrados.calleEntre1 = 'Elegí la primera calle.'
-      if (!datos.calleEntre2) encontrados.calleEntre2 = 'Elegí la segunda calle.'
-      if (datos.calleEntre1 && datos.calleEntre1 === datos.calleEntre2) encontrados.calleEntre2 = 'Elegí una calle distinta.'
-    }
-    if (modoUbicacion === 'ALTURA') {
-      if (!datos.altura.trim()) encontrados.altura = 'Indicá la altura.'
-    }
+    if (esLugarCalle) Object.assign(encontrados, validarUbicacion({ ...datos, modoUbicacion }, callesParaTramo))
     if (datos.montoAproximado !== '' && (!Number.isFinite(Number(datos.montoAproximado)) || Number(datos.montoAproximado) < 0)) {
       encontrados.montoAproximado = 'Ingresá un monto igual o mayor a cero.'
     }
@@ -159,9 +161,8 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
       origen: datos.origen,
       prioridad: datos.prioridad,
       lugarId: Number(datos.lugarId),
-      calleEntre1: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre1 : null,
-      calleEntre2: modoUbicacion === 'ENTRE_CALLES' ? datos.calleEntre2 : null,
-      altura: modoUbicacion === 'ALTURA' ? datos.altura.trim() : null,
+      // calleEntre1, calleEntre2, altura y tramo (siempre va el tramo: el PUT reemplaza todo)
+      ...pedidoDeUbicacion({ calle: lugarSeleccionado, cruces, datos: { ...datos, modoUbicacion } }),
       montoAproximado: datos.montoAproximado === '' ? null : Number(datos.montoAproximado),
     }
 
@@ -318,26 +319,46 @@ function FormularioOrden({ lugares, errorLugares, ordenEditando, onGuardado, onC
 
               {esLugarCalle && <div className="campo">
                 <label htmlFor="modoUbicacion">Ubicación dentro de la calle</label>
-                <select id="modoUbicacion" name="modoUbicacion" value={datos.modoUbicacion} onChange={cambiar}>
-                  <option value="NINGUNA">Sin detalle</option>
+                <select id="modoUbicacion" name="modoUbicacion" value={datos.modoUbicacion} onChange={cambiar}
+                  {...accesibilidad(errores.tramo ? 'tramo' : 'modoUbicacion')}>
+                  <option value="NINGUNA">Toda la calle</option>
+                  {datos.tramo && <option value="TRAMO">Tramo marcado</option>}
                   <option value="ENTRE_CALLES">Entre calles</option>
                   <option value="ALTURA">Por altura</option>
                 </select>
+                {errores.tramo ? mensajeCampo('tramo') : mensajeCampo('modoUbicacion')}
               </div>}
-              {esLugarCalle && datos.modoUbicacion === 'ENTRE_CALLES' && <>
-                <div className="campo"><label htmlFor="calleEntre1">Entre calle <span aria-hidden="true">*</span></label>
-                  <select id="calleEntre1" name="calleEntre1" value={datos.calleEntre1} onChange={cambiar} {...accesibilidad('calleEntre1')}>
-                    <option value="">Elegí una calle…</option>
-                    {callesParaTramo.map((calle) => <option key={calle.id} value={calle.nombre}>{calle.nombre}</option>)}
+              {/* Tramo marcado en el mapa (o el que ya tenía la OT): se muestra cuál es y se puede volver a toda la calle */}
+              {esLugarCalle && conTramo && <div className="campo campo-ancho resumen-tramo" aria-live="polite">
+                <p><Icono nombre="calle" /><span><strong>Tramo marcado:</strong> {textoTramo(lugarSeleccionado, cruces, datos.tramo)}</span></p>
+                <button type="button" className="boton boton-secundario" onClick={() => setDatos((anterior) => ({ ...anterior, modoUbicacion: 'NINGUNA' }))}>
+                  Usar toda la calle
+                </button>
+              </div>}
+              {esLugarCalle && modoUbicacion === MODOS_UBICACION.ENTRE_CALLES && callesParaTramo.length === 0 && !errores.modoUbicacion && (
+                <p className="mensaje mensaje-informacion campo-ancho">
+                  {lugarSeleccionado.nombre} no cruza con ninguna calle cargada: usá "Por altura" o "Toda la calle".
+                </p>
+              )}
+              {esLugarCalle && (modoUbicacion === MODOS_UBICACION.ENTRE_CALLES || conTramo) && callesParaTramo.length >= 2 && <>
+                <div className="campo"><label htmlFor="calleEntre1">Entre calle {!conTramo && <span aria-hidden="true">*</span>}</label>
+                  <select id="calleEntre1" name="calleEntre1" value={datos.calleEntre1} onChange={cambiar} {...accesibilidad('calleEntre1', 'ayuda-entre-calles')}>
+                    <option value="">{conTramo ? 'Sin elegir' : 'Elegí una calle…'}</option>
+                    {callesParaTramo.map((nombre) => <option key={nombre} value={nombre}>{nombre}</option>)}
                   </select>
-                  {mensajeCampo('calleEntre1')}</div>
-                <div className="campo"><label htmlFor="calleEntre2">Y calle <span aria-hidden="true">*</span></label>
+                  {mensajeCampo('calleEntre1', 'ayuda-entre-calles', conTramo
+                    ? 'Solo las calles que limitan el tramo.'
+                    : `Solo las calles que cruzan ${lugarSeleccionado.nombre}.`)}</div>
+                <div className="campo"><label htmlFor="calleEntre2">Y calle {!conTramo && <span aria-hidden="true">*</span>}</label>
                   <select id="calleEntre2" name="calleEntre2" value={datos.calleEntre2} onChange={cambiar} {...accesibilidad('calleEntre2')}>
-                    <option value="">Elegí una calle…</option>
-                    {callesParaTramo.filter((calle) => calle.nombre !== datos.calleEntre1).map((calle) => <option key={calle.id} value={calle.nombre}>{calle.nombre}</option>)}
+                    <option value="">{conTramo ? 'Sin elegir' : 'Elegí una calle…'}</option>
+                    {callesParaTramo.filter((nombre) => nombre !== datos.calleEntre1).map((nombre) => <option key={nombre} value={nombre}>{nombre}</option>)}
                   </select>
                   {mensajeCampo('calleEntre2')}</div>
               </>}
+              {tramoDeLasCalles && <p className="ayuda-campo campo-ancho" aria-live="polite">
+                Tramo: {textoTramo(lugarSeleccionado, cruces, tramoDeLasCalles)}. Se dibuja en el mapa.
+              </p>}
               {esLugarCalle && datos.modoUbicacion === 'ALTURA' && <div className="campo">
                 <label htmlFor="altura">Altura <span aria-hidden="true">*</span></label>
                 <input id="altura" name="altura" maxLength={20} value={datos.altura} onChange={cambiar} {...accesibilidad('altura')} />

@@ -26,6 +26,7 @@ function horaDe(fecha) {
 // params.desde === 'mapa': se muestra "Volver al mapa" para seguir donde estaba.
 // params.tipo (ej. 'ALUMBRADO', desde la pestaña Luminarias): el formulario arranca con ese tipo de trabajo.
 // params.pestana: la pestaña del mapa a la que vuelve "Volver al mapa".
+// params.tramo, params.calleEntre1, params.calleEntre2: el tramo de calle marcado en el mapa (ver PaginaMapa).
 function PaginaOrdenes({ params, onNavegar }) {
   const { usuario } = useSesion()
   const puedeGestionar = puedeAsignar(usuario)
@@ -192,6 +193,7 @@ function PaginaOrdenes({ params, onNavegar }) {
         onGuardado={alGuardar}
         onCancelar={() => setOrdenEditando(null)}
         lugarInicial={lugarInicial}
+        ubicacionDelMapa={params?.tramo ? { tramo: params.tramo, calleEntre1: params.calleEntre1, calleEntre2: params.calleEntre2 } : null}
         tipoInicial={params?.tipo}
         programarInicial={params?.programar}
         onVerProgramaciones={() => onNavegar('mantenimiento')}

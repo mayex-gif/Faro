@@ -53,6 +53,16 @@ test('un alta guarda solo los datos de la OT que pide el backend', () => {
   })
 })
 
+test('un alta sin señal en una calle guarda también el tramo marcado (y las calles que lo limitan)', () => {
+  const tramo = { type: 'LineString', coordinates: [[-64.14011, -31.131628], [-64.14033, -31.132688]] }
+  const datos = { descripcion: 'Bache', tipo: 'BACHEO', origen: 'RECLAMO_VECINAL', prioridad: 'ALTA', lugarId: 3,
+    calleEntre1: 'La Rioja', calleEntre2: 'Catamarca', altura: null, tramo, montoAproximado: null }
+  const operacion = crearAltaOrden({ id: 2, nombre: 'Ana', apellido: 'Martínez' }, datos, 'Buenos Aires', { numero: 'n-3' })
+  assert.deepEqual(cuerpoDeEnvio(operacion).orden, datos)
+  // sin tramo (toda la calle) viaja null, así el backend sabe que es de toda la calle
+  assert.equal(cuerpoDeEnvio(crearAltaOrden({ id: 2 }, { ...datos, tramo: null }, 'Buenos Aires', { numero: 'n-4' })).orden.tramo, null)
+})
+
 test('sin señal o con error del servidor se reintenta; 401 espera la sesión; el resto es conflicto', () => {
   assert.equal(clasificarError(new TypeError('Failed to fetch')), REINTENTAR)
   assert.equal(clasificarError({ estado: 500 }), REINTENTAR)

@@ -58,3 +58,9 @@
   .hoja-lugar-nuevo .elegir-tramo-tramo .botones-tramo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .hoja-lugar-nuevo .elegir-tramo-tramo .boton { min-height: 44px; padding: 0 10px; font-size: 0.875rem; }
 }
+
+/* Formulario de OT: el tramo marcado en el mapa (components/FormularioOrden.jsx) */
+.resumen-tramo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid #F3C2A5; border-radius: 10px; background: #FFF6F0; }
+.resumen-tramo p { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
+.resumen-tramo p .icono { flex: none; width: 20px; height: 20px; margin-top: 2px; color: #A44013; }
+.resumen-tramo .boton { flex: none; }
