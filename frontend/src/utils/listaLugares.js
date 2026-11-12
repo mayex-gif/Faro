@@ -5,7 +5,7 @@ import { etiquetaTipoLugar } from './lugares.js'
 // Los botoncitos de tipo de lugar. Si no hay ninguno prendido, se ven todos los tipos.
 export const FILTROS_TIPO = [
   { valor: 'LUMINARIA', etiqueta: 'Luminarias' },
-  { valor: 'ESPACIO_VERDE', etiqueta: 'Espacios verdes' },
+  { valor: 'ESPACIO_VERDE', etiqueta: 'Otros lugares' }, // plazas, espacios verdes (tipo "Lugar")
   { valor: 'CALLE', etiqueta: 'Calles' },
 ]
 
@@ -41,7 +41,7 @@ export function textoTrabajos(ordenes) {
   return `${base} · ${urgentes === 1 ? '1 urgente' : `${urgentes} urgentes`}`
 }
 
-// Segunda línea de cada fila: "Espacio verde · 2 trabajos abiertos", "Luminaria · Fuera de servicio · Sin trabajos abiertos"
+// Segunda línea de cada fila: "Lugar · 2 trabajos abiertos", "Luminaria · Fuera de servicio · Sin trabajos abiertos"
 export function subtituloLugar(resumen) {
   const partes = [etiquetaTipoLugar(resumen.lugar.tipo)]
   if (!resumen.lugar.estadoOperativo) partes.push('Fuera de servicio')

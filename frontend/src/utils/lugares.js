@@ -2,16 +2,29 @@
 // Los valores de "tipo" son los que guarda el backend.
 
 export const TIPOS_LUGAR = {
-  ESPACIO_VERDE: 'Área',
+  // ESPACIO_VERDE se muestra como "Lugar": plazas, espacios verdes y cualquier otro lugar con superficie.
+  // El valor que guarda el backend sigue siendo ESPACIO_VERDE.
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }
 
 // Categorías de lugares: las luminarias tienen su propia sección (Más → Luminarias) y su pestaña en el mapa.
-// Infraestructura queda para espacios verdes y calles. Los tipos van en el orden en que se ofrecen.
+// Infraestructura queda para los lugares (plazas, espacios verdes) y las calles. Los tipos van en el orden en que se ofrecen.
 export const CATEGORIAS_LUGAR = {
   infraestructura: ['ESPACIO_VERDE', 'CALLE'],
   luminarias: ['LUMINARIA'],
+}
+
+// Los tipos que ofrece "Agregar" en cada pestaña del mapa.
+// En "Todo el pueblo" también se puede elegir Luminaria: al elegirla, el mapa pasa a la pestaña Luminarias.
+export const TIPOS_PARA_AGREGAR = {
+  todo: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
+  luminarias: ['LUMINARIA'],
+}
+
+export function tiposParaAgregar(pestana) {
+  return TIPOS_PARA_AGREGAR[pestana] ?? TIPOS_PARA_AGREGAR.todo
 }
 
 // Los tipos de una categoría. Una categoría desconocida (o ninguna) = todos los tipos.

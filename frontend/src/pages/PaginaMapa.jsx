@@ -22,7 +22,7 @@ import {
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
-import { tiposDeCategoria } from '../utils/lugares'
+import { tiposParaAgregar } from '../utils/lugares'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
@@ -152,12 +152,13 @@ function PaginaMapa({ params, onNavegar }) {
     return () => window.clearTimeout(reloj)
   }, [aviso])
 
+  // aFuturo: solo true desde "Agregar luminaria a futuro" (el botón común no pasa nada).
   function empezarAgregar(aFuturo = false) {
-    setAgregandoAFuturo(aFuturo === true)
+    setAgregandoAFuturo(aFuturo)
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
-    setTipoNuevo(aFuturo || pestana === 'luminarias' ? 'LUMINARIA' : tiposDeCategoria('infraestructura')[0])
+    setTipoNuevo(aFuturo ? 'LUMINARIA' : tiposParaAgregar(pestana)[0])
     setPuntosNuevo([])
     setAviso('')
     setAgregando(true)
@@ -178,9 +179,15 @@ function PaginaMapa({ params, onNavegar }) {
     setAviso(`Se registró "${creado.nombre}".`)
   }
 
+  // "Agregar lugar" en "Todo el pueblo": si se elige Luminaria, se sigue agregando en la pestaña Luminarias
+  // (ahí se ven los postes y su estado). El formulario se vuelve a armar como "Luminaria nueva".
   function alCambiarTipoNuevo(tipo) {
     setTipoNuevo(tipo)
     setPuntosNuevo([])
+    if (tipo === 'LUMINARIA' && pestana !== 'luminarias') {
+      setPestana('luminarias')
+      setAviso('Pasaste a la pestaña Luminarias: tocá el mapa donde está la luminaria.')
+    }
   }
 
   function agregarVerticeNuevo(punto) {
@@ -390,7 +397,7 @@ function PaginaMapa({ params, onNavegar }) {
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
         {puedeAgregar && !agregando && !cargando && !error && (
-          <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={empezarAgregar}>
+          <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={() => empezarAgregar()}>
             <Icono nombre="agregar" />{pestana === 'luminarias' ? 'Agregar luminaria' : 'Agregar lugar'}
           </button>
         )}
@@ -478,12 +485,12 @@ function PaginaMapa({ params, onNavegar }) {
       {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
-          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
+          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un lugar, una calle o una luminaria */}
           <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} tipo={tipoNuevo} puntos={puntosNuevo}
             geometria={geometriaNueva()} onCambiarTipo={alCambiarTipoNuevo}
             onDeshacerPunto={() => setPuntosNuevo((anteriores) => anteriores.slice(0, -1))}
             onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
-            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')}
+            tipos={tiposParaAgregar(pestana)}
             permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>
       )}

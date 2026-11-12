@@ -71,7 +71,7 @@ test('singular y plural', () => {
 })
 
 test('el tipo de lugar se muestra con texto para el usuario', () => {
-  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Espacio verde')
+  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Lugar')
   assert.equal(nombreTipoLugar('LUMINARIA'), 'Luminaria')
   assert.equal(nombreTipoLugar('OTRO_TIPO'), 'OTRO_TIPO')
 })

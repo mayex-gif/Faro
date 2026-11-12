@@ -2,7 +2,7 @@ import Icono from './Icono'
 import { claseEstadoLugar, textoEstadoLugar } from '../utils/lugares'
 
 const NOMBRES_TIPO = {
-  ESPACIO_VERDE: 'Espacio verde',
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }

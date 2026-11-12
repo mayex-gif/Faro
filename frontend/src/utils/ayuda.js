@@ -55,12 +55,12 @@ export const AYUDA = {
         titulo: 'Qué podés hacer',
         items: [
           'Tocá un lugar (en el mapa o en la lista) para ver su ficha: estado, trabajos abiertos e historia. "Ver toda la historia" abre la Ficha histórica completa.',
-          'Usá los botoncitos "Con trabajos abiertos", "Luminarias", "Espacios verdes" y "Calles" para ver solo esos lugares. Si no prendés ningún tipo, se ven todos.',
+          'Usá los botoncitos "Con trabajos abiertos", "Luminarias", "Otros lugares" y "Calles" para ver solo esos lugares. Si no prendés ningún tipo, se ven todos.',
           'En "Más filtros" podés buscar por estado, prioridad, tipo de trabajo, origen, lugar y fechas. También podés hacer que la lista muestre solo lo que se ve en el mapa.',
           'Con el buscador de arriba encontrás un lugar, una calle o un trabajo escribiendo al menos 2 letras.',
           { texto: '"Nueva OT acá" crea una orden de trabajo para ese lugar, con el lugar ya elegido.', roles: [ENCARGADO, MESA] },
           { texto: 'En la ficha, los trabajos que esperan cuadrilla se pueden asignar ahí mismo: elegí la cuadrilla y tocá "Asignar".', roles: [ENCARGADO] },
-          { texto: '"Agregar lugar": tocá el mapa donde está el lugar (un espacio verde o una calle), completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar lugar": elegí qué es (Lugar, Calle o Luminaria), tocá el mapa para marcarlo, completá el nombre y tocá "Registrar lugar". Un lugar (plaza, espacio verde) se marca con su contorno; una calle, con varios puntos siguiendo su recorrido. Si elegís Luminaria, el mapa pasa a la pestaña Luminarias.', roles: [ENCARGADO, MESA] },
         ],
       },
       {
