@@ -7,6 +7,7 @@ import BotoncitosLugares from '../components/BotoncitosLugares'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import FormularioLugarMapa from '../components/FormularioLugarMapa'
 import Icono from '../components/Icono'
+import ElegirTramo from '../components/ElegirTramo'
 import ListaLugares from '../components/ListaLugares'
 import MapaLugares from '../components/MapaLugares'
 import PanelLugar from '../components/PanelLugar'
@@ -24,7 +25,8 @@ import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
 import { tiposParaAgregar } from '../utils/lugares'
-import { callesDe, esCalle, resumirCalles } from '../utils/calles'
+import { callesDe, conTramos, esCalle, resumirCalles, sinCallesVacias } from '../utils/calles'
+import { crucesDe, cortar, puntoEn, tocarTramo } from '../utils/tramos'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
@@ -90,6 +92,9 @@ function PaginaMapa({ params, onNavegar }) {
   const [agregandoAFuturo, setAgregandoAFuturo] = useState(false) // "Agregar luminaria a futuro" (panel de Luminarias)
   const [aviso, setAviso] = useState('') // "Se registró ..." (se borra solo a los pocos segundos)
   const hojaLugarNuevo = useRef(null) // celular: la hoja del formulario, para que el mapa no deje el pin debajo
+  // "Nueva OT acá" en una calle: antes del formulario de OT se elige toda la calle o un tramo (dos toques).
+  // null o { calleId, modo: 'elegir' | 'tramo', toques: [{ distancia, esquina }] }
+  const [eligiendoTramo, setEligiendoTramo] = useState(null)
 
   function cargarDatos() {
     // Sin los tres no se puede armar el mapa: si falla uno, es un error de carga.
@@ -132,15 +137,18 @@ function PaginaMapa({ params, onNavegar }) {
     cargarCuadrillas()
   }, [])
 
-  // Mientras se agrega un lugar, Escape cancela (como cerrar el formulario).
+  // Mientras se agrega un lugar (o se marca el tramo de una OT), Escape cancela (como cerrar el formulario).
+  const ocupadoEnElMapa = agregando || eligiendoTramo != null
   useEffect(() => {
-    if (!agregando) return
+    if (!ocupadoEnElMapa) return
     function alApretarTecla(evento) {
-      if (evento.key === 'Escape') cancelarAgregar()
+      if (evento.key !== 'Escape') return
+      cancelarAgregar()
+      cancelarTramo()
     }
     document.addEventListener('keydown', alApretarTecla)
     return () => document.removeEventListener('keydown', alApretarTecla)
-  }, [agregando])
+  }, [ocupadoEnElMapa])
 
   useEffect(() => {
     try {
@@ -159,6 +167,7 @@ function PaginaMapa({ params, onNavegar }) {
 
   // aFuturo: solo true desde "Agregar luminaria a futuro" (el botón común no pasa nada).
   function empezarAgregar(aFuturo = false) {
+    setEligiendoTramo(null)
     setAgregandoAFuturo(aFuturo)
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
@@ -229,10 +238,19 @@ function PaginaMapa({ params, onNavegar }) {
   // Solo se dibujan los lugares que están en el pueblo; los mal ubicados se avisan en la lista.
   const { dentro: lugaresConUbicacion, fuera: fueraDeZona } = useMemo(() => separarPorZona(lugares), [lugares])
   const limites = useMemo(() => limitesDe(lugaresConUbicacion), [lugaresConUbicacion])
-  const resumenes = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), [lugaresConUbicacion, abiertasFiltradas])
-  const enMapa = useMemo(() => filtrarLugares(resumenes, filtrosLugares), [resumenes, filtrosLugares])
+  // Todas las calles cargadas: con ellas se calculan las esquinas (tramos de las OT y "entre calles")
+  const todasLasCalles = useMemo(() => lugares.filter(esCalle), [lugares])
+  // Las calles con trabajos llevan el tramo de cada OT abierta (utils/calles.js → conTramos)
+  const resumenes = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), todasLasCalles),
+    [lugaresConUbicacion, abiertasFiltradas, todasLasCalles])
+  // "Todo el pueblo" no muestra las calles sin trabajos (quedan en la pestaña Calles), salvo la que está elegida
+  const lugarActivo = lugares.find((lugar) => lugar.id === lugarActivoId)
+  const calleVaciaElegida = esCalle(lugarActivo) ? lugarActivoId : null
+  const enTodo = useMemo(() => sinCallesVacias(resumenes, calleVaciaElegida), [resumenes, calleVaciaElegida])
+  const enMapa = useMemo(() => filtrarLugares(enTodo, filtrosLugares), [enTodo, filtrosLugares])
   // La ficha muestra todos los trabajos abiertos del lugar, aunque "Más filtros" esconda algunos.
-  const resumenesCompletos = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertas), [lugaresConUbicacion, abiertas])
+  const resumenesCompletos = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertas), todasLasCalles),
+    [lugaresConUbicacion, abiertas, todasLasCalles])
   // Pestaña Luminarias: el estado sale de TODAS las OT abiertas (los filtros de la otra pestaña no cuentan).
   const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
   const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
@@ -246,6 +264,17 @@ function PaginaMapa({ params, onNavegar }) {
     ? ordenados.filter((resumen) => geometriaEnLimites(resumen.lugar.ubicacion, zonaVisible))
     : ordenados
   const resumenActivo = resumenesCompletos.find((resumen) => resumen.lugar.id === lugarActivoId) ?? null
+  // Marcar el tramo: la calle, sus esquinas (con TODAS las calles cargadas, aunque haya filtros) y lo que dibuja el mapa.
+  const calleDelTramo = eligiendoTramo ? lugares.find((lugar) => lugar.id === eligiendoTramo.calleId) ?? null : null
+  const crucesDelTramo = useMemo(() => (calleDelTramo ? crucesDe(calleDelTramo, todasLasCalles) : []), [calleDelTramo, todasLasCalles])
+  const toquesDelTramo = eligiendoTramo?.toques
+  const modoDelTramo = eligiendoTramo?.modo
+  const tramoEnMapa = useMemo(() => {
+    if (!calleDelTramo) return null
+    const toques = (toquesDelTramo ?? []).map((toque) => ({ ...toque, punto: puntoEn(calleDelTramo, toque.distancia) }))
+    const vistaPrevia = toques.length === 2 ? cortar(calleDelTramo, toques[0].distancia, toques[1].distancia) : null
+    return { calle: calleDelTramo, cruces: crucesDelTramo, modo: modoDelTramo, toques, vistaPrevia }
+  }, [calleDelTramo, crucesDelTramo, modoDelTramo, toquesDelTramo])
   const filtrosActivos = Object.values(filtros).filter((valor) => valor !== '').length + (soloVisibles ? 1 : 0)
   const estadosAbiertos = estados.filter((estado) => !estado.cierre) // el mapa solo muestra trabajos abiertos
 
@@ -253,6 +282,7 @@ function PaginaMapa({ params, onNavegar }) {
   // En el celular se vuelve al mapa y sube la tarjeta del lugar.
   function elegirDesdeLista(lugarId) {
     cancelarAgregar()
+    setEligiendoTramo(null)
     setLugarActivoId(lugarId)
     setSeleccion((anterior) => ({ lugarId, vez: (anterior?.vez ?? 0) + 1 }))
     setVistaAngosta('mapa')
@@ -282,6 +312,7 @@ function PaginaMapa({ params, onNavegar }) {
   function cambiarPestana(nueva) {
     if (nueva === pestana) return
     setPestana(nueva)
+    if (nueva === 'luminarias') setEligiendoTramo(null) // en Luminarias no hay calles
     const lugar = resumenActivo?.lugar
     const noEsta = (nueva === 'luminarias' && !esLuminaria(lugar)) || (nueva === 'calles' && !esCalle(lugar))
     if (lugar && noEsta) {
@@ -292,9 +323,44 @@ function PaginaMapa({ params, onNavegar }) {
 
   const verHistoria = (lugarId) => onNavegar('ficha', { lugarId })
   // Desde la pestaña Luminarias la OT arranca como "Alumbrado". "Volver al mapa" vuelve a la misma pestaña.
-  const nuevaOrden = (lugarId) => onNavegar('ordenes', pestana === 'luminarias'
+  // extra: lo que se eligió en el mapa para una calle (tramo, calleEntre1, calleEntre2).
+  const irAlFormulario = (lugarId, extra = {}) => onNavegar('ordenes', pestana === 'luminarias'
     ? { lugarId, desde: 'mapa', tipo: 'ALUMBRADO', pestana: 'luminarias' }
-    : pestana === 'calles' ? { lugarId, desde: 'mapa', pestana: 'calles' } : { lugarId, desde: 'mapa' })
+    : pestana === 'calles' ? { lugarId, desde: 'mapa', pestana: 'calles', ...extra } : { lugarId, desde: 'mapa', ...extra })
+
+  // "+ Nueva OT acá": en una calle primero se pregunta dónde es el trabajo; en el resto va directo al formulario.
+  function nuevaOrden(lugarId) {
+    const lugar = lugares.find((item) => item.id === lugarId)
+    if (!esCalle(lugar) || lugar.ubicacion?.type !== 'LineString') {
+      irAlFormulario(lugarId)
+      return
+    }
+    cancelarAgregar()
+    setFichaAbierta(false)
+    setVistaAngosta('mapa')
+    setAviso('')
+    setEligiendoTramo({ calleId: lugarId, modo: 'elegir', toques: [] })
+  }
+
+  // Cancelar: vuelve la ficha (o la tarjeta, en el celular) de la calle, que sigue elegida.
+  function cancelarTramo() {
+    setEligiendoTramo(null)
+  }
+
+  const cambiarTramo = (cambios) => setEligiendoTramo((anterior) => (anterior ? { ...anterior, ...cambios } : anterior))
+
+  function tocarEnTramo(punto) {
+    if (!eligiendoTramo || eligiendoTramo.modo !== 'tramo' || !calleDelTramo) return
+    const resultado = tocarTramo(calleDelTramo, crucesDelTramo, eligiendoTramo.toques, punto)
+    cambiarTramo({ toques: resultado.toques })
+    setAviso(resultado.aviso)
+  }
+
+  function seguirConTramo(pedido) {
+    const calleId = eligiendoTramo.calleId
+    setEligiendoTramo(null)
+    irAlFormulario(calleId, pedido ? { tramo: pedido.tramo, calleEntre1: pedido.calleEntre1, calleEntre2: pedido.calleEntre2 } : {})
+  }
 
   // Se cambió el estado de una luminaria desde su ficha: se reemplaza el lugar y el mapa se redibuja.
   function alActualizarLugar(actualizado) {
@@ -327,11 +393,13 @@ function PaginaMapa({ params, onNavegar }) {
     mensajeVacio = { titulo: 'No hay lugares en la zona que se ve', texto: 'Alejá el mapa para ver más lugares.' }
   }
 
-  const mostrarTarjeta = !agregando && angosta && resumenActivo && !fichaAbierta
-  const mostrarPanel = !agregando && resumenActivo && (!angosta || fichaAbierta)
+  const mostrarTarjeta = !ocupadoEnElMapa && angosta && resumenActivo && !fichaAbierta
+  const mostrarPanel = !ocupadoEnElMapa && resumenActivo && (!angosta || fichaAbierta)
+  const conHoja = agregando || calleDelTramo != null // el formulario o "¿Dónde es el trabajo?" en lugar de la ficha
   let clase = 'pantalla-mapa'
-  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}${agregando ? ' agregando-lugar' : ''}`
-  else if (resumenActivo || agregando) clase += ' pantalla-mapa-con-ficha'
+  if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || conHoja ? ' con-tarjeta' : ''}${agregando ? ' agregando-lugar' : ''}${calleDelTramo ? ' eligiendo-tramo' : ''}`
+  else if (resumenActivo || conHoja) clase += ' pantalla-mapa-con-ficha'
+  if (calleDelTramo && !angosta) clase += ' eligiendo-tramo'
   if (pestana === 'luminarias') clase += ' pantalla-mapa-luminarias'
   if (pestana !== 'todo') clase += ' pantalla-mapa-sin-botoncitos' // celular: los botoncitos de filtro son solo de "Todo el pueblo"
   const TITULOS_MAPA = { todo: 'Mapa de lugares', luminarias: 'Mapa de luminarias', calles: 'Mapa de calles' }
@@ -367,7 +435,7 @@ function PaginaMapa({ params, onNavegar }) {
       ) : pestana === 'calles' ? (
         <PanelCalles calles={calles} totales={totalesCalles} modoColor={modoColor} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} />
       ) : (
-        <ListaLugares resumenes={enLista} total={resumenes.length}
+        <ListaLugares resumenes={enLista} total={enTodo.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
           lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} mensajeVacio={mensajeVacio}
           fueraDeZona={fueraDeZona} onRevisarFuera={puedeRevisar ? () => onNavegar('infraestructura') : undefined}>
@@ -393,7 +461,8 @@ function PaginaMapa({ params, onNavegar }) {
         <MapaLugares resumenes={pestana === 'calles' ? calles : enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} tipoNuevo={tipoNuevo} puntosNuevo={puntosNuevo} onElegirPunto={agregarVerticeNuevo}
-          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche} />
+          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche}
+          tramo={tramoEnMapa} onTocarTramo={tocarEnTramo} />
 
         {/* Pestañas arriba del mapa: todos los lugares, solo las luminarias o solo las calles */}
         {!cargando && !error && (
@@ -422,7 +491,7 @@ function PaginaMapa({ params, onNavegar }) {
         )}
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
-        {puedeAgregar && !agregando && !cargando && !error && (
+        {puedeAgregar && !ocupadoEnElMapa && !cargando && !error && (
           <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={() => empezarAgregar()}>
             <Icono nombre="agregar" />{TEXTO_AGREGAR[pestana]}
           </button>
@@ -523,6 +592,19 @@ function PaginaMapa({ params, onNavegar }) {
             onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
             tipos={tiposParaAgregar('todo')}
             permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
+        </div>
+      )}
+
+      {/* "Nueva OT acá" en una calle: ¿toda la calle o un tramo? (en el lugar de la ficha, o desde abajo en el celular) */}
+      {calleDelTramo && (
+        <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
+          <ElegirTramo calle={calleDelTramo} cruces={crucesDelTramo} modo={eligiendoTramo.modo} toques={eligiendoTramo.toques}
+            onTodaLaCalle={() => seguirConTramo(null)}
+            onUnTramo={() => cambiarTramo({ modo: 'tramo', toques: [] })}
+            onVolver={() => { cambiarTramo({ modo: 'elegir', toques: [] }); setAviso('') }}
+            onDeshacer={() => cambiarTramo({ toques: eligiendoTramo.toques.slice(0, -1) })}
+            onElegirOtraVez={() => { cambiarTramo({ toques: [] }); setAviso('') }}
+            onSeguir={seguirConTramo} onCancelar={cancelarTramo} />
         </div>
       )}
 

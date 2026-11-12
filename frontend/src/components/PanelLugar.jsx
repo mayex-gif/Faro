@@ -14,7 +14,8 @@ import { puedeAsignar, puedeCambiarEstadoLuminaria, puedeCrearOrden } from '../u
 // Ficha del lugar elegido, en el panel derecho de la pantalla Mapa (no en otra página).
 // Muestra los datos del lugar, sus trabajos abiertos y las últimas novedades de su historia.
 // Props:
-// - resumen: { lugar, ordenes } del lugar (ver agruparPorLugar en utils/mapa.js); ordenes = las abiertas
+// - resumen: { lugar, ordenes, tramos? } del lugar (ver agruparPorLugar en utils/mapa.js); ordenes = las abiertas;
+//   tramos (solo calles con trabajos) = dónde es cada OT dentro de la calle
 // - onCerrar(): cerrar el panel
 // - onVerHistoria(lugarId): abrir la Ficha histórica completa
 // - onNuevaOrden(lugarId): "+ Nueva OT acá" (abre el formulario de OT con este lugar ya elegido)
@@ -25,6 +26,8 @@ import { puedeAsignar, puedeCambiarEstadoLuminaria, puedeCrearOrden } from '../u
 function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion, onLugarActualizado }) {
   const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
+  // Calles: el texto del tramo de cada OT abierta (resumen.tramos, ver utils/calles.js → conTramos)
+  const ubicaciones = new Map((resumen.tramos ?? []).map((tramo) => [tramo.orden.id, tramo.texto]))
   const [historia, setHistoria] = useState(null)
   const [error, setError] = useState(null)
   const [intento, setIntento] = useState(0) // cambia con "Volver a cargar" y después de asignar una cuadrilla
@@ -117,6 +120,10 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
                 <span className="tarjeta-trabajo-detalle">
                   OT #{orden.id} · {etiqueta(TIPOS_TRABAJO, orden.tipo)} · {orden.cuadrillaNombre ? `Cuadrilla: ${orden.cuadrillaNombre}` : 'Sin cuadrilla asignada'}
                 </span>
+                {/* En una calle: qué parte de la calle (el tramo, "entre calles" o la altura) */}
+                {ubicaciones.has(orden.id) && (
+                  <span className="tarjeta-trabajo-tramo"><Icono nombre="calle" />{ubicaciones.get(orden.id)}</span>
+                )}
                 {puedeAsignar(usuario) && esperaCuadrilla(orden, asignacion.estados) && (
                   <AsignarCuadrilla orden={orden} cuadrillas={asignacion.cuadrillas}
                     cargandoCuadrillas={asignacion.cargandoCuadrillas} errorCuadrillas={asignacion.errorCuadrillas}

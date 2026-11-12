@@ -1,6 +1,7 @@
 package com.faro.backend.models;
 
 import jakarta.persistence.*;
+import org.locationtech.jts.geom.Geometry;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,6 +31,11 @@ public class OrdenTrabajo {
     private String altura;
     @Column(name = "monto_aproximado", precision = 14, scale = 2)
     private BigDecimal montoAproximado;
+
+    // Parte de la calle donde se trabaja (línea sobre la calle). null = toda la calle o no es una calle.
+    // Ver services/TramoDeCalle. Columna opcional: las OT viejas quedan con null.
+    @Column(columnDefinition = "geometry(Geometry, 4326)")
+    private Geometry tramo;
 
     @Enumerated(EnumType.STRING) // se guarda el NOMBRE ("PODA"), no un número
     @Column(nullable = false, length = 30)
@@ -98,6 +104,8 @@ public class OrdenTrabajo {
     public void setAltura(String altura) { this.altura = altura; }
     public BigDecimal getMontoAproximado() { return montoAproximado; }
     public void setMontoAproximado(BigDecimal montoAproximado) { this.montoAproximado = montoAproximado; }
+    public Geometry getTramo() { return tramo; }
+    public void setTramo(Geometry tramo) { this.tramo = tramo; }
 
     public TipoTrabajo getTipo() { return tipo; }
     public void setTipo(TipoTrabajo tipo) { this.tipo = tipo; }

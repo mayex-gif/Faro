@@ -208,7 +208,8 @@ public class MotorMantenimientoService {
                 orden.getFechaPlanificada(),
                 orden.getFechaFinalizacion(),
                 orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
-                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado()
+                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado(),
+                orden.getTramo()
         );
     }
 }

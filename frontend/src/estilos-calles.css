@@ -13,3 +13,60 @@
 .calles-buscar { position: relative; margin: 10px 0 0; }
 .calles-buscar .icono { position: absolute; top: 50%; left: 12px; width: 18px; height: 18px; color: var(--texto-secundario); transform: translateY(-50%); pointer-events: none; }
 .campo.calles-buscar input { padding-left: 38px; }
+
+/* "Nueva OT acá" en una calle: ¿toda la calle o un tramo? (components/ElegirTramo.jsx).
+   Usa el mismo lugar que el formulario de "Agregar lugar" (.contenedor-lugar-nuevo / .hoja-lugar-nuevo). */
+.opciones-tramo { display: grid; gap: 10px; margin-top: 10px; }
+.opcion-tramo { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 64px; padding: 14px; border: 2px solid var(--borde-campo); border-radius: 12px; background: var(--blanco); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.opcion-tramo:hover { border-color: var(--marca-naranja); background: #FFF6F0; }
+.opcion-tramo:focus-visible { outline: 3px solid var(--marca-naranja); outline-offset: 2px; }
+.opcion-tramo > .icono { flex: none; width: 24px; height: 24px; margin-top: 2px; color: #086C80; }
+.opcion-tramo > span { display: flex; flex-direction: column; gap: 2px; }
+.opcion-tramo > span > span { color: var(--texto-secundario); font-size: 0.875rem; }
+
+/* Desde / Hasta mientras se marca */
+.tramo-elegido { margin: 10px 0 0; }
+.tramo-elegido > div { display: flex; gap: 8px; }
+.tramo-elegido dt { min-width: 52px; color: var(--texto-secundario); font-weight: 650; }
+.tramo-elegido dd { margin: 0; font-weight: 650; }
+.tramo-elegido .tramo-elegido-resumen { margin-top: 6px; padding-top: 6px; border-top: 1px solid #C9E3EA; }
+.tramo-elegido .tramo-elegido-resumen dd { font-weight: 400; }
+/* Compu: Deshacer y Elegir otra vez arriba; Volver y Seguir abajo */
+.botones-tramo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* En el mapa: el nombre de cada esquina y las marcas "Desde" / "Hasta" */
+.leaflet-tooltip.etiqueta-esquina { padding: 1px 6px; border: 1px solid #086C80; border-radius: 6px; background: rgb(255 255 255 / 92%); color: #0B4F5E; font-size: 0.75rem; font-weight: 650; box-shadow: none; }
+.leaflet-tooltip.etiqueta-esquina::before { display: none; }
+.leaflet-tooltip.etiqueta-toque { padding: 1px 6px; border: 0; border-radius: 6px; background: #A44013; color: #FFFFFF; font-size: 0.75rem; font-weight: 700; box-shadow: none; }
+.leaflet-tooltip.etiqueta-toque::before { display: none; }
+.mapa .franja-tramo { cursor: crosshair; }
+/* El aviso ("Tocá sobre ...") queda encima del mapa: que no se coma los toques mientras se marca */
+.eligiendo-tramo .aviso-mapa { pointer-events: none; }
+
+/* Celular: mientras se marca el tramo, los filtros y "Ver como lista" se esconden (como al agregar un lugar) */
+@media (max-width: 1050px) {
+  .pantalla-mapa-angosta.eligiendo-tramo .botoncitos-sobre-mapa,
+  .pantalla-mapa-angosta.eligiendo-tramo .boton-ver-lista { display: none; }
+  /* Marcando: la hoja queda chica para dejar a la vista la mayor parte de la calle */
+  .hoja-lugar-nuevo .elegir-tramo-tramo .panel-lugar-cabecera { padding: 12px 16px 8px; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo .panel-lugar-seccion { gap: 8px; padding: 10px 16px 12px; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo h3,
+  .hoja-lugar-nuevo .elegir-tramo-tramo .ayuda-campo,
+  .hoja-lugar-nuevo .elegir-tramo-tramo .tramo-elegido-resumen { display: none; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo .paso-agregar { padding: 8px 12px; font-size: 0.9375rem; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo .tramo-elegido { margin: 0; padding: 8px 12px; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo .botones-tramo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .hoja-lugar-nuevo .elegir-tramo-tramo .boton { min-height: 44px; padding: 0 10px; font-size: 0.875rem; }
+}
+
+/* Formulario de OT: el tramo marcado en el mapa (components/FormularioOrden.jsx) */
+.resumen-tramo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid #F3C2A5; border-radius: 10px; background: #FFF6F0; }
+.resumen-tramo p { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
+.resumen-tramo p .icono { flex: none; width: 20px; height: 20px; margin-top: 2px; color: #A44013; }
+.resumen-tramo .boton { flex: none; }
+
+/* Ficha y tarjeta de una calle: dónde es cada trabajo (el tramo) */
+.tarjeta-trabajo-tramo,
+.tarjeta-lugar-tramo { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: #A44013; font-size: 0.875rem; font-weight: 650; }
+.tarjeta-trabajo-tramo .icono,
+.tarjeta-lugar-tramo .icono { flex: none; width: 16px; height: 16px; margin-top: 2px; }

@@ -40,7 +40,7 @@ export const AYUDA = {
 
   mapa: {
     titulo: 'Mapa',
-    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, plazas y espacios verdes, y calles) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está; la pestaña Calles, solo las calles y sus trabajos.',
+    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo los lugares (luminarias, plazas y espacios verdes, y las calles con trabajos) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está; la pestaña Calles, todas las calles y sus trabajos.',
     secciones: [
       {
         titulo: 'Qué ves',
@@ -49,6 +49,7 @@ export const AYUDA = {
           'En el celular el mapa ocupa toda la pantalla. Con "Ver como lista" ves los lugares en una lista y con "Ver mapa" volvés.',
           'Cada marca es un lugar. Su color indica la prioridad del trabajo más urgente: cuanto más urgente, más grande es la marca. La leyenda dice qué significa cada color.',
           'En "Colorear por" podés cambiar a "Estado" para que el color muestre en qué estado está cada trabajo.',
+          'En "Todo el pueblo" una calle aparece solo si tiene trabajos abiertos, y se pinta solo el tramo donde se trabaja (o toda la calle si el trabajo es de toda la calle). Todas las calles están en la pestaña Calles.',
         ],
       },
       {
@@ -80,10 +81,12 @@ export const AYUDA = {
       {
         titulo: 'Pestaña Calles',
         items: [
-          'Arriba del mapa, "Calles" muestra solo las calles del pueblo, dibujadas con un borde blanco. El color es el del trabajo abierto más urgente de cada calle; gris, sin trabajos.',
-          'A la izquierda (en el celular, "Ver como lista"): cuántas calles tienen trabajos abiertos, la lista de las que tienen (las más urgentes arriba) y la de las que no. Con "Buscar una calle" la encontrás escribiendo parte del nombre, con o sin tildes.',
+          'Arriba del mapa, "Calles" muestra todas las calles del pueblo en gris, con un borde blanco. Encima, de color, el tramo de cada trabajo abierto: el color es el de su prioridad (o su estado) y el más urgente queda arriba.',
+          'A la izquierda (en el celular, "Ver como lista"): cuántas calles tienen trabajos abiertos, la lista de las que tienen (las más urgentes arriba, con dónde es el trabajo: "entre Catamarca y La Rioja") y la de las que no. Con "Buscar una calle" la encontrás escribiendo parte del nombre, con o sin tildes.',
+          'En la ficha de una calle, cada trabajo dice en qué parte de la calle es: el tramo, entre qué calles, la altura o "Toda la calle".',
           'Las calles del pueblo ya vienen cargadas (se tomaron de OpenStreetMap): no hace falta dibujarlas una por una.',
-          { texto: 'Tocá una calle para ver su ficha y "Nueva OT acá" para crearle una orden (por ejemplo, un bacheo). "Volver al mapa" te trae de nuevo a esta pestaña.', roles: [ENCARGADO, MESA] },
+          { texto: 'Tocá una calle para ver su ficha y "Nueva OT acá" para crearle una orden (por ejemplo, un bacheo). Primero te pregunta "¿Dónde es el trabajo?": "Toda la calle" o "Un tramo". "Volver al mapa" te trae de nuevo a esta pestaña.', roles: [ENCARGADO, MESA] },
+          { texto: '"Un tramo": la calle queda resaltada y las esquinas llevan el nombre de la calle que cruza. Tocá en la calle dónde empieza el trabajo y dónde termina (puede ser en la mitad de una cuadra; si tocás cerca de una esquina, se pega a ella). El tramo se ve en naranja. "Deshacer" borra el último toque, "Elegir otra vez" los borra todos y Escape cancela. "Seguir" abre la orden con el tramo y las calles que lo limitan ya cargados.', roles: [ENCARGADO, MESA] },
           { texto: '"Agregar calle": tocá varios puntos siguiendo el recorrido de la calle y registrala. Sirve para calles nuevas o que no estaban en la carga inicial.', roles: [ENCARGADO, MESA] },
         ],
       },
@@ -99,6 +102,7 @@ export const AYUDA = {
         titulo: 'Registrar una orden',
         items: [
           'Completá la descripción (qué hay que hacer, hasta 500 letras), el tipo de trabajo, el origen (reclamo vecinal, plan de mantenimiento u orden directa), el lugar y la prioridad.',
+          'Si el lugar es una calle, en "Ubicación dentro de la calle" elegí dónde es: "Toda la calle"; "Entre calles" (solo aparecen las calles que la cruzan, y con las dos se marca el tramo en el mapa); "Por altura"; o "Tramo marcado", si lo marcaste en el mapa (ahí solo se ofrecen las calles que lo limitan, y "Usar toda la calle" lo saca).',
           'Tocá "Registrar orden". La orden queda pendiente de asignar a una cuadrilla.',
           { texto: 'Si el trabajo se repite (por ejemplo, cortar el pasto cada 15 días), marcá "Sí, programar este trabajo" y elegí cada cuánto. FARO va a crear las órdenes solo, en cada fecha.', roles: [ENCARGADO] },
         ],
@@ -115,7 +119,7 @@ export const AYUDA = {
         titulo: 'Modificar una orden',
         roles: [ENCARGADO],
         items: [
-          { texto: '"Editar" carga la orden en el formulario de arriba para corregir sus datos. Después tocá "Guardar cambios".', roles: [ENCARGADO] },
+          { texto: '"Editar" carga la orden en el formulario de arriba para corregir sus datos. Después tocá "Guardar cambios". Si la orden es en un tramo de calle, el tramo se mantiene mientras no cambies la ubicación.', roles: [ENCARGADO] },
           { texto: 'Los botones "Pasar a…" cambian el estado de la orden. Finalizada y Cancelada piden confirmación porque después ya no se puede modificar.', roles: [ENCARGADO] },
           { texto: '"Ver programaciones" lleva a Mantenimiento periódico, donde están los trabajos que se repiten.', roles: [ENCARGADO] },
         ],

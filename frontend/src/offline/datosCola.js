@@ -63,7 +63,7 @@ export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Dat
 export function crearAltaOrden(usuario, datos, lugarNombre, { ahora = new Date(), numero = nuevoNumero() } = {}) {
   const { descripcion, tipo, origen, prioridad, lugarId } = datos
   const orden = { descripcion, tipo, origen, prioridad, lugarId }
-  for (const campo of ['calleEntre1', 'calleEntre2', 'altura', 'montoAproximado']) {
+  for (const campo of ['calleEntre1', 'calleEntre2', 'altura', 'tramo', 'montoAproximado']) {
     if (Object.hasOwn(datos, campo)) orden[campo] = datos[campo]
   }
   return {

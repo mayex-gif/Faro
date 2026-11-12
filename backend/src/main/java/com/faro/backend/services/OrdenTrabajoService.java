@@ -335,6 +335,12 @@ public class OrdenTrabajoService {
         orden.setCalleEntre1(entreCalles ? request.calleEntre1().trim() : null);
         orden.setCalleEntre2(entreCalles ? request.calleEntre2().trim() : null);
         orden.setAltura(conAltura ? request.altura().trim() : null);
+        // Tramo de calle: "por altura" no lleva tramo; sin tramo = toda la calle.
+        // El PUT reemplaza todo: si la pantalla no manda el tramo, se borra.
+        if (conAltura && request.tramo() != null) {
+            throw new DatoInvalidoException("tramo", "Una OT por altura no lleva tramo marcado");
+        }
+        orden.setTramo(TramoDeCalle.validar(request.tramo(), lugar));
         orden.setMontoAproximado(request.montoAproximado());
     }
 
@@ -358,7 +364,8 @@ public class OrdenTrabajoService {
                 orden.getFechaPlanificada(),
                 orden.getFechaFinalizacion(),
                 orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
-                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado()
+                orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado(),
+                orden.getTramo()
         );
     }
 }
