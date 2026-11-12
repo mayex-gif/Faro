@@ -46,3 +46,12 @@ test('la ayuda del mapa explica la pestaña Luminarias, y lo de luminarias a fut
   assert.doesNotMatch(textos('MESA_ENTRADAS'), /Marcar como instalada/)
   assert.doesNotMatch(textos('CAPATAZ_CUADRILLA'), /Agregar luminaria/)
 })
+
+test('la ayuda explica cómo marcar un tramo de calle, y solo a quien puede crear OT', () => {
+  const textos = (clave, rol) => ayudaPara(clave, rol).secciones.flatMap((s) => s.items).join(' ')
+  assert.match(textos('mapa', 'MESA_ENTRADAS'), /¿Dónde es el trabajo\?/)
+  assert.match(textos('mapa', 'ENCARGADO_CORRALON'), /se pega a ella/)
+  assert.doesNotMatch(textos('mapa', 'CAPATAZ_CUADRILLA'), /Un tramo/)
+  assert.match(textos('mapa', 'CAPATAZ_CUADRILLA'), /solo si tiene trabajos abiertos/)
+  assert.match(textos('ordenes', 'MESA_ENTRADAS'), /solo aparecen las calles que la cruzan/)
+})

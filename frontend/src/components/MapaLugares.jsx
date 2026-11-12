@@ -288,16 +288,28 @@ function MapaLugares({
   // Al empezar a marcar el tramo, el mapa encuadra la calle (en el celular, por encima de la hoja de abajo).
   // Si una calle larga no entra de cerca (celular), queda en un zoom cómodo para tocar y se arrastra para recorrerla.
   useEffect(() => {
-    if (!mapa.current || !calleDelTramo) return
+    const instancia = mapa.current
+    if (!instancia || !calleDelTramo) return
     const caja = L.latLngBounds(L.GeoJSON.coordsToLatLngs(calleDelTramo.ubicacion.coordinates, 0))
-    const arriba = 70 // las pestañas del mapa
-    const abajo = (hojaAbajo?.current?.offsetHeight ?? 0) + 30
-    mapa.current.invalidateSize({ pan: false })
-    const zoomQueEntra = mapa.current.getBoundsZoom(caja, false, L.point(80, arriba + abajo))
-    const zoom = Math.min(18, Math.max(zoomQueEntra, ZOOM_MINIMO_TRAMO))
-    mapa.current.setView(caja.getCenter(), zoom, { animate: false })
-    // el centro de la calle queda en el medio de lo que se ve (entre las pestañas y la hoja de abajo)
-    mapa.current.panBy([0, (abajo - arriba) / 2], { animate: false })
+    function encuadrar() {
+      const arriba = 70 // las pestañas del mapa
+      const abajo = (hojaAbajo?.current?.offsetHeight ?? 0) + 30
+      instancia.invalidateSize({ pan: false })
+      const zoomQueEntra = instancia.getBoundsZoom(caja, false, L.point(80, arriba + abajo))
+      const zoom = Math.min(18, Math.max(zoomQueEntra, ZOOM_MINIMO_TRAMO))
+      instancia.setView(caja.getCenter(), zoom, { animate: false })
+      // el centro de la calle queda en el medio de lo que se ve (entre las pestañas y la hoja de abajo)
+      instancia.panBy([0, (abajo - arriba) / 2], { animate: false })
+    }
+    // Si el mapa todavía se está moviendo hacia la calle (se la eligió recién en la lista), se espera a que termine:
+    // si no, al terminar ese zoom Leaflet vuelve a la vista de antes y la calle queda debajo de la hoja del celular.
+    // (_animatingZoom es interno de Leaflet: no hay otra forma de saber si hay un zoom animado en curso.)
+    instancia.stop()
+    if (instancia._animatingZoom) {
+      instancia.once('zoomend', encuadrar)
+      return () => instancia.off('zoomend', encuadrar)
+    }
+    encuadrar()
   }, [calleDelTramo, modoDelTramo, hojaAbajo])
 
   // "¿Dónde falta luz?": un rectángulo punteado sobre la zona elegida, y el mapa la encuadra.
