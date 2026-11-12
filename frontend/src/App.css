@@ -21,6 +21,7 @@
 .seccion-ubicacion { padding-left: 32px; border-left: 1px solid var(--borde); }
 .campos { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px 16px; }
 .campo { min-width: 0; }
+.campo-nombre { grid-column: 1 / -1; }
 .campo-ancho { grid-column: 1 / -1; }
 .campo label { display: block; margin-bottom: 7px; font-size: 0.8125rem; font-weight: 600; }
 .campo label > span:not(.opcional) { color: #A44013; }
