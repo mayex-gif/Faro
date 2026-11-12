@@ -16,6 +16,11 @@ function coordenadasIniciales(tipo, ubicacion) {
   if (ubicacion?.type === 'LineString') {
     return ubicacion.coordinates.map(([longitud, latitud]) => ({ longitud: String(longitud), latitud: String(latitud) }))
   }
+  // Una calle en varios tramos: se editan sus puntos uno detrás de otro y al guardar queda como una sola línea
+  // (si no, el formulario arrancaría vacío y se perdería el recorrido)
+  if (ubicacion?.type === 'MultiLineString') {
+    return ubicacion.coordinates.flat(1).map(([longitud, latitud]) => ({ longitud: String(longitud), latitud: String(latitud) }))
+  }
   if (ubicacion?.type === 'Polygon') {
     const anillo = ubicacion.coordinates[0] ?? []
     const cerrado = anillo.length > 1 && anillo[0][0] === anillo.at(-1)[0] && anillo[0][1] === anillo.at(-1)[1]
@@ -149,7 +154,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
             <h2 id="titulo-formulario">{editando ? `Editar ${cosa}` : `Registrar ${soloLuminarias ? 'una luminaria' : 'un lugar'}`}</h2>
             <p>{editando ? `Estás modificando: ${puntoEditando.nombre}`
               : soloLuminarias ? 'Completá los datos para incorporar una luminaria del alumbrado público.'
-                : 'Completá los datos para incorporar un espacio verde o una calle.'}</p>
+                : 'Completá los datos para incorporar un lugar (plaza, espacio verde) o una calle.'}</p>
           </div>
         </div>
         {editando && <span className="etiqueta-edicion">En edición</span>}
@@ -182,7 +187,7 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
 
           <section className="seccion-formulario seccion-ubicacion" aria-labelledby="titulo-ubicacion">
             <h3 id="titulo-ubicacion"><Icono nombre="lugar" />Ubicación y estado</h3>
-            <p className="ayuda-seccion" id="ayuda-coordenadas">Ingresá coordenadas en grados decimales con punto como separador. Una luminaria usa un punto; una calle, varios puntos; un área, al menos tres vértices.</p>
+            <p className="ayuda-seccion" id="ayuda-coordenadas">Ingresá coordenadas en grados decimales con punto como separador. Una luminaria usa un punto; una calle, varios puntos; un lugar, al menos tres vértices (su contorno).</p>
             {datos.coordenadas.map((punto, indice) => <div className="campos coordenadas" key={indice}>
               <div className="campo">
                 <label htmlFor={`latitud-${indice}`}>Latitud {indice + 1} <span aria-hidden="true">*</span></label>

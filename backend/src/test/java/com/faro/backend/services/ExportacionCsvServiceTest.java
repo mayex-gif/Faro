@@ -40,7 +40,8 @@ class ExportacionCsvServiceTest {
         assertThat(csv).contains("\"Equipo\nVerde\"");
         assertThat(csv).contains("\"Plaza\rCentral\"");
         assertThat(csv).contains("02/10/2026 08:05;03/10/2026 14:30");
-        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;\r\n");
+        // OT sin opcionales: lugar, monto, ubicación de calle y fechas vacíos (monto y ubicación vienen del #67)
+        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;;;\r\n");
     }
 
     @Test

@@ -10,6 +10,7 @@ import Icono from '../components/Icono'
 import ListaLugares from '../components/ListaLugares'
 import MapaLugares from '../components/MapaLugares'
 import PanelLugar from '../components/PanelLugar'
+import PanelCalles from '../components/PanelCalles'
 import PanelLuminarias, { MuestraPoste } from '../components/PanelLuminarias'
 import TarjetaLugar from '../components/TarjetaLugar'
 import usePantallaAngosta from '../hooks/usePantallaAngosta'
@@ -22,14 +23,17 @@ import {
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
-import { tiposDeCategoria } from '../utils/lugares'
+import { tiposParaAgregar } from '../utils/lugares'
+import { callesDe, esCalle, resumirCalles } from '../utils/calles'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
 import '../estilos-mapa.css'
 import '../estilos-mapa-primero.css'
 import '../estilos-luminarias.css'
+import '../estilos-calles.css'
 
 const PRIORIDADES_DE_MAYOR_A_MENOR = [...PRIORIDADES].reverse()
+const PESTANAS = ['todo', 'luminarias', 'calles']
 
 // Pantalla principal de FARO (propuesta A "El mapa primero").
 // Modo noche de la pestaña Luminarias: se recuerda en este navegador (si el navegador no deja guardar, dura la visita).
@@ -59,8 +63,9 @@ function PaginaMapa({ params, onNavegar }) {
   const [filtrosLugares, setFiltrosLugares] = useState(FILTROS_LUGARES_VACIOS) // los botoncitos
   const [filtros, setFiltros] = useState(FILTROS_ORDENES_VACIOS) // "Más filtros" (de las órdenes)
   const [modoColor, setModoColor] = useState('prioridad') // 'prioridad' o 'estado' (RNF11)
-  // Pestaña del mapa: 'todo' (todos los lugares) o 'luminarias' (solo luminarias y su estado: lo pidió el intendente)
-  const [pestana, setPestana] = useState(params?.pestana === 'luminarias' ? 'luminarias' : 'todo')
+  // Pestaña del mapa: 'todo' (todos los lugares), 'luminarias' (solo luminarias y su estado: lo pidió el intendente)
+  // o 'calles' (solo las calles y sus trabajos)
+  const [pestana, setPestana] = useState(PESTANAS.includes(params?.pestana) ? params.pestana : 'todo')
   const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
   const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
   const [noche, setNoche] = useState(leerModoNoche) // modo noche (pestaña Luminarias)
@@ -152,12 +157,13 @@ function PaginaMapa({ params, onNavegar }) {
     return () => window.clearTimeout(reloj)
   }, [aviso])
 
+  // aFuturo: solo true desde "Agregar luminaria a futuro" (el botón común no pasa nada).
   function empezarAgregar(aFuturo = false) {
-    setAgregandoAFuturo(aFuturo === true)
+    setAgregandoAFuturo(aFuturo)
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
-    setTipoNuevo(aFuturo || pestana === 'luminarias' ? 'LUMINARIA' : tiposDeCategoria('infraestructura')[0])
+    setTipoNuevo(aFuturo ? 'LUMINARIA' : tiposParaAgregar(pestana)[0])
     setPuntosNuevo([])
     setAviso('')
     setAgregando(true)
@@ -178,9 +184,15 @@ function PaginaMapa({ params, onNavegar }) {
     setAviso(`Se registró "${creado.nombre}".`)
   }
 
+  // "Agregar lugar" en "Todo el pueblo": si se elige Luminaria, se sigue agregando en la pestaña Luminarias
+  // (ahí se ven los postes y su estado). El formulario se vuelve a armar como "Luminaria nueva".
   function alCambiarTipoNuevo(tipo) {
     setTipoNuevo(tipo)
     setPuntosNuevo([])
+    if (tipo === 'LUMINARIA' && pestana !== 'luminarias') {
+      setPestana('luminarias')
+      setAviso('Pasaste a la pestaña Luminarias: tocá el mapa donde está la luminaria.')
+    }
   }
 
   function agregarVerticeNuevo(punto) {
@@ -219,6 +231,9 @@ function PaginaMapa({ params, onNavegar }) {
   const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
   const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
   const luminariasEnMapa = useMemo(() => filtrarPorEstado(luminarias, ocultos), [luminarias, ocultos])
+  // Pestaña Calles: igual que Luminarias, con todas las OT abiertas (los filtros de "Todo el pueblo" no cuentan).
+  const calles = useMemo(() => callesDe(resumenesCompletos), [resumenesCompletos])
+  const totalesCalles = useMemo(() => resumirCalles(calles), [calles])
 
   const ordenados = ordenarResumenes(enMapa)
   const enLista = soloVisibles && zonaVisible
@@ -256,21 +271,24 @@ function PaginaMapa({ params, onNavegar }) {
     requestAnimationFrame(() => document.getElementById('titulo-panel-lugar')?.focus())
   }
 
-  // Cambiar de pestaña. Si el lugar elegido no es una luminaria, se cierra su ficha (no está en el mapa de luminarias).
+  // Cambiar de pestaña. Si el lugar elegido no está en el mapa de la pestaña nueva (por ejemplo, una plaza
+  // al pasar a Luminarias o a Calles), se cierra su ficha.
   function cambiarPestana(nueva) {
     if (nueva === pestana) return
     setPestana(nueva)
-    if (nueva === 'luminarias' && resumenActivo && !esLuminaria(resumenActivo.lugar)) {
+    const lugar = resumenActivo?.lugar
+    const noEsta = (nueva === 'luminarias' && !esLuminaria(lugar)) || (nueva === 'calles' && !esCalle(lugar))
+    if (lugar && noEsta) {
       setLugarActivoId(null)
       setFichaAbierta(false)
     }
   }
 
   const verHistoria = (lugarId) => onNavegar('ficha', { lugarId })
-  // Desde la pestaña Luminarias la OT arranca como "Alumbrado" y "Volver al mapa" vuelve a esta pestaña.
+  // Desde la pestaña Luminarias la OT arranca como "Alumbrado". "Volver al mapa" vuelve a la misma pestaña.
   const nuevaOrden = (lugarId) => onNavegar('ordenes', pestana === 'luminarias'
     ? { lugarId, desde: 'mapa', tipo: 'ALUMBRADO', pestana: 'luminarias' }
-    : { lugarId, desde: 'mapa' })
+    : pestana === 'calles' ? { lugarId, desde: 'mapa', pestana: 'calles' } : { lugarId, desde: 'mapa' })
 
   // Se cambió el estado de una luminaria desde su ficha: se reemplaza el lugar y el mapa se redibuja.
   function alActualizarLugar(actualizado) {
@@ -309,11 +327,14 @@ function PaginaMapa({ params, onNavegar }) {
   if (angosta) clase += ` pantalla-mapa-angosta vista-${vistaAngosta}${mostrarTarjeta || agregando ? ' con-tarjeta' : ''}${agregando ? ' agregando-lugar' : ''}`
   else if (resumenActivo || agregando) clase += ' pantalla-mapa-con-ficha'
   if (pestana === 'luminarias') clase += ' pantalla-mapa-luminarias'
+  if (pestana !== 'todo') clase += ' pantalla-mapa-sin-botoncitos' // celular: los botoncitos de filtro son solo de "Todo el pueblo"
+  const TITULOS_MAPA = { todo: 'Mapa de lugares', luminarias: 'Mapa de luminarias', calles: 'Mapa de calles' }
+  const TEXTO_AGREGAR = { todo: 'Agregar lugar', luminarias: 'Agregar luminaria', calles: 'Agregar calle' }
 
   return (
     <div className={clase}>
       {/* En el celular, mientras se ve el mapa, la lista (con su título) está escondida: el título queda para lectores */}
-      {angosta && vistaAngosta === 'mapa' && <h1 className="solo-lectores">{pestana === 'luminarias' ? 'Mapa de luminarias' : 'Mapa de lugares'}</h1>}
+      {angosta && vistaAngosta === 'mapa' && <h1 className="solo-lectores">{TITULOS_MAPA[pestana]}</h1>}
       {cargando || error ? (
         <section className="columna-lugares" aria-labelledby="titulo-lugares" aria-busy={cargando}>
           <div className="lugares-encabezado">
@@ -337,6 +358,8 @@ function PaginaMapa({ params, onNavegar }) {
           zonaElegida={zonaElegida?.clave ?? null}
           onAgregarAFuturo={puedeCargarLuminariaAFuturo(usuario) ? () => empezarAgregar(true) : undefined}
           onElegirZona={(zona) => { setZonaElegida(zona); if (angosta && zona) setVistaAngosta('mapa') }} />
+      ) : pestana === 'calles' ? (
+        <PanelCalles calles={calles} totales={totalesCalles} modoColor={modoColor} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} />
       ) : (
         <ListaLugares resumenes={enLista} total={resumenes.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
@@ -361,12 +384,12 @@ function PaginaMapa({ params, onNavegar }) {
       )}
 
       <section className="columna-mapa" aria-label="Mapa de Estación General Paz">
-        <MapaLugares resumenes={enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
+        <MapaLugares resumenes={pestana === 'calles' ? calles : enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} tipoNuevo={tipoNuevo} puntosNuevo={puntosNuevo} onElegirPunto={agregarVerticeNuevo}
           hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche} />
 
-        {/* Pestañas arriba del mapa: todos los lugares o solo las luminarias */}
+        {/* Pestañas arriba del mapa: todos los lugares, solo las luminarias o solo las calles */}
         {!cargando && !error && (
           <div className="pestanas-mapa" role="tablist" aria-label="Qué mostrar en el mapa">
             <button type="button" role="tab" aria-selected={pestana === 'todo'}
@@ -376,6 +399,10 @@ function PaginaMapa({ params, onNavegar }) {
             <button type="button" role="tab" aria-selected={pestana === 'luminarias'}
               className={pestana === 'luminarias' ? 'pestana-mapa pestana-mapa-activa' : 'pestana-mapa'} onClick={() => cambiarPestana('luminarias')}>
               <Icono nombre="luminaria" />Luminarias
+            </button>
+            <button type="button" role="tab" aria-selected={pestana === 'calles'}
+              className={pestana === 'calles' ? 'pestana-mapa pestana-mapa-activa' : 'pestana-mapa'} onClick={() => cambiarPestana('calles')}>
+              <Icono nombre="calle" />Calles
             </button>
           </div>
         )}
@@ -390,8 +417,8 @@ function PaginaMapa({ params, onNavegar }) {
 
         {/* Encargado y mesa de entradas: agregar un lugar tocando el mapa (sin escribir coordenadas) */}
         {puedeAgregar && !agregando && !cargando && !error && (
-          <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={empezarAgregar}>
-            <Icono nombre="agregar" />{pestana === 'luminarias' ? 'Agregar luminaria' : 'Agregar lugar'}
+          <button type="button" className="boton boton-primario boton-agregar-lugar" onClick={() => empezarAgregar()}>
+            <Icono nombre="agregar" />{TEXTO_AGREGAR[pestana]}
           </button>
         )}
 
@@ -464,7 +491,8 @@ function PaginaMapa({ params, onNavegar }) {
                 Sin trabajos
               </li>
             </ul>
-            {modoColor === 'prioridad' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
+            {/* En las calles el color ya lo dice todo (las líneas con trabajos son más anchas, pero no cambian con la prioridad) */}
+            {modoColor === 'prioridad' && pestana === 'todo' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
           </div>
         )}
       </section>
@@ -478,12 +506,12 @@ function PaginaMapa({ params, onNavegar }) {
       {/* Agregar un lugar: el formulario ocupa el lugar de la ficha (compu) o sube desde abajo (celular) */}
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
-          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un espacio verde o una calle */}
+          {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un lugar, una calle o una luminaria */}
           <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} tipo={tipoNuevo} puntos={puntosNuevo}
             geometria={geometriaNueva()} onCambiarTipo={alCambiarTipoNuevo}
             onDeshacerPunto={() => setPuntosNuevo((anteriores) => anteriores.slice(0, -1))}
             onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
-            tipos={tiposDeCategoria(pestana === 'luminarias' ? 'luminarias' : 'infraestructura')}
+            tipos={tiposParaAgregar(pestana)}
             permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>
       )}
