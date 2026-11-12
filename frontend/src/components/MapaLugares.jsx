@@ -34,6 +34,40 @@ function crearEtiquetaLuminaria(resumen, estado) {
   return texto
 }
 
+// Calles: se dibujan como en un mapa de rutas, con un borde blanco debajo y la línea de color encima.
+// Así se distinguen de los bordes de los espacios verdes y se ven sobre cualquier fondo.
+// El borde también agranda la zona que se puede tocar con el dedo.
+const ANCHO_CALLE = { conTrabajos: 7, sinTrabajos: 4 }
+const BORDE_CALLE = 4
+
+function esLinea(geometria) {
+  return geometria?.type === 'LineString' || geometria?.type === 'MultiLineString'
+}
+
+// Una capa por lugar. Las calles son un grupo de dos líneas (borde y color); el resto, una capa GeoJSON.
+function crearCapaLugar(resumen, modoColor) {
+  const color = colorDelResumen(resumen, modoColor)
+  const sinTrabajos = !resumen.principal
+  const geometria = resumen.lugar.ubicacion
+  if (esLinea(geometria)) {
+    // MultiLineString: una calle cortada en varios tramos (así vienen algunas de OpenStreetMap)
+    const posiciones = L.GeoJSON.coordsToLatLngs(geometria.coordinates, geometria.type === 'MultiLineString' ? 1 : 0)
+    const ancho = sinTrabajos ? ANCHO_CALLE.sinTrabajos : ANCHO_CALLE.conTrabajos
+    return L.featureGroup([
+      L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }),
+      L.polyline(posiciones, { color, weight: ancho, opacity: sinTrabajos ? 0.8 : 1, lineCap: 'round', lineJoin: 'round' }),
+    ])
+  }
+  return L.geoJSON({ type: 'Feature', properties: {}, geometry: geometria }, {
+    // Puntos (luminarias): círculo. El tamaño crece con la prioridad.
+    pointToLayer: (_, posicion) => L.circleMarker(posicion, {
+      radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, fillColor: color, fillOpacity: sinTrabajos ? 0.7 : 1,
+    }),
+    // Polígonos (lugares con área: plazas, espacios verdes)
+    style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
+  })
+}
+
 // Props:
 // - resumenes: lo que se dibuja, un elemento por lugar (ver agruparPorLugar en utils/mapa.js)
 // - modoColor: 'prioridad' o 'estado'
@@ -144,16 +178,7 @@ function MapaLugares({
     }
 
     for (const resumen of resumenes) {
-      const color = colorDelResumen(resumen, modoColor)
-      const sinTrabajos = !resumen.principal
-      const capa = L.geoJSON({ type: 'Feature', properties: {}, geometry: resumen.lugar.ubicacion }, {
-        // Puntos (luminarias): círculo. El tamaño crece con la prioridad.
-        pointToLayer: (_, posicion) => L.circleMarker(posicion, {
-          radius: radioDelResumen(resumen), color: '#FFFFFF', weight: 2, fillColor: color, fillOpacity: sinTrabajos ? 0.7 : 1,
-        }),
-        // Líneas (calles) y polígonos (espacios verdes)
-        style: () => ({ color, weight: sinTrabajos ? 3 : 6, opacity: sinTrabajos ? 0.7 : 0.95, fillColor: color, fillOpacity: 0.35 }),
-      })
+      const capa = crearCapaLugar(resumen, modoColor)
       capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
       // Mientras se agrega un lugar, tocar uno existente no abre su ficha: el toque sigue al mapa y pone el pin ahí.
       capa.on('click', () => {
