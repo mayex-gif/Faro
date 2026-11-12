@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { colorDelResumen, radioDelResumen } from '../utils/mapa'
+import { COLOR_SIN_TRABAJOS, colorDelResumen, radioDelResumen } from '../utils/mapa'
 import { contarTrabajos } from '../utils/listaLugares'
 import { datosDelEstado, puntoDe } from '../utils/luminarias'
 import { ANCLA_POSTE, TAMANO_POSTE, htmlPoste } from '../utils/poste'
@@ -44,9 +44,20 @@ function esLinea(geometria) {
   return geometria?.type === 'LineString' || geometria?.type === 'MultiLineString'
 }
 
-// Una capa por lugar. Las calles son un grupo de dos líneas (borde y color); el resto, una capa GeoJSON.
+// Una calle con borde blanco: dos líneas (borde y color)
+function lineaConBorde(posiciones, color, ancho, opacidad) {
+  return [
+    L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95 * opacidad, lineCap: 'round', lineJoin: 'round' }),
+    L.polyline(posiciones, { color, weight: ancho, opacity: opacidad, lineCap: 'round', lineJoin: 'round' }),
+  ]
+}
+
+// Una capa por lugar. Las calles son un grupo de líneas (borde y color); el resto, una capa GeoJSON.
 // atenuada: mientras se marca el tramo de otra calle, el resto del mapa queda clarito (no distrae).
-function crearCapaLugar(resumen, modoColor, atenuada = false) {
+// Calles con trabajos: se dibuja el TRAMO de cada OT abierta (resumen.tramos, ver utils/calles.js → conTramos),
+// cada uno con el color de su OT y el más urgente arriba. conCalleDeFondo (pestaña Calles): debajo va la calle
+// entera en gris; en "Todo el pueblo" solo se ven los tramos.
+function crearCapaLugar(resumen, modoColor, atenuada = false, conCalleDeFondo = false) {
   const color = colorDelResumen(resumen, modoColor)
   const factor = atenuada ? 0.3 : 1
   const sinTrabajos = !resumen.principal
@@ -54,6 +65,14 @@ function crearCapaLugar(resumen, modoColor, atenuada = false) {
   if (esLinea(geometria)) {
     // MultiLineString: una calle cortada en varios tramos (así vienen algunas de OpenStreetMap)
     const posiciones = L.GeoJSON.coordsToLatLngs(geometria.coordinates, geometria.type === 'MultiLineString' ? 1 : 0)
+    if (resumen.tramos?.length) {
+      const capas = conCalleDeFondo ? lineaConBorde(posiciones, COLOR_SIN_TRABAJOS, ANCHO_CALLE.sinTrabajos, 0.8 * factor) : []
+      for (const tramo of [...resumen.tramos].reverse()) {
+        const posicionesTramo = tramo.geometria ? L.GeoJSON.coordsToLatLngs(tramo.geometria.coordinates, 0) : posiciones
+        capas.push(...lineaConBorde(posicionesTramo, colorDelResumen({ principal: tramo.orden }, modoColor), ANCHO_CALLE.conTrabajos, factor))
+      }
+      return L.featureGroup(capas)
+    }
     const ancho = sinTrabajos ? ANCHO_CALLE.sinTrabajos : ANCHO_CALLE.conTrabajos
     return L.featureGroup([
       L.polyline(posiciones, { color: '#FFFFFF', weight: ancho + BORDE_CALLE, opacity: 0.95 * factor, lineCap: 'round', lineJoin: 'round' }),
@@ -244,7 +263,7 @@ function MapaLugares({
     }
 
     for (const resumen of resumenes) {
-      const capa = crearCapaLugar(resumen, modoColor, calleDelTramo != null && resumen.lugar.id !== calleDelTramo.id)
+      const capa = crearCapaLugar(resumen, modoColor, calleDelTramo != null && resumen.lugar.id !== calleDelTramo.id, pestana === 'calles')
       capa.bindTooltip(crearEtiqueta(resumen), { direction: 'top', offset: [0, -8], className: 'etiqueta-lugar' })
       // Mientras se agrega un lugar (o se marca un tramo), tocar uno existente no abre su ficha:
       // el toque sigue al mapa y pone el pin (o el inicio / fin del tramo) ahí.

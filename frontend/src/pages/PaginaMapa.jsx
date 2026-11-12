@@ -25,7 +25,7 @@ import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
 import { tiposParaAgregar } from '../utils/lugares'
-import { callesDe, esCalle, resumirCalles } from '../utils/calles'
+import { callesDe, conTramos, esCalle, resumirCalles, sinCallesVacias } from '../utils/calles'
 import { crucesDe, cortar, puntoEn, tocarTramo } from '../utils/tramos'
 import { useSesion } from '../context/useSesion'
 import { puedeAgregarLugar, puedeCargarLuminariaAFuturo, puedeVer } from '../utils/permisos'
@@ -232,10 +232,19 @@ function PaginaMapa({ params, onNavegar }) {
   // Solo se dibujan los lugares que están en el pueblo; los mal ubicados se avisan en la lista.
   const { dentro: lugaresConUbicacion, fuera: fueraDeZona } = useMemo(() => separarPorZona(lugares), [lugares])
   const limites = useMemo(() => limitesDe(lugaresConUbicacion), [lugaresConUbicacion])
-  const resumenes = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), [lugaresConUbicacion, abiertasFiltradas])
-  const enMapa = useMemo(() => filtrarLugares(resumenes, filtrosLugares), [resumenes, filtrosLugares])
+  // Todas las calles cargadas: con ellas se calculan las esquinas (tramos de las OT y "entre calles")
+  const todasLasCalles = useMemo(() => lugares.filter(esCalle), [lugares])
+  // Las calles con trabajos llevan el tramo de cada OT abierta (utils/calles.js → conTramos)
+  const resumenes = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), todasLasCalles),
+    [lugaresConUbicacion, abiertasFiltradas, todasLasCalles])
+  // "Todo el pueblo" no muestra las calles sin trabajos (quedan en la pestaña Calles), salvo la que está elegida
+  const lugarActivo = lugares.find((lugar) => lugar.id === lugarActivoId)
+  const calleVaciaElegida = esCalle(lugarActivo) ? lugarActivoId : null
+  const enTodo = useMemo(() => sinCallesVacias(resumenes, calleVaciaElegida), [resumenes, calleVaciaElegida])
+  const enMapa = useMemo(() => filtrarLugares(enTodo, filtrosLugares), [enTodo, filtrosLugares])
   // La ficha muestra todos los trabajos abiertos del lugar, aunque "Más filtros" esconda algunos.
-  const resumenesCompletos = useMemo(() => agruparPorLugar(lugaresConUbicacion, abiertas), [lugaresConUbicacion, abiertas])
+  const resumenesCompletos = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertas), todasLasCalles),
+    [lugaresConUbicacion, abiertas, todasLasCalles])
   // Pestaña Luminarias: el estado sale de TODAS las OT abiertas (los filtros de la otra pestaña no cuentan).
   const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
   const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
@@ -251,7 +260,6 @@ function PaginaMapa({ params, onNavegar }) {
   const resumenActivo = resumenesCompletos.find((resumen) => resumen.lugar.id === lugarActivoId) ?? null
   // Marcar el tramo: la calle, sus esquinas (con TODAS las calles cargadas, aunque haya filtros) y lo que dibuja el mapa.
   const calleDelTramo = eligiendoTramo ? lugares.find((lugar) => lugar.id === eligiendoTramo.calleId) ?? null : null
-  const todasLasCalles = useMemo(() => lugares.filter(esCalle), [lugares])
   const crucesDelTramo = useMemo(() => (calleDelTramo ? crucesDe(calleDelTramo, todasLasCalles) : []), [calleDelTramo, todasLasCalles])
   const toquesDelTramo = eligiendoTramo?.toques
   const modoDelTramo = eligiendoTramo?.modo
@@ -421,7 +429,7 @@ function PaginaMapa({ params, onNavegar }) {
       ) : pestana === 'calles' ? (
         <PanelCalles calles={calles} totales={totalesCalles} modoColor={modoColor} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} />
       ) : (
-        <ListaLugares resumenes={enLista} total={resumenes.length}
+        <ListaLugares resumenes={enLista} total={enTodo.length}
           filtros={filtrosLugares} onCambiarFiltros={setFiltrosLugares}
           lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} mensajeVacio={mensajeVacio}
           fueraDeZona={fueraDeZona} onRevisarFuera={puedeRevisar ? () => onNavegar('infraestructura') : undefined}>

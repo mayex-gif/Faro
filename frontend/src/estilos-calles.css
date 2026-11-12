@@ -64,3 +64,9 @@
 .resumen-tramo p { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
 .resumen-tramo p .icono { flex: none; width: 20px; height: 20px; margin-top: 2px; color: #A44013; }
 .resumen-tramo .boton { flex: none; }
+
+/* Ficha y tarjeta de una calle: dónde es cada trabajo (el tramo) */
+.tarjeta-trabajo-tramo,
+.tarjeta-lugar-tramo { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: #A44013; font-size: 0.875rem; font-weight: 650; }
+.tarjeta-trabajo-tramo .icono,
+.tarjeta-lugar-tramo .icono { flex: none; width: 16px; height: 16px; margin-top: 2px; }
