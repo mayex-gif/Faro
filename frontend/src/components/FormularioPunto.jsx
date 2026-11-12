@@ -16,6 +16,11 @@ function coordenadasIniciales(tipo, ubicacion) {
   if (ubicacion?.type === 'LineString') {
     return ubicacion.coordinates.map(([longitud, latitud]) => ({ longitud: String(longitud), latitud: String(latitud) }))
   }
+  // Una calle en varios tramos: se editan sus puntos uno detrás de otro y al guardar queda como una sola línea
+  // (si no, el formulario arrancaría vacío y se perdería el recorrido)
+  if (ubicacion?.type === 'MultiLineString') {
+    return ubicacion.coordinates.flat(1).map(([longitud, latitud]) => ({ longitud: String(longitud), latitud: String(latitud) }))
+  }
   if (ubicacion?.type === 'Polygon') {
     const anillo = ubicacion.coordinates[0] ?? []
     const cerrado = anillo.length > 1 && anillo[0][0] === anillo.at(-1)[0] && anillo[0][1] === anillo.at(-1)[1]

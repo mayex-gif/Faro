@@ -1,28 +1,10 @@
 import Icono from './Icono'
-import { claseEstadoLugar, textoEstadoLugar } from '../utils/lugares'
+import { claseEstadoLugar, describirUbicacion, textoEstadoLugar } from '../utils/lugares'
 
 const NOMBRES_TIPO = {
   ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
-}
-
-function describirUbicacion(ubicacion) {
-  if (!ubicacion) return 'Sin ubicación'
-  switch (ubicacion.type) {
-    case 'Point': {
-      // Agregamos seguridad por si el backend manda mal las coordenadas
-      if (!ubicacion.coordinates || ubicacion.coordinates.length < 2) return 'Ubicación inválida'
-      const [longitud, latitud] = ubicacion.coordinates
-      return `${latitud.toFixed(4)}, ${longitud.toFixed(4)}`
-    }
-    case 'LineString':
-      return `Línea de ${ubicacion.coordinates?.length || 0} puntos`
-    case 'Polygon':
-      return 'Polígono'
-    default:
-      return ubicacion.type
-  }
 }
 
 // 1. Agregamos mensajeVacio a las props recibidas

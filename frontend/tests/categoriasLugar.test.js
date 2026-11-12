@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  CATEGORIAS_LUGAR, TIPOS_LUGAR, claseEstadoLugar, lugaresDeCategoria, textoEstadoLugar, tiposDeCategoria, tiposParaAgregar,
+  CATEGORIAS_LUGAR, TIPOS_LUGAR, claseEstadoLugar, describirUbicacion, lugaresDeCategoria, textoEstadoLugar, tiposDeCategoria, tiposParaAgregar,
 } from '../src/utils/lugares.js'
 
 const lugares = [
@@ -35,4 +35,10 @@ test('"Agregar" ofrece Lugar, Calle y Luminaria en "Todo el pueblo", Luminaria y
   assert.deepEqual(tiposParaAgregar('luminarias'), ['LUMINARIA'])
   assert.deepEqual(tiposParaAgregar('calles'), ['CALLE'])
   assert.deepEqual(tiposParaAgregar('otra'), tiposParaAgregar('todo'))
+})
+
+test('describirUbicacion dice cuántos tramos tiene una calle cortada (MultiLineString)', () => {
+  assert.equal(describirUbicacion({ type: 'MultiLineString', coordinates: [[[0, 0], [1, 1]], [[2, 2], [3, 3]], [[4, 4], [5, 5]]] }), 'Línea de 3 tramos')
+  assert.equal(describirUbicacion({ type: 'MultiLineString', coordinates: [[[0, 0], [1, 1]]] }), 'Línea de 1 tramo')
+  assert.equal(describirUbicacion({ type: 'LineString', coordinates: [[0, 0], [1, 1]] }), 'Línea de 2 puntos')
 })

@@ -78,6 +78,11 @@ export function describirUbicacion(ubicacion) {
     }
     case 'LineString':
       return `Línea de ${ubicacion.coordinates?.length || 0} puntos`
+    // Una calle cortada en varios tramos (así vienen algunas de OpenStreetMap, por ejemplo Salta)
+    case 'MultiLineString': {
+      const tramos = ubicacion.coordinates?.length || 0
+      return tramos === 1 ? 'Línea de 1 tramo' : `Línea de ${tramos} tramos`
+    }
     case 'Polygon':
       return 'Polígono'
     default:
