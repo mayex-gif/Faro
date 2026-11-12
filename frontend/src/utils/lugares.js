@@ -9,19 +9,17 @@ export const TIPOS_LUGAR = {
   LUMINARIA: 'Luminaria',
 }
 
-// Categorías de lugares: las luminarias tienen su propia sección (Más → Luminarias) y su pestaña en el mapa.
-// Infraestructura queda para los lugares (plazas, espacios verdes) y las calles. Los tipos van en el orden en que se ofrecen.
+// Las calles y las luminarias tienen pestañas propias en el mapa. Infraestructura registra solo lugares.
 export const CATEGORIAS_LUGAR = {
-  infraestructura: ['ESPACIO_VERDE', 'CALLE'],
+  infraestructura: ['ESPACIO_VERDE'],
   luminarias: ['LUMINARIA'],
 }
 
-// Los tipos que ofrece "Agregar" en cada pestaña del mapa.
-// En "Todo el pueblo" también se puede elegir Luminaria: al elegirla, el mapa pasa a la pestaña Luminarias.
+// El selector de "Agregar" siempre permite elegir los tres tipos; la página cambia a la pestaña correspondiente.
 export const TIPOS_PARA_AGREGAR = {
   todo: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
-  luminarias: ['LUMINARIA'],
-  calles: ['CALLE'],
+  luminarias: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
+  calles: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
 }
 
 export function tiposParaAgregar(pestana) {

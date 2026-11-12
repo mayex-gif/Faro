@@ -1,6 +1,6 @@
 // La lista de lugares de la pantalla Mapa: los botoncitos para filtrar y los textos de cada fila.
 // Son funciones puras: reciben los resúmenes de utils/mapa.js (agruparPorLugar) y no tocan la pantalla.
-import { etiquetaTipoLugar } from './lugares.js'
+import { etiquetaTipoLugar, textoEstadoLugar } from './lugares.js'
 
 // Los botoncitos de tipo de lugar. Si no hay ninguno prendido, se ven todos los tipos.
 export const FILTROS_TIPO = [
@@ -44,7 +44,8 @@ export function textoTrabajos(ordenes) {
 // Segunda línea de cada fila: "Lugar · 2 trabajos abiertos", "Luminaria · Fuera de servicio · Sin trabajos abiertos"
 export function subtituloLugar(resumen) {
   const partes = [etiquetaTipoLugar(resumen.lugar.tipo)]
-  if (!resumen.lugar.estadoOperativo) partes.push('Fuera de servicio')
+  const estado = textoEstadoLugar(resumen.lugar)
+  if (estado !== 'Funciona') partes.push(estado)
   partes.push(contarTrabajos(resumen.ordenes.length))
   return partes.join(' · ')
 }

@@ -11,9 +11,9 @@ const lugares = [
   { id: 4, tipo: 'LUMINARIA', estadoOperativo: false, instalada: false },
 ]
 
-test('Infraestructura tiene espacios verdes y calles; las luminarias van aparte', () => {
-  assert.deepEqual(CATEGORIAS_LUGAR.infraestructura, ['ESPACIO_VERDE', 'CALLE'])
-  assert.deepEqual(lugaresDeCategoria(lugares, 'infraestructura').map((l) => l.id), [1, 3])
+test('Infraestructura muestra lugares; Calles y Luminarias se gestionan en sus pestañas del mapa', () => {
+  assert.deepEqual(CATEGORIAS_LUGAR.infraestructura, ['ESPACIO_VERDE'])
+  assert.deepEqual(lugaresDeCategoria(lugares, 'infraestructura').map((l) => l.id), [1])
   assert.deepEqual(lugaresDeCategoria(lugares, 'luminarias').map((l) => l.id), [2, 4])
 })
 
@@ -30,10 +30,10 @@ test('el estado dice "A futuro" para las luminarias que no se instalaron', () =>
   assert.equal(claseEstadoLugar(lugares[1]), 'estado estado-falla')
 })
 
-test('"Agregar" ofrece Lugar, Calle y Luminaria en "Todo el pueblo", Luminaria y Calles solo lo suyo', () => {
+test('"Agregar" ofrece Lugar, Calle y Luminaria desde todas las pestañas del mapa', () => {
   assert.deepEqual(tiposParaAgregar('todo').map((tipo) => TIPOS_LUGAR[tipo]), ['Lugar', 'Calle', 'Luminaria'])
-  assert.deepEqual(tiposParaAgregar('luminarias'), ['LUMINARIA'])
-  assert.deepEqual(tiposParaAgregar('calles'), ['CALLE'])
+  assert.deepEqual(tiposParaAgregar('luminarias'), ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'])
+  assert.deepEqual(tiposParaAgregar('calles'), ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'])
   assert.deepEqual(tiposParaAgregar('otra'), tiposParaAgregar('todo'))
 })
 

@@ -10,6 +10,7 @@
 .panel-comentarios .ayuda-campo { margin: 0; color: var(--texto-secundario); font-size: 0.8125rem; }
 .panel-comentarios .comentarios-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .panel-comentarios .comentarios-acciones .boton { min-height: 48px; flex: 1 1 120px; padding-inline: 10px; white-space: nowrap; }
+.panel-comentarios .comentarios-acciones .indicador-carga { width: 16px; height: 16px; border-width: 2px; border-color: rgb(255 255 255 / 45%); border-top-color: currentColor; }
 /* En una caja angosta (la tarjeta del celular), "Publicar" va solo abajo, con todo el ancho */
 @container (max-width: 420px) { .panel-comentarios .comentarios-acciones .boton-primario { flex-basis: 100%; } }
 .panel-comentarios .comentarios-estado { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--texto-secundario); }

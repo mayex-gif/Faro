@@ -17,7 +17,7 @@ import usePantallaAngosta from '../hooks/usePantallaAngosta'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes } from '../utils/filtrosOrdenes'
 import { FILTROS_LUGARES_VACIOS, filtrarLugares } from '../utils/listaLugares'
 import {
-  COLORES_PRIORIDAD, COLOR_SIN_TRABAJOS, agruparPorLugar, geometriaEnLimites,
+  COLORES_PRIORIDAD, COLOR_SIN_TRABAJOS, colorEstadoEnMapa, agruparPorLugar, geometriaEnLimites,
   limitesDe, ordenarResumenes, ordenesAbiertas,
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
@@ -163,7 +163,7 @@ function PaginaMapa({ params, onNavegar }) {
     setLugarActivoId(null) // se cierra la ficha que estuviera abierta: en su lugar va el formulario
     setFichaAbierta(false)
     setVistaAngosta('mapa')
-    setTipoNuevo(aFuturo ? 'LUMINARIA' : tiposParaAgregar(pestana)[0])
+    setTipoNuevo(aFuturo ? 'LUMINARIA' : pestana === 'luminarias' ? 'LUMINARIA' : pestana === 'calles' ? 'CALLE' : 'ESPACIO_VERDE')
     setPuntosNuevo([])
     setAviso('')
     setAgregando(true)
@@ -184,14 +184,20 @@ function PaginaMapa({ params, onNavegar }) {
     setAviso(`Se registró "${creado.nombre}".`)
   }
 
-  // "Agregar lugar" en "Todo el pueblo": si se elige Luminaria, se sigue agregando en la pestaña Luminarias
-  // (ahí se ven los postes y su estado). El formulario se vuelve a armar como "Luminaria nueva".
+  // Desde "Todo el pueblo", cada tipo se termina de registrar en su pestaña del mapa.
   function alCambiarTipoNuevo(tipo) {
     setTipoNuevo(tipo)
     setPuntosNuevo([])
+    if (tipo !== 'LUMINARIA') setAgregandoAFuturo(false)
     if (tipo === 'LUMINARIA' && pestana !== 'luminarias') {
       setPestana('luminarias')
       setAviso('Pasaste a la pestaña Luminarias: tocá el mapa donde está la luminaria.')
+    } else if (tipo === 'CALLE' && pestana !== 'calles') {
+      setPestana('calles')
+      setAviso('Pasaste a la pestaña Calles: marcá el recorrido en el mapa.')
+    } else if (tipo === 'ESPACIO_VERDE' && pestana !== 'todo') {
+      setPestana('todo')
+      setAviso('Pasaste a la pestaña Todo el pueblo: marcá el contorno del lugar.')
     }
   }
 
@@ -482,7 +488,7 @@ function PaginaMapa({ params, onNavegar }) {
                 ))
                 : estadosAbiertos.map((estado) => (
                   <li key={estado.id}>
-                    <span className="leyenda-color" style={{ background: estado.color }} aria-hidden="true" />
+                    <span className="leyenda-color" style={{ background: colorEstadoEnMapa(estado) }} aria-hidden="true" />
                     {estado.nombre}
                   </li>
                 ))}
@@ -491,8 +497,12 @@ function PaginaMapa({ params, onNavegar }) {
                 Sin trabajos
               </li>
             </ul>
-            {/* En las calles el color ya lo dice todo (las líneas con trabajos son más anchas, pero no cambian con la prioridad) */}
-            {modoColor === 'prioridad' && pestana === 'todo' && <p className="leyenda-ayuda">Cuanto más urgente, más grande es la marca.</p>}
+            {/* El texto explica cómo leer los colores en Todo el pueblo y en Calles. */}
+            {(pestana === 'todo' || pestana === 'calles') && <p className="leyenda-ayuda">
+              {modoColor === 'prioridad'
+                ? pestana === 'calles' ? 'El color indica la prioridad de la OT más urgente de cada calle.' : 'Cuanto más urgente, más grande es la marca.'
+                : 'El color indica el estado actual del trabajo abierto.'}
+            </p>}
           </div>
         )}
       </section>
@@ -507,11 +517,11 @@ function PaginaMapa({ params, onNavegar }) {
       {agregando && (
         <div ref={hojaLugarNuevo} className={angosta ? 'hoja-lugar-nuevo' : 'contenedor-lugar-nuevo'}>
           {/* Pestaña Luminarias: se registra una luminaria; "Todo el pueblo": un lugar, una calle o una luminaria */}
-          <FormularioLugarMapa key={`${pestana}-${agregandoAFuturo}`} tipo={tipoNuevo} puntos={puntosNuevo}
+          <FormularioLugarMapa key={`${pestana}-${tipoNuevo}-${agregandoAFuturo}`} tipo={tipoNuevo} puntos={puntosNuevo}
             geometria={geometriaNueva()} onCambiarTipo={alCambiarTipoNuevo}
             onDeshacerPunto={() => setPuntosNuevo((anteriores) => anteriores.slice(0, -1))}
             onGuardado={alGuardarLugar} onCancelar={cancelarAgregar}
-            tipos={tiposParaAgregar(pestana)}
+            tipos={tiposParaAgregar('todo')}
             permitirAFuturo={puedeCargarLuminariaAFuturo(usuario)} aFuturo={agregandoAFuturo} />
         </div>
       )}

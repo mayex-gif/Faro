@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { ESTADOS_LUMINARIA, luminariaEnZona, luminariasDelEstado, textoDeZona, zonasDeLuminarias } from '../utils/luminarias'
 import { htmlPoste } from '../utils/poste'
+import { subtituloLugar } from '../utils/listaLugares'
 import Icono from './Icono'
 
 // El poste chiquito de la leyenda y de los conteos. htmlPoste es HTML fijo (no lleva datos de usuarios).
@@ -41,6 +42,7 @@ function ListaDelEstado({ id, titulo, ayuda, items, vacio, lugarActivoId, onEleg
                   <MuestraPoste estado={estado} />
                   <span className="fila-lugar-texto">
                     <strong>{lugar.nombre}</strong>
+                    <span>{subtituloLugar(resumen)}</span>
                     {conOrden && <span>{textoDeLaOrden(resumen)}</span>}
                   </span>
                 </button>

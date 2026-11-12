@@ -9,14 +9,14 @@ import { lugaresDeCategoria, tiposDeCategoria } from '../utils/lugares'
 import '../estilos-luminarias.css'
 
 // Textos de cada categoría. La misma pantalla sirve para las dos:
-// - "infraestructura" (Más → Infraestructura): espacios verdes y calles
+// - "infraestructura" (Más → Infraestructura): plazas y otros lugares
 // - "luminarias" (Más → Luminarias): el alumbrado público, aparte (pedido del municipio)
 const TEXTOS = {
   infraestructura: {
     sobreTitulo: 'REGISTRO DE LUGARES', titulo: 'Puntos de infraestructura',
-    bajada: 'Registrá y mantené actualizada la información de los espacios verdes y las calles. Las luminarias tienen su propia sección: Más → Luminarias.',
+    bajada: 'Registrá y mantené actualizada la información de las plazas y otros lugares. Las calles y luminarias tienen sus propias pestañas en el mapa.',
     listado: 'Lugares registrados', ayudaListado: 'Consultá los datos y el estado operativo de cada lugar.',
-    contador: 'puntos', vacio: 'Todavía no hay espacios verdes ni calles cargados.', cargando: 'Cargando lugares…',
+    contador: 'lugares', vacio: 'Todavía no hay lugares cargados.', cargando: 'Cargando lugares…',
   },
   luminarias: {
     sobreTitulo: 'ALUMBRADO PÚBLICO', titulo: 'Luminarias',
@@ -38,7 +38,7 @@ function PaginaInfraestructura({ onNavegar, categoria = 'infraestructura' }) {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS)
 
   // No es un estado: se calcula de nuevo cada vez que cambian los puntos o los filtros
-  // Solo los lugares de esta pantalla (Infraestructura: espacios verdes y calles; Luminarias: luminarias)
+  // Solo los registros de esta pantalla (Infraestructura: lugares; Luminarias: luminarias)
   const deLaCategoria = lugaresDeCategoria(puntos, categoria)
   const puntosFiltrados = filtrarPuntos(deLaCategoria, filtros)
   const esLuminarias = categoria === 'luminarias'
