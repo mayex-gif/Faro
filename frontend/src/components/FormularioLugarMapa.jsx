@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { crearPunto } from '../api/infraestructura'
 import Icono from './Icono'
 import { TIPOS_LUGAR, estadoParaGuardar } from '../utils/lugares'
@@ -6,11 +6,12 @@ import { puntoEnLaZona, redondearCoordenada } from '../utils/zona'
 
 function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshacerPunto, onGuardado, onCancelar,
   tipos, permitirAFuturo = false, aFuturo = false }) {
+  // El tipo lo maneja la página (prop "tipo"), porque también cambia cómo se dibuja en el mapa.
   const [datos, setDatos] = useState(() => ({
-    nombre: '', tipo, datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo,
+    nombre: '', datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo,
   }))
   const soloLuminarias = tipos.length === 1 && tipos[0] === 'LUMINARIA'
-  const sinInstalar = datos.tipo === 'LUMINARIA' && !datos.instalada
+  const sinInstalar = tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const campoNombre = useRef(null)
@@ -22,19 +23,13 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
       ? 'Tocá varios puntos siguiendo el recorrido de la calle.'
       : 'Tocá al menos tres puntos para marcar el contorno del área.'
 
-  useEffect(() => {
-    setDatos((anterior) => ({ ...anterior, tipo }))
-  }, [tipo])
-
   function cambiar(evento) {
     const { name, value, type, checked } = evento.target
     setDatos((anterior) => ({ ...anterior, [name]: type === 'checkbox' ? checked : value }))
   }
 
   function elegirTipo(evento) {
-    const nuevoTipo = evento.target.value
-    setDatos((anterior) => ({ ...anterior, tipo: nuevoTipo }))
-    onCambiarTipo(nuevoTipo)
+    onCambiarTipo(evento.target.value)
   }
 
   async function enviar(evento) {
@@ -52,7 +47,7 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
         nombre: datos.nombre.trim(),
         tipo,
         datosTecnicos: datos.datosTecnicos.trim(),
-        ...estadoParaGuardar(datos),
+        ...estadoParaGuardar({ ...datos, tipo }),
         ubicacion: geometria,
       })
       onGuardado(creado)

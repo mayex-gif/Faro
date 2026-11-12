@@ -54,6 +54,6 @@ test('textoTrabajos agrega cuántos son urgentes, solo si hay', () => {
 })
 
 test('subtituloLugar dice el tipo, si está fuera de servicio y cuántos trabajos tiene', () => {
-  assert.equal(subtituloLugar(plaza), 'Espacio verde · 2 trabajos abiertos')
+  assert.equal(subtituloLugar(plaza), 'Área · 2 trabajos abiertos')
   assert.equal(subtituloLugar(luminaria), 'Luminaria · Fuera de servicio · Sin trabajos abiertos')
 })
