@@ -4,8 +4,7 @@ import Icono from './Icono'
 import { TIPOS_LUGAR, estadoParaGuardar } from '../utils/lugares'
 import { puntoEnLaZona, redondearCoordenada } from '../utils/zona'
 
-// Los textos del formulario según lo que se agrega: desde la pestaña Luminarias solo luminarias,
-// desde la pestaña Calles solo calles y desde "Todo el pueblo" cualquier lugar.
+// Los textos del formulario según el tipo elegido desde cualquier pestaña.
 const TEXTOS = {
   LUMINARIA: { el: 'la luminaria', agregar: 'Agregar una luminaria', nuevo: 'Luminaria nueva', datos: 'Datos de la luminaria nueva',
     ejemplo: 'Luminaria San Martín y Belgrano', registrar: 'Registrar luminaria' },
@@ -21,7 +20,7 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
   const [datos, setDatos] = useState(() => ({
     nombre: '', datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo,
   }))
-  const textos = (tipos.length === 1 && TEXTOS[tipos[0]]) || TEXTOS.general
+  const textos = TEXTOS[tipo] ?? TEXTOS.general
   const sinInstalar = tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
@@ -93,7 +92,9 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
           </select>
           <p className="ayuda-campo" id="ayuda-lugar-nuevo-tipo">
             Lugar: una plaza o un espacio verde (se marca su contorno).
+            {tipos.includes('CALLE') && ' Si elegís Calle, el mapa pasa a la pestaña Calles.'}
             {tipos.includes('LUMINARIA') && ' Si elegís Luminaria, el mapa pasa a la pestaña Luminarias.'}
+            {tipos.includes('ESPACIO_VERDE') && ' Si elegís Lugar, el mapa vuelve a Todo el pueblo.'}
           </p>
         </div>}
 

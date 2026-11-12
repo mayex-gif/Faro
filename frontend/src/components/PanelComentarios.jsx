@@ -228,7 +228,8 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
             <Icono nombre="foto" />Elegir fotos
           </button>
           <button type="submit" className="boton boton-primario" disabled={ocupado}>
-            <Icono nombre="guardar" />{enviando ? 'Publicando…' : preparandoFotos ? 'Preparando fotos…' : 'Publicar'}
+            {ocupado ? <span className="indicador-carga" aria-hidden="true" /> : <Icono nombre="guardar" />}
+            {enviando ? 'Publicando…' : preparandoFotos ? 'Preparando fotos…' : 'Publicar'}
           </button>
         </div>
         <p className="ayuda-campo">Hasta 5 fotos por comentario. Se achican antes de enviarlas.</p>

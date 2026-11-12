@@ -36,6 +36,7 @@
 .ayuda-campo { margin-top: 7px; color: var(--texto-secundario); font-size: 0.75rem; line-height: 1.5; }
 .ayuda-seccion { margin: -6px 0 16px; color: var(--texto-secundario); font-size: 0.8125rem; }
 .coordenadas { grid-template-columns: 1fr 1fr; }
+.seccion-ubicacion > .boton { margin-top: 10px; }
 .campo-check { display: flex; align-items: flex-start; gap: 12px; padding: 14px; margin-top: 20px; border: 1px solid var(--borde); border-radius: 8px; cursor: pointer; background: #F8FAFB; }
 .campo-check input { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--enlace); }
 .campo-check strong { display: block; font-size: 0.8125rem; font-weight: 600; }

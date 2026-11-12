@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { buscarCalles, textoDeLaCalle } from '../utils/calles'
+import { subtituloLugar } from '../utils/listaLugares'
 import { colorDelResumen } from '../utils/mapa'
 import Icono from './Icono'
 
@@ -28,7 +29,8 @@ function ListaDeCalles({ id, titulo, ayuda, calles, vacio, modoColor, lugarActiv
                   <MuestraCalle color={colorDelResumen(resumen, modoColor)} />
                   <span className="fila-lugar-texto">
                     <strong>{lugar.nombre}</strong>
-                    <span>{textoDeLaCalle(resumen)}</span>
+                    <span>{subtituloLugar(resumen)}</span>
+                    {resumen.principal && <span>{textoDeLaCalle(resumen)}</span>}
                   </span>
                 </button>
               </li>

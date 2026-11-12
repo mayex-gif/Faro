@@ -180,14 +180,14 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
               <div className="campo campo-ancho">
                 <label htmlFor="datos-tecnicos">Datos técnicos <span className="opcional">(opcional)</span></label>
                 <textarea id="datos-tecnicos" name="datosTecnicos" value={datos.datosTecnicos} onChange={cambiar} rows={3} aria-describedby="ayuda-datos" />
-                <p className="ayuda-campo" id="ayuda-datos">{soloLuminarias ? 'Por ejemplo: potencia, tipo de lámpara o altura del poste.' : 'Por ejemplo: superficie, tipo de calzada o características del espacio.'}</p>
+                <p className="ayuda-campo" id="ayuda-datos">{soloLuminarias ? 'Por ejemplo: potencia, tipo de lámpara o altura del poste.' : 'Por ejemplo: superficie o características del espacio.'}</p>
               </div>
             </div>
           </section>
 
           <section className="seccion-formulario seccion-ubicacion" aria-labelledby="titulo-ubicacion">
             <h3 id="titulo-ubicacion"><Icono nombre="lugar" />Ubicación y estado</h3>
-            <p className="ayuda-seccion" id="ayuda-coordenadas">Ingresá coordenadas en grados decimales con punto como separador. Una luminaria usa un punto; una calle, varios puntos; un lugar, al menos tres vértices (su contorno).</p>
+            <p className="ayuda-seccion" id="ayuda-coordenadas">Ingresá coordenadas en grados decimales con punto como separador. Un lugar necesita al menos tres vértices para marcar su contorno.</p>
             {datos.coordenadas.map((punto, indice) => <div className="campos coordenadas" key={indice}>
               <div className="campo">
                 <label htmlFor={`latitud-${indice}`}>Latitud {indice + 1} <span aria-hidden="true">*</span></label>
