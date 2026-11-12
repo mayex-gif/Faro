@@ -30,8 +30,9 @@ test('el estado dice "A futuro" para las luminarias que no se instalaron', () =>
   assert.equal(claseEstadoLugar(lugares[1]), 'estado estado-falla')
 })
 
-test('"Agregar" ofrece Lugar, Calle y Luminaria en "Todo el pueblo", y solo Luminaria en su pestaña', () => {
+test('"Agregar" ofrece Lugar, Calle y Luminaria en "Todo el pueblo", Luminaria y Calles solo lo suyo', () => {
   assert.deepEqual(tiposParaAgregar('todo').map((tipo) => TIPOS_LUGAR[tipo]), ['Lugar', 'Calle', 'Luminaria'])
   assert.deepEqual(tiposParaAgregar('luminarias'), ['LUMINARIA'])
+  assert.deepEqual(tiposParaAgregar('calles'), ['CALLE'])
   assert.deepEqual(tiposParaAgregar('otra'), tiposParaAgregar('todo'))
 })

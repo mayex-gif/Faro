@@ -61,15 +61,21 @@
 /* ---- Celular y tablet (mismo ancho que usePantallaAngosta) ---- */
 @media (max-width: 1050px) {
   .pestanas-mapa { top: 12px; right: 12px; left: 12px; }
-  .pestana-mapa { flex: 1; justify-content: center; min-height: 44px; }
+  .pestana-mapa { flex: 1; justify-content: center; min-height: 44px; white-space: nowrap; }
   /* Debajo de las pestañas van los botoncitos (solo en "Todo el pueblo"), "Ver como lista" y "Agregar lugar" */
   .pantalla-mapa-angosta .botoncitos-sobre-mapa { top: 68px; }
   .pantalla-mapa-angosta .boton-ver-lista, .pantalla-mapa-angosta .boton-agregar-lugar { top: 122px; }
   .pantalla-mapa-angosta .leaflet-top, .pantalla-mapa-angosta .columna-mapa .leaflet-top.leaflet-left { top: 176px; }
-  /* En la pestaña Luminarias no hay botoncitos: todo sube una fila */
-  .pantalla-mapa-angosta.pantalla-mapa-luminarias .boton-ver-lista,
-  .pantalla-mapa-angosta.pantalla-mapa-luminarias .boton-agregar-lugar { top: 68px; }
-  .pantalla-mapa-angosta.pantalla-mapa-luminarias .leaflet-top { top: 122px; }
+  /* En las pestañas Luminarias y Calles no hay botoncitos: todo sube una fila */
+  .pantalla-mapa-angosta.pantalla-mapa-sin-botoncitos .boton-ver-lista,
+  .pantalla-mapa-angosta.pantalla-mapa-sin-botoncitos .boton-agregar-lugar { top: 68px; }
+  .pantalla-mapa-angosta.pantalla-mapa-sin-botoncitos .leaflet-top { top: 122px; }
+}
+
+/* Celular chico: con tres pestañas ("Todo el pueblo", Luminarias, Calles) no entran los íconos */
+@media (max-width: 480px) {
+  .pestana-mapa { padding: 0 6px; }
+  .pestana-mapa .icono { display: none; }
 }
 
 /* ---- Ficha de la luminaria: "Estado de la luminaria" (components/EstadoLuminaria.jsx) ---- */

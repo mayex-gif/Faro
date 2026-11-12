@@ -21,6 +21,7 @@ export const CATEGORIAS_LUGAR = {
 export const TIPOS_PARA_AGREGAR = {
   todo: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
   luminarias: ['LUMINARIA'],
+  calles: ['CALLE'],
 }
 
 export function tiposParaAgregar(pestana) {

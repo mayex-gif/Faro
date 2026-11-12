@@ -68,6 +68,12 @@ function crearCapaLugar(resumen, modoColor) {
   })
 }
 
+const ETIQUETAS_MAPA = {
+  todo: 'Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.',
+  luminarias: 'Mapa de luminarias y su estado. El panel que está junto al mapa tiene los mismos datos en texto.',
+  calles: 'Mapa de calles y sus trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.',
+}
+
 // Props:
 // - resumenes: lo que se dibuja, un elemento por lugar (ver agruparPorLugar en utils/mapa.js)
 // - modoColor: 'prioridad' o 'estado'
@@ -81,7 +87,8 @@ function crearCapaLugar(resumen, modoColor) {
 // - onElegirPunto(punto): se tocó el mapa o se soltó el pin después de arrastrarlo
 // - hojaAbajo: (celular) ref de la hoja del formulario que sube desde abajo y tapa parte del mapa
 // Pestaña Luminarias:
-// - pestana: 'todo' (todos los lugares, como siempre) o 'luminarias' (solo las luminarias, dibujadas como postes)
+// - pestana: 'todo' (todos los lugares, como siempre), 'luminarias' (solo las luminarias, dibujadas como postes)
+//   o 'calles' (la página pasa en "resumenes" solo las calles; se dibujan igual que en "Todo el pueblo")
 // - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
 // - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
@@ -284,9 +291,7 @@ function MapaLugares({
     <>
       <DefinicionesPoste />
       <div id="mapa-lugares" ref={contenedor} className="mapa" role="region"
-        aria-label={pestana === 'luminarias'
-          ? 'Mapa de luminarias y su estado. El panel que está junto al mapa tiene los mismos datos en texto.'
-          : 'Mapa de lugares y trabajos abiertos. La lista que está junto al mapa tiene los mismos datos en texto.'} />
+        aria-label={ETIQUETAS_MAPA[pestana] ?? ETIQUETAS_MAPA.todo} />
     </>
   )
 }
