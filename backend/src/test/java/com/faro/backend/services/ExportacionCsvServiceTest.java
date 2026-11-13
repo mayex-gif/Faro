@@ -27,6 +27,8 @@ class ExportacionCsvServiceTest {
         PuntoInfraestructura lugar = lugar("Plaza\rCentral");
         OrdenTrabajo completa = orden(1L, "Sector; norte", TipoTrabajo.PODA, estado, lugar);
         completa.setCuadrilla(cuadrilla);
+        completa.setMontoAproximado(new java.math.BigDecimal("12000"));
+        completa.setGastoAdicional(new java.math.BigDecimal("8000.50"));
         completa.setFechaCreacion(LocalDateTime.of(2026, 10, 2, 8, 5));
         completa.setFechaFinalizacion(LocalDateTime.of(2026, 10, 3, 14, 30));
 
@@ -40,8 +42,11 @@ class ExportacionCsvServiceTest {
         assertThat(csv).contains("\"Equipo\nVerde\"");
         assertThat(csv).contains("\"Plaza\rCentral\"");
         assertThat(csv).contains("02/10/2026 08:05;03/10/2026 14:30");
-        // OT sin opcionales: lugar, monto, ubicación de calle y fechas vacíos (monto y ubicación vienen del #67)
-        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;;;\r\n");
+        // Monto aproximado (declarado al crear) y gasto adicional (declarado al finalizar), en columnas seguidas
+        assertThat(csv).contains("Monto Aproximado Gastado;Gasto Adicional;Ubicacion de Calle");
+        assertThat(csv).contains("ORDEN_DIRECTA;MEDIA;12000;8000.50;;02/10/2026");
+        // OT sin opcionales: lugar, monto, gasto, ubicación de calle y fechas vacíos (monto y ubicación vienen del #67)
+        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;;;;\r\n");
     }
 
     @Test

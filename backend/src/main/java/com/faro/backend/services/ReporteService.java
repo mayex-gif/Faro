@@ -102,6 +102,8 @@ public class ReporteService {
                 montoPorPeriodo,
                 resumenDesvios,
                 java.util.Optional.ofNullable(reporteRepository.sumarMontosAproximados(desdeTs, hastaTs))
+                        .orElse(BigDecimal.ZERO),
+                java.util.Optional.ofNullable(reporteRepository.sumarGastosAdicionales(desdeTs, hastaTs))
                         .orElse(BigDecimal.ZERO)
         );
     }
@@ -113,10 +115,16 @@ public class ReporteService {
             case SEMANA -> reporteRepository.sumarMontosPorSemana(desde, hasta);
             case MES -> reporteRepository.sumarMontosPorMes(desde, hasta);
         };
+        // Cada fila: [período, monto aproximado, gasto adicional]
         return filas.stream()
-                .map(fila -> new MontoPorPeriodoDTO((String) fila[0],
-                        fila[1] instanceof BigDecimal monto ? monto : new BigDecimal(fila[1].toString())))
+                .map(fila -> new MontoPorPeriodoDTO((String) fila[0], comoMonto(fila, 1), comoMonto(fila, 2)))
                 .toList();
+    }
+
+    // La base puede devolver la suma como BigDecimal u otro número; si la columna no vino, es cero
+    private static BigDecimal comoMonto(Object[] fila, int columna) {
+        if (fila.length <= columna || fila[columna] == null) return BigDecimal.ZERO;
+        return fila[columna] instanceof BigDecimal monto ? monto : new BigDecimal(fila[columna].toString());
     }
 
     // ─────────────────────────────────────────────────────────────────────────

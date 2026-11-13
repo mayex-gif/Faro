@@ -69,7 +69,8 @@ export function casillaDelLugar(lugar, otrasAbiertas = 0) {
 export function formatearPesos(valor) {
   const numero = Number(valor)
   const decimales = Number.isInteger(numero) ? 0 : 2
-  return `$ ${numero.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })}`
+  // \u00A0: espacio que no se corta, así "$" y el número no quedan en renglones distintos en el celular
+  return `$\u00A0${numero.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })}`
 }
 
 // Lo que se ve arriba del campo del gasto: el presupuesto que se cargó al crear la OT

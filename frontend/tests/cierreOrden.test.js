@@ -78,12 +78,12 @@ test('si el lugar ya funciona, no se sabe cómo está o es una luminaria a futur
 // ===================== Monto declarado y gasto adicional =====================
 
 test('el monto declarado se muestra en pesos, o se avisa que no se declaró', () => {
-  assert.equal(textoMontoDeclarado(12000), 'Monto aproximado declarado: $ 12.000')
-  assert.equal(textoMontoDeclarado(8000.5), 'Monto aproximado declarado: $ 8.000,50')
-  assert.equal(textoMontoDeclarado(0), 'Monto aproximado declarado: $ 0')
+  assert.equal(textoMontoDeclarado(12000), 'Monto aproximado declarado: $\u00a012.000')
+  assert.equal(textoMontoDeclarado(8000.5), 'Monto aproximado declarado: $\u00a08.000,50')
+  assert.equal(textoMontoDeclarado(0), 'Monto aproximado declarado: $\u00a00')
   assert.equal(textoMontoDeclarado(null), 'No se declaró un monto')
   assert.equal(textoMontoDeclarado(undefined), 'No se declaró un monto')
-  assert.equal(formatearPesos(1234567.891), '$ 1.234.567,89')
+  assert.equal(formatearPesos(1234567.891), '$\u00a01.234.567,89')
 })
 
 test('el gasto adicional vacío es válido: no hubo otro gasto', () => {
@@ -104,7 +104,7 @@ test('el gasto adicional rechaza negativos, más de 2 decimales, puntos de miles
   assert.equal(validarGasto('-1').error, 'El gasto no puede ser negativo.')
   assert.equal(validarGasto('10,555').error, 'Escribí el monto con hasta 2 decimales (ej: 8000 o 8000,50).')
   assert.equal(validarGasto('8.000').error, 'Escribí solo el número, sin puntos de miles (ej: 8000 o 8000,50).')
-  assert.equal(validarGasto('$ 500').error, 'Escribí solo el número, sin puntos de miles (ej: 8000 o 8000,50).')
+  assert.equal(validarGasto('$\u00a0500').error, 'Escribí solo el número, sin puntos de miles (ej: 8000 o 8000,50).')
   assert.equal(validarGasto('1234567890123').error, 'El monto es demasiado grande.') // 13 enteros
   assert.deepEqual(validarGasto('999999999999,99'), { valor: 999999999999.99, error: null }) // 12 enteros: entra
   assert.equal(validarGasto('-1').valor, null)
@@ -234,9 +234,9 @@ test('el mensaje de error dice qué parte falló', () => {
 })
 
 test('el cartel del cuaderno dice qué se marcó en el pop-up', () => {
-  assert.equal(detalleDeCierre({ lugarFunciona: true, gastoAdicional: 1500 }), 'El lugar queda funcionando · Gasto adicional $ 1.500')
+  assert.equal(detalleDeCierre({ lugarFunciona: true, gastoAdicional: 1500 }), 'El lugar queda funcionando · Gasto adicional $\u00a01.500')
   assert.equal(detalleDeCierre({ lugarFunciona: false }), 'El lugar sigue fuera de servicio')
-  assert.equal(detalleDeCierre({ gastoAdicional: 0 }), 'Gasto adicional $ 0')
+  assert.equal(detalleDeCierre({ gastoAdicional: 0 }), 'Gasto adicional $\u00a00')
   assert.equal(detalleDeCierre({ estadoId: 4 }), '')
 })
 

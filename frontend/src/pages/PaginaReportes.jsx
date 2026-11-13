@@ -7,8 +7,8 @@ import GraficoBarras from '../components/GraficoBarras'
 import GraficoDona from '../components/GraficoDona'
 import Icono from '../components/Icono'
 import {
-  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, porcentaje,
-  tableroVacio,
+  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
+  resumenGastos, tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
 
@@ -83,6 +83,7 @@ function PaginaReportes() {
 
   const desvios = tablero?.resumenDesvios
   const finalizadasPlan = desvios ? desvios.aTiempo + desvios.adelantadas + desvios.demoradas : 0
+  const gastos = resumenGastos(tablero)
 
   return (
     <>
@@ -161,11 +162,10 @@ function PaginaReportes() {
                   <span className="indicador-detalle">pendientes, asignadas o en curso</span>
                 </li>
                 <li>
-                  <span className="indicador-nombre">Monto aproximado de OTs finalizadas</span>
-                  <strong className="indicador-valor">{Number(tablero.montoAproximadoTotal ?? 0).toLocaleString('es-AR', {
-                    style: 'currency', currency: 'ARS', maximumFractionDigits: 2,
-                  })}</strong>
-                  <span className="indicador-detalle">informado para las órdenes del período</span>
+                  {/* Lo declarado al crear las OT finalizadas + lo que se gastó de más (declarado al finalizarlas) */}
+                  <span className="indicador-nombre">Total gastado en OTs finalizadas</span>
+                  <strong className="indicador-valor">{pesos(gastos.total)}</strong>
+                  <span className="indicador-detalle">{pesos(gastos.declarado)} declarados + {pesos(gastos.adicional)} adicionales</span>
                 </li>
                 <li>
                   <span className="indicador-nombre">Plan cumplido a tiempo</span>
@@ -189,7 +189,7 @@ function PaginaReportes() {
 
             <section className="panel panel-reporte" aria-labelledby="titulo-montos">
               <div className="panel-encabezado">
-                <div><h2 id="titulo-montos">Monto aproximado gastado</h2><p>Suma de los montos de las órdenes finalizadas en cada día, semana o mes.</p></div>
+                <div><h2 id="titulo-montos">Monto gastado</h2><p>Lo declarado al crear las órdenes finalizadas en cada día, semana o mes, y lo que se gastó de más al finalizarlas.</p></div>
               </div>
               <GraficoMontos serie={tablero.montoPorPeriodo ?? []} />
             </section>

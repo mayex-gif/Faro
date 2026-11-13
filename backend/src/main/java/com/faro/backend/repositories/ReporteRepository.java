@@ -36,13 +36,20 @@ public interface ReporteRepository extends JpaRepository<OrdenTrabajo, Long> {
     BigDecimal sumarMontosAproximados(@Param("desde") LocalDateTime desde,
                                       @Param("hasta") LocalDateTime hasta);
 
-    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('day', ot.fecha_finalizacion), 'YYYY-MM-DD'), COALESCE(SUM(ot.monto_aproximado), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
+    /** Suma los gastos adicionales (los que se declaran al finalizar) de las OTs finalizadas en el período. */
+    @Query("SELECT COALESCE(SUM(o.gastoAdicional), 0) FROM OrdenTrabajo o JOIN o.estado e WHERE o.fechaFinalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada'")
+    BigDecimal sumarGastosAdicionales(@Param("desde") LocalDateTime desde,
+                                      @Param("hasta") LocalDateTime hasta);
+
+    // Las tres series de montos devuelven [período, monto aproximado, gasto adicional]
+
+    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('day', ot.fecha_finalizacion), 'YYYY-MM-DD'), COALESCE(SUM(ot.monto_aproximado), 0), COALESCE(SUM(ot.gasto_adicional), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
     List<Object[]> sumarMontosPorDia(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
-    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('week', ot.fecha_finalizacion), 'IYYY-\"W\"IW'), COALESCE(SUM(ot.monto_aproximado), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
+    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('week', ot.fecha_finalizacion), 'IYYY-\"W\"IW'), COALESCE(SUM(ot.monto_aproximado), 0), COALESCE(SUM(ot.gasto_adicional), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
     List<Object[]> sumarMontosPorSemana(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
-    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('month', ot.fecha_finalizacion), 'YYYY-MM'), COALESCE(SUM(ot.monto_aproximado), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
+    @Query(value = "SELECT TO_CHAR(DATE_TRUNC('month', ot.fecha_finalizacion), 'YYYY-MM'), COALESCE(SUM(ot.monto_aproximado), 0), COALESCE(SUM(ot.gasto_adicional), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
     List<Object[]> sumarMontosPorMes(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
     /** OTs en estados de cierre (finalizadas, canceladas) creadas en el período. */

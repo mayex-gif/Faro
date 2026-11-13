@@ -152,3 +152,37 @@ export function altoBarras(cantidadFilas) {
 export function tableroVacio(tablero) {
   return !tablero || (tablero.totalOts === 0 && (tablero.resumenDesvios?.totalConPlanificacion ?? 0) === 0)
 }
+
+// ===================== Montos gastados =====================
+
+// Colores de la serie de montos (validados juntos: se distinguen también con daltonismo)
+export const COLORES_MONTOS = { declarado: '#1F8A6A', adicional: '#C2571A' }
+
+// Pesos sin centavos para el tablero: "$ 37.000"
+export function pesos(valor) {
+  return Number(valor ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
+}
+
+// Lo gastado en las OT finalizadas del período: lo declarado al crearlas (monto aproximado)
+// más lo que se gastó de más (gasto adicional, declarado al finalizarlas).
+export function resumenGastos(tablero) {
+  const declarado = Number(tablero?.montoAproximadoTotal ?? 0) || 0
+  const adicional = Number(tablero?.gastoAdicionalTotal ?? 0) || 0
+  return { declarado, adicional, total: declarado + adicional }
+}
+
+// La serie del gráfico de montos, con las etiquetas de cada período y el total de cada uno
+export function serieMontos(serie = []) {
+  return serie.map((punto) => {
+    const declarado = Number(punto.montoAproximado ?? 0) || 0
+    const adicional = Number(punto.gastoAdicional ?? 0) || 0
+    return {
+      periodo: punto.periodo,
+      declarado,
+      adicional,
+      total: declarado + adicional,
+      etiqueta: etiquetaPeriodo(punto.periodo),
+      etiquetaLarga: etiquetaPeriodo(punto.periodo, { larga: true }),
+    }
+  })
+}
