@@ -19,12 +19,12 @@ function fetchFalso(t, respuestas) {
 test('sin comentario, solo se manda el cambio de estado con los datos del cierre', async (t) => {
   const pedidos = fetchFalso(t, [{ cuerpo: { id: 7, estadoNombre: 'Finalizada' } }])
 
-  const resultado = await enviarCierre(7, { cambio: { estadoId: 4, lugarFunciona: true, gastoAdicional: 8000 }, comentario: null })
+  const resultado = await enviarCierre(7, { cambio: { estadoId: 4, lugarFunciona: true, gastoReal: 15000 }, comentario: null })
 
   assert.equal(pedidos.length, 1)
   assert.equal(pedidos[0].url, '/api/ordenes-trabajo/7/estado')
   assert.equal(pedidos[0].opciones.method, 'PATCH')
-  assert.deepEqual(JSON.parse(pedidos[0].opciones.body), { estadoId: 4, lugarFunciona: true, gastoAdicional: 8000 })
+  assert.deepEqual(JSON.parse(pedidos[0].opciones.body), { estadoId: 4, lugarFunciona: true, gastoReal: 15000 })
   assert.deepEqual(resultado, { orden: { id: 7, estadoNombre: 'Finalizada' }, comentario: null })
 })
 

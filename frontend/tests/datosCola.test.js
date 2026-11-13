@@ -248,34 +248,46 @@ test('los comentarios cuentan en el cuaderno pero no cambian la lista de OT ni h
 
 // ===================== Pop-up de "Finalizar" sin señal =====================
 
-test('un cierre sin señal guarda la casilla y el gasto adicional y los manda al servidor', () => {
+test('un cierre sin señal guarda la casilla y el gasto total y los manda al servidor', () => {
   const operacion = crearCambioEstado(capataz, { ...ot7, estadoId: 3, estadoNombre: 'En curso' }, finalizada, {
     ahora: new Date(Date.UTC(2026, 10, 13, 18, 0)), numero: 'n-9',
-    datosCierre: { estadoId: 4, lugarFunciona: false, gastoAdicional: 1500.5 },
+    datosCierre: { estadoId: 4, lugarFunciona: false, gastoReal: 15000.5 },
   })
   assert.equal(operacion.lugarFunciona, false)
-  assert.equal(operacion.gastoAdicional, 1500.5)
+  assert.equal(operacion.gastoReal, 15000.5)
   assert.deepEqual(cuerpoDeEnvio(operacion), {
-    ordenId: 7, estadoId: 4, estadoAnteriorId: 3, hechoEn: '2026-11-13T18:00:00.000Z', lugarFunciona: false, gastoAdicional: 1500.5,
+    ordenId: 7, estadoId: 4, estadoAnteriorId: 3, hechoEn: '2026-11-13T18:00:00.000Z', lugarFunciona: false, gastoReal: 15000.5,
   })
   assert.equal(operacionValida(operacion), true)
+})
+
+test('una comanda que quedó en el cuaderno con el pop-up viejo sigue mandando su gasto adicional', () => {
+  // Guardada por la versión de #74 (antes de "¿Cuánto se gastó en total?"): el backend hace la cuenta
+  const vieja = {
+    ...crearCambioEstado(capataz, { ...ot7, estadoId: 3 }, finalizada, { ahora: new Date(Date.UTC(2026, 10, 13, 18, 0)), numero: 'n-14' }),
+    gastoAdicional: 1500,
+  }
+  assert.deepEqual(cuerpoDeEnvio(vieja), {
+    ordenId: 7, estadoId: 4, estadoAnteriorId: 3, hechoEn: '2026-11-13T18:00:00.000Z', gastoAdicional: 1500,
+  })
 })
 
 test('un cierre sin casilla ni gasto (o una comanda de antes del pop-up) viaja como siempre', () => {
   const sinDatos = crearCambioEstado(capataz, ot7, finalizada, { numero: 'n-10', datosCierre: { estadoId: 4 } })
   assert.equal('lugarFunciona' in sinDatos, false)
+  assert.equal('gastoReal' in sinDatos, false)
   assert.equal('gastoAdicional' in sinDatos, false)
   assert.deepEqual(Object.keys(cuerpoDeEnvio(sinDatos)), ['ordenId', 'estadoId', 'estadoAnteriorId', 'hechoEn'])
   // Datos raros (texto, NaN) no se guardan
-  const raros = crearCambioEstado(capataz, ot7, finalizada, { numero: 'n-11', datosCierre: { lugarFunciona: 'si', gastoAdicional: NaN } })
+  const raros = crearCambioEstado(capataz, ot7, finalizada, { numero: 'n-11', datosCierre: { lugarFunciona: 'si', gastoReal: NaN, gastoAdicional: '5' } })
   assert.deepEqual(Object.keys(cuerpoDeEnvio(raros)), ['ordenId', 'estadoId', 'estadoAnteriorId', 'hechoEn'])
 })
 
 test('"Aplicar igual" conserva la casilla y el gasto del cierre', () => {
-  const operacion = crearCambioEstado(capataz, ot7, finalizada, { numero: 'n-12', datosCierre: { lugarFunciona: true, gastoAdicional: 800 } })
+  const operacion = crearCambioEstado(capataz, ot7, finalizada, { numero: 'n-12', datosCierre: { lugarFunciona: true, gastoReal: 800 } })
   const conConflicto = marcarConflicto(operacion, { mensaje: 'x', sePuedeAplicar: true, estadoActualId: 3, estadoActual: 'En curso' })
   const otraVez = aplicarIgual(conConflicto, { numero: 'n-13' })
   assert.equal(cuerpoDeEnvio(otraVez).lugarFunciona, true)
-  assert.equal(cuerpoDeEnvio(otraVez).gastoAdicional, 800)
+  assert.equal(cuerpoDeEnvio(otraVez).gastoReal, 800)
   assert.equal(cuerpoDeEnvio(otraVez).estadoAnteriorId, 3)
 })
