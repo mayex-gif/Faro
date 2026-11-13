@@ -491,4 +491,33 @@ class SincronizacionServiceTest {
         assertNull(conflicto.getEstadoActualId());
         verify(ordenService, never()).crear(any());
     }
+
+    // ===================== Pop-up de "Finalizar" hecho sin señal =====================
+
+    @Test
+    void unaFinalizacionSinSenalLlegaConLaCasillaYElGastoAdicional() {
+        CambioEstadoSinSenalDTO aFinalizada = new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
+                new java.math.BigDecimal("2500"));
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        enElServidor(EN_CURSO, 1L);
+        when(ordenService.cambiarEstado(7L, new CambioEstadoRequestDTO(4L, true, new java.math.BigDecimal("2500")), capataz))
+                .thenReturn(orden(7L, "Finalizada"));
+
+        OrdenTrabajoDTO resultado = service.cambiarEstado(COMANDA, aFinalizada, capataz);
+
+        assertEquals("Finalizada", resultado.estadoNombre());
+    }
+
+    @Test
+    void unaComandaViejaSinLosDatosDelPopUpSeAplicaComoAntes() {
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        enElServidor(EN_CURSO, 1L);
+        when(ordenService.cambiarEstado(7L, new CambioEstadoRequestDTO(4L, null, null), capataz))
+                .thenReturn(orden(7L, "Finalizada"));
+
+        OrdenTrabajoDTO resultado = service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN), capataz);
+
+        assertEquals("Finalizada", resultado.estadoNombre());
+    }
 }
+

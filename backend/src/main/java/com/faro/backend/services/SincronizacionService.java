@@ -1,7 +1,6 @@
 package com.faro.backend.services;
 
 import com.faro.backend.dto.AltaOrdenSinSenalDTO;
-import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.CambioEstadoSinSenalDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.exceptions.ConflictoSincronizacionException;
@@ -126,7 +125,8 @@ public class SincronizacionService {
         }
         try {
             // Las reglas de siempre (permisos, caminos entre estados) y el evento de la ficha
-            return ordenService.cambiarEstado(pedido.ordenId(), new CambioEstadoRequestDTO(pedido.estadoId()), usuario);
+            // (con la casilla "El lugar quedó funcionando" y el gasto adicional, si es un cierre)
+            return ordenService.cambiarEstado(pedido.ordenId(), pedido.comoPedido(), usuario);
         } catch (RecursoNoEncontradoException e) {
             throw new ConflictoSincronizacionException(Motivo.DATO_NO_EXISTE,
                     e.getMessage() + ": tu cambio no se aplicó.", actualId, actualNombre, false);

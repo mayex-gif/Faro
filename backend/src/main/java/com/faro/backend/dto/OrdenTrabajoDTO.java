@@ -31,7 +31,8 @@ public record OrdenTrabajoDTO(
         String calleEntre2,
         String altura,
         BigDecimal montoAproximado,
-        Geometry tramo        // null = toda la calle (o el lugar no es una calle)
+        Geometry tramo,       // null = toda la calle (o el lugar no es una calle)
+        BigDecimal gastoAdicional // lo que se gastó de más al finalizar (null = no se declaró)
 ) {
     /** Constructor de conveniencia para casos donde no hay cuadrilla asignada */
     public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
@@ -39,7 +40,7 @@ public record OrdenTrabajoDTO(
                            LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
                            String estadoColor) {
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
-                estadoId, estadoNombre, estadoColor, null, null, null, null, null, null, null, null, null, null);
+                estadoId, estadoNombre, estadoColor, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /** Constructor de compatibilidad con 13 parámetros (usado previamente) */
@@ -48,7 +49,7 @@ public record OrdenTrabajoDTO(
                            LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
                            String estadoColor, Long cuadrillaId, String cuadrillaNombre) {
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
-                estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre, null, null, null, null, null, null, null, null);
+                estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre, null, null, null, null, null, null, null, null, null);
     }
 
     /** Compatibilidad con el constructor canónico anterior a los campos de ubicación vial y gasto. */
@@ -60,7 +61,7 @@ public record OrdenTrabajoDTO(
                            Long reglaMantenimientoId) {
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
                 estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre,
-                fechaPlanificada, fechaFinalizacion, reglaMantenimientoId, null, null, null, null, null);
+                fechaPlanificada, fechaFinalizacion, reglaMantenimientoId, null, null, null, null, null, null);
     }
 
     /** Compatibilidad con el constructor canónico anterior al tramo de calle (OT de toda la calle). */
@@ -74,6 +75,20 @@ public record OrdenTrabajoDTO(
         this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
                 estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre,
                 fechaPlanificada, fechaFinalizacion, reglaMantenimientoId,
-                calleEntre1, calleEntre2, altura, montoAproximado, null);
+                calleEntre1, calleEntre2, altura, montoAproximado, null, null);
+    }
+
+    /** Compatibilidad con el constructor canónico anterior al gasto adicional. */
+    public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                           PrioridadOrden prioridad, Long lugarId, String lugarNombre,
+                           LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,
+                           String estadoColor, Long cuadrillaId, String cuadrillaNombre,
+                           LocalDate fechaPlanificada, LocalDateTime fechaFinalizacion,
+                           Long reglaMantenimientoId, String calleEntre1, String calleEntre2,
+                           String altura, BigDecimal montoAproximado, Geometry tramo) {
+        this(id, descripcion, tipo, origen, prioridad, lugarId, lugarNombre, fechaCreacion,
+                estadoId, estadoNombre, estadoColor, cuadrillaId, cuadrillaNombre,
+                fechaPlanificada, fechaFinalizacion, reglaMantenimientoId,
+                calleEntre1, calleEntre2, altura, montoAproximado, tramo, null);
     }
 }

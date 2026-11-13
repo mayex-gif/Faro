@@ -68,7 +68,10 @@ public class OrdenTrabajoController {
     @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'CAPATAZ_CUADRILLA')")
     @Operation(summary = "Cambiar el estado de una orden de trabajo",
             description = "Solo se permite si existe el camino entre el estado actual y el nuevo (si no, responde 409). "
-                    + "El capataz solo puede cambiar las órdenes de su cuadrilla (si no, responde 403).")
+                    + "El capataz solo puede cambiar las órdenes de su cuadrilla (si no, responde 403). "
+                    + "Al finalizar (no al cancelar) se pueden mandar, opcionales: lugarFunciona (true = el lugar vuelve "
+                    + "a Funciona; false = queda como está; sin el dato, una luminaria vuelve sola a Funciona) y "
+                    + "gastoAdicional (lo que se gastó de más, ≥ 0). En otro cambio de estado esos datos responden 400.")
     public OrdenTrabajoDTO cambiarEstado(@PathVariable Long id, @Valid @RequestBody CambioEstadoRequestDTO request,
                                          @Parameter(hidden = true) @AuthenticationPrincipal UsuarioDetalles usuario) {
         // @AuthenticationPrincipal: Spring nos da el usuario que mandó el token (quién pide el plato)
