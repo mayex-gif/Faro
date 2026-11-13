@@ -217,4 +217,24 @@ class HistoriaLugarServiceTest {
         assertEquals(1, historia.ordenesAbiertas());
         assertEquals(0, historia.ordenesCerradas());
     }
+
+    @Test
+    void laFinalizacionTraeElGastoAdicionalYSiElLugarVolvioAFuncionar() {
+        OrdenTrabajo poda = orden(10L, "Podar el fresno", finalizada, dia(1, 9));
+
+        when(lugarRepository.findById(3L)).thenReturn(Optional.of(plaza()));
+        when(ordenRepository.findByLugarIdOrderByFechaCreacionDesc(3L)).thenReturn(List.of(poda));
+        when(eventoRepository.findByOrdenLugarIdOrderByFechaDesc(3L)).thenReturn(List.of(
+                conFecha(EventoOrden.finalizacion(poda, enCurso, finalizada, new java.math.BigDecimal("8000"), true), dia(4, 18)),
+                conFecha(EventoOrden.cambioDeEstado(poda, pendiente, enCurso), dia(2, 8))
+        ));
+
+        List<EventoHistoriaDTO> eventos = service.obtenerHistoria(3L).eventos();
+
+        assertEquals(new java.math.BigDecimal("8000"), eventos.get(0).gastoAdicional());
+        assertEquals(Boolean.TRUE, eventos.get(0).lugarFunciona());
+        assertNull(eventos.get(1).gastoAdicional()); // un cambio de estado común no trae nada de eso
+        assertNull(eventos.get(1).lugarFunciona());
+    }
 }
+

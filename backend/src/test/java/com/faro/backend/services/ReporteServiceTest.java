@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -373,5 +374,47 @@ class ReporteServiceTest {
     private DesvioOrdenDTO desvio(ClasificacionDesvio clasificacion, long diasDesvio) {
         return new DesvioOrdenDTO(1L, null, null, "OT", TipoTrabajo.PODA, 1L, "Lugar",
                 null, null, "Estado", LocalDate.now(), null, diasDesvio, clasificacion);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Montos: lo declarado al crear y el gasto adicional declarado al finalizar
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void elTableroTraeElMontoDeclaradoYElGastoAdicionalTotal() {
+        stubearRepositorioVacio();
+        when(reporteRepository.sumarMontosAproximados(any(), any())).thenReturn(new BigDecimal("37000"));
+        when(reporteRepository.sumarGastosAdicionales(any(), any())).thenReturn(new BigDecimal("9500.50"));
+
+        DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
+
+        assertThat(dto.montoAproximadoTotal()).isEqualByComparingTo("37000");
+        assertThat(dto.gastoAdicionalTotal()).isEqualByComparingTo("9500.50");
+    }
+
+    @Test
+    void sinGastosAdicionalesElTotalEsCero() {
+        stubearRepositorioVacio();
+
+        DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
+
+        assertThat(dto.gastoAdicionalTotal()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void laSerieDeMontosTraeElGastoAdicionalDeCadaPeriodo() {
+        stubearRepositorioVacio();
+        List<Object[]> filas = new ArrayList<>();
+        filas.add(new Object[]{"2026-10", new BigDecimal("25000"), new BigDecimal("8000.50")});
+        filas.add(new Object[]{"2026-11", 12000L, null}); // otro tipo de número; sin gasto adicional
+        when(reporteRepository.sumarMontosPorMes(any(), any())).thenReturn(filas);
+
+        DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
+
+        assertThat(dto.montoPorPeriodo()).hasSize(2);
+        assertThat(dto.montoPorPeriodo().get(0).montoAproximado()).isEqualByComparingTo("25000");
+        assertThat(dto.montoPorPeriodo().get(0).gastoAdicional()).isEqualByComparingTo("8000.50");
+        assertThat(dto.montoPorPeriodo().get(1).montoAproximado()).isEqualByComparingTo("12000");
+        assertThat(dto.montoPorPeriodo().get(1).gastoAdicional()).isEqualByComparingTo("0");
     }
 }

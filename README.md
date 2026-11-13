@@ -139,3 +139,7 @@ El encargado y la mesa de entradas gestionan el personal (altas, bajas, roles y 
 ## Comentarios y fotos de las OT
 
 Cada orden de trabajo tiene un muro de comentarios con fotos (evidencia del trabajo), también sin señal. Las fotos van a un almacén S3 aparte: RustFS en Docker y Backblaze B2 en Render. Ver [COMENTARIOS_Y_FOTOS.md](./COMENTARIOS_Y_FOTOS.md) (cómo probarlo en la compu) y [DESPLIEGUE.md](./DESPLIEGUE.md#9-almacén-de-fotos-backblaze-b2) (cómo configurarlo en Render).
+
+## Finalizar y cancelar una OT
+
+Al finalizar una OT sale un pop-up (todo opcional, también sin señal): si el lugar quedó funcionando, si hubo algún otro gasto (gasto adicional), un comentario y fotos de evidencia. Al cancelar, un motivo opcional. El gasto adicional se ve en Trabajos, en la ficha del lugar, en Reportes y en el CSV. Ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md).

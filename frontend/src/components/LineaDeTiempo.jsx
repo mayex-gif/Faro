@@ -1,5 +1,5 @@
 import Icono from './Icono'
-import { agruparPorDia, detalleEvento, horaEvento, nombreDia, ordenDelEvento, tituloEvento } from '../utils/historia'
+import { agruparPorDia, cierreDelEvento, detalleEvento, horaEvento, nombreDia, ordenDelEvento, tituloEvento } from '../utils/historia'
 
 // Dibuja la historia de un lugar: los eventos agrupados por día, del más nuevo al más viejo.
 // Cada evento tiene un punto con el color de su estado, pero el texto siempre dice lo que pasó
@@ -25,6 +25,7 @@ function LineaDeTiempo({ eventos }) {
           <ol className="eventos-linea">
             {grupo.eventos.map((evento, posicion) => {
               const detalle = detalleEvento(evento)
+              const cierre = cierreDelEvento(evento) // lo del pop-up de "Finalizar"
               return (
                 <li key={`${evento.fecha}-${evento.tipo}-${evento.ordenId}-${posicion}`}
                   className={evento.cierre ? 'evento evento-cierre' : 'evento'}>
@@ -37,6 +38,7 @@ function LineaDeTiempo({ eventos }) {
                     {evento.cierre && <span className="marca-cierre">Orden cerrada</span>}
                   </p>
                   {detalle && <p className="evento-detalle">{detalle}</p>}
+                  {cierre && <p className="evento-detalle evento-datos-cierre">{cierre}</p>}
                   <p className="evento-orden">{ordenDelEvento(evento)}</p>
                 </li>
               )

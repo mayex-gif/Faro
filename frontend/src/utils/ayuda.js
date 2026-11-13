@@ -73,7 +73,7 @@ export const AYUDA = {
           '"¿Dónde falta luz?" ordena las zonas del pueblo de la que tiene menos luminarias andando a la que tiene más. Tocá una para marcarla en el mapa y ver solo sus luminarias.',
           'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Los números no cambian.',
           '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
-          { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Cuando esa OT se finaliza, la luminaria vuelve sola a "Funciona".', roles: [ENCARGADO] },
+          { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Al finalizar esa OT, dejá marcado "El lugar quedó funcionando" y la luminaria vuelve a "Funciona".', roles: [ENCARGADO] },
           { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando.', roles: [ENCARGADO] },
           { texto: '"Agregar luminaria": tocá el mapa donde está y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
         ],
@@ -113,6 +113,7 @@ export const AYUDA = {
           'La lista "Órdenes registradas" va de la más reciente a la más antigua.',
           'En "Buscar y filtrar órdenes" podés buscar por descripción, lugar o número, y filtrar por estado, prioridad, tipo, origen, lugar y fechas de creación.',
           '"Comentarios" abre lo que se fue contando del trabajo, con fotos. Ahí también podés sumar un comentario (hasta 5 fotos por comentario).',
+          'En las órdenes finalizadas, debajo del estado se ve el gasto adicional que se declaró al terminarlas (si hubo).',
         ],
       },
       {
@@ -120,7 +121,9 @@ export const AYUDA = {
         roles: [ENCARGADO],
         items: [
           { texto: '"Editar" carga la orden en el formulario de arriba para corregir sus datos. Después tocá "Guardar cambios". Si la orden es en un tramo de calle, el tramo se mantiene mientras no cambies la ubicación.', roles: [ENCARGADO] },
-          { texto: 'Los botones "Pasar a…" cambian el estado de la orden. Finalizada y Cancelada piden confirmación porque después ya no se puede modificar.', roles: [ENCARGADO] },
+          { texto: 'Los botones "Pasar a…" cambian el estado de la orden. Finalizada y Cancelada no tienen vuelta atrás: después la orden ya no se puede modificar.', roles: [ENCARGADO] },
+          { texto: '"Pasar a Finalizada" abre una ventana para contar cómo quedó el trabajo. Todo es opcional: si el lugar quedó funcionando (aparece si estaba fuera de servicio), si hubo algún otro gasto (nafta, materiales o repuestos que no estaban previstos), un comentario y hasta 5 fotos. "Finalizar la OT" lo guarda todo.', roles: [ENCARGADO] },
+          { texto: '"Pasar a Cancelada" pide el motivo (opcional): queda como comentario de la orden.', roles: [ENCARGADO] },
           { texto: '"Ver programaciones" lleva a Mantenimiento periódico, donde están los trabajos que se repiten.', roles: [ENCARGADO] },
         ],
       },
@@ -210,7 +213,7 @@ export const AYUDA = {
         items: [
           'Arriba, el lugar elegido. Si llegaste desde el Mapa, Infraestructura o Mis tareas, ya viene elegido; si no, elegilo en la lista "Lugar".',
           'Los datos del lugar: tipo, estado operativo, ubicación, datos técnicos y cuántas órdenes tuvo.',
-          'La "Línea de tiempo": cada orden registrada y cada cambio de estado, del más reciente al más antiguo.',
+          'La "Línea de tiempo": cada orden registrada y cada cambio de estado, del más reciente al más antiguo. Al finalizar una orden también dice si el lugar volvió a funcionar y el gasto adicional (si hubo).',
         ],
       },
       {
@@ -239,9 +242,9 @@ export const AYUDA = {
       {
         titulo: 'Qué podés hacer',
         items: [
-          '"Iniciar tarea" cuando la cuadrilla empieza el trabajo y "Finalizar tarea" cuando lo termina. Finalizar pide confirmación porque después no se puede modificar.',
-          'En "Otras opciones" están los demás estados posibles (por ejemplo, cancelar).',
-          'Al finalizar, FARO te ofrece sumar fotos del trabajo terminado.',
+          '"Iniciar tarea" cuando la cuadrilla empieza el trabajo y "Finalizar tarea" cuando lo termina.',
+          '"Finalizar tarea" abre una ventana para contar cómo quedó. Todo es opcional: "El lugar quedó funcionando" (si el lugar tiene otro trabajo abierto viene desmarcada: marcala solo si ya anda), "¿Hubo algún otro gasto?" (nafta, materiales o repuestos que no estaban previstos), un comentario y fotos del trabajo terminado (con "Sacar foto" o "Elegir fotos").',
+          'En "Otras opciones" están los demás estados posibles. Cancelar pide el motivo (opcional), que queda como comentario.',
           '"Comentarios y fotos" sirve para contar cómo va el trabajo o mandar fotos (hasta 5 por comentario).',
           '"Ficha del lugar" muestra todo lo que se hizo antes en ese lugar.',
           '"Actualizar tareas" trae los trabajos recién asignados.',
@@ -251,7 +254,7 @@ export const AYUDA = {
         titulo: 'Sin señal',
         roles: [CAPATAZ],
         items: [
-          { texto: 'Lo que inicies o finalices sin señal queda guardado en el celular, marcado "Sin enviar", y se envía solo cuando vuelve la señal. Arriba se ve cuántos cambios faltan enviar.', roles: [CAPATAZ] },
+          { texto: 'Lo que inicies, finalices o canceles sin señal queda guardado en el celular, marcado "Sin enviar", y se envía solo cuando vuelve la señal: también el comentario, las fotos, si el lugar quedó funcionando y el gasto adicional. Arriba se ve cuántos cambios faltan enviar.', roles: [CAPATAZ] },
           { texto: 'Antes de salir, tocá "Guardar copia local" para poder consultar tus tareas aunque abras FARO sin señal. "Ver copia local" la muestra y "Eliminar copia local" la borra del celular.', roles: [CAPATAZ] },
           { texto: 'Si dice "para revisar", el trabajo cambió mientras no tenías señal: FARO te muestra qué pasó y vos decidís qué hacer.', roles: [CAPATAZ] },
         ],
@@ -345,8 +348,9 @@ export const AYUDA = {
       {
         titulo: 'Qué ves',
         items: [
-          'Arriba, los totales: órdenes creadas, resueltas, las que siguen abiertas y qué parte del plan se cumplió a tiempo.',
+          'Arriba, los totales: órdenes creadas, resueltas, las que siguen abiertas, el total gastado en las finalizadas (lo declarado al crearlas más los gastos adicionales) y qué parte del plan se cumplió a tiempo.',
           '"Evolución": órdenes creadas y cerradas en cada día, semana o mes.',
+          '"Monto gastado": en cada día, semana o mes, una barra con dos partes: lo declarado al crear las órdenes finalizadas (verde) y los gastos adicionales (naranja).',
           '"Por estado", "Por tipo de trabajo" y "Por cuadrilla": cómo se reparten las órdenes del período.',
           '"Mantenimiento programado": cómo vienen las órdenes del plan con fecha en el período.',
         ],
@@ -354,7 +358,7 @@ export const AYUDA = {
       {
         titulo: 'Descargar',
         items: [
-          '"Trabajos finalizados (CSV)" y "Desvíos del plan (CSV)" bajan los datos del período en un archivo que se abre con Excel.',
+          '"Trabajos finalizados (CSV)" y "Desvíos del plan (CSV)" bajan los datos del período en un archivo que se abre con Excel. El de trabajos trae el monto aproximado y el gasto adicional de cada orden.',
         ],
       },
     ],

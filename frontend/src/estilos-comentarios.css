@@ -57,12 +57,10 @@
 .hoja-comentarios .hoja-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .hoja-comentarios .hoja-encabezado h2 { font-size: 1.125rem; overflow-wrap: anywhere; }
 
-/* Dentro de la tarjeta de tarea (Mis tareas) y el aviso después de Finalizar */
+/* Dentro de la tarjeta de tarea (Mis tareas) */
 .tarea-comentarios summary { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--enlace); font-size: 0.875rem; font-weight: 650; cursor: pointer; }
 .tarea-comentarios summary .icono { width: 18px; height: 18px; }
 .tarea-comentarios[open] summary { margin-bottom: 8px; }
-.aviso-evidencia { display: grid; gap: 12px; padding: 20px; }
-.aviso-evidencia .acciones { justify-content: flex-end; }
 
 @media (prefers-reduced-motion: reduce) {
   .foto-cargando { animation: none; }

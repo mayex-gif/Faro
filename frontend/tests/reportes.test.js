@@ -5,6 +5,7 @@ import { nombreDeArchivo } from '../src/api/cliente.js'
 import {
   PERIODO_INICIAL, altoBarras, describirRango, errorPeriodo, etiquetaPeriodo, filasBarras, filasDesvios, formatearDia,
   granularidadSugerida, nombreTipoTrabajo, parametrosReporte, porcentaje, serieEvolucion, tableroVacio,
+  pesos, resumenGastos, serieMontos,
 } from '../src/utils/reportes.js'
 
 // ---------- API ----------
@@ -151,4 +152,31 @@ test('tableroVacio solo cuando no hubo órdenes ni programadas', () => {
   assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 0 } }), true)
   assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 2 } }), false)
   assert.equal(tableroVacio({ totalOts: 4, resumenDesvios: null }), false)
+})
+
+// ===================== Montos gastados (declarado + gasto adicional) =====================
+
+test('el total gastado suma lo declarado y los gastos adicionales', () => {
+  assert.deepEqual(resumenGastos({ montoAproximadoTotal: 37000, gastoAdicionalTotal: 9500.5 }), { declarado: 37000, adicional: 9500.5, total: 46500.5 })
+  // Un backend anterior (sin gasto adicional) o un tablero vacío: ceros
+  assert.deepEqual(resumenGastos({ montoAproximadoTotal: 1000 }), { declarado: 1000, adicional: 0, total: 1000 })
+  assert.deepEqual(resumenGastos(null), { declarado: 0, adicional: 0, total: 0 })
+})
+
+test('la serie de montos trae lo declarado, lo adicional y el total de cada período', () => {
+  const serie = serieMontos([
+    { periodo: '2026-10', montoAproximado: 25000, gastoAdicional: 8000.5 },
+    { periodo: '2026-11', montoAproximado: 12000 }, // backend anterior: sin gasto adicional
+  ])
+  assert.equal(serie[0].declarado, 25000)
+  assert.equal(serie[0].adicional, 8000.5)
+  assert.equal(serie[0].total, 33000.5)
+  assert.equal(serie[1].adicional, 0)
+  assert.equal(serie[1].etiqueta, etiquetaPeriodo('2026-11'))
+  assert.deepEqual(serieMontos(), [])
+})
+
+test('los pesos del tablero van sin centavos', () => {
+  assert.equal(pesos(46500.5).replace(/\s/g, ' '), '$ 46.501')
+  assert.equal(pesos(null).replace(/\s/g, ' '), '$ 0')
 })

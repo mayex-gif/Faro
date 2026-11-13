@@ -31,6 +31,10 @@ public class OrdenTrabajo {
     private String altura;
     @Column(name = "monto_aproximado", precision = 14, scale = 2)
     private BigDecimal montoAproximado;
+    // Lo que se gastó de más y no estaba en el monto aproximado (ej: nafta, materiales o repuestos no previstos).
+    // Lo declara quien finaliza la OT (encargado o capataz), en el pop-up de "Finalizar". Opcional.
+    @Column(name = "gasto_adicional", precision = 14, scale = 2)
+    private BigDecimal gastoAdicional;
 
     // Parte de la calle donde se trabaja (línea sobre la calle). null = toda la calle o no es una calle.
     // Ver services/TramoDeCalle. Columna opcional: las OT viejas quedan con null.
@@ -104,6 +108,8 @@ public class OrdenTrabajo {
     public void setAltura(String altura) { this.altura = altura; }
     public BigDecimal getMontoAproximado() { return montoAproximado; }
     public void setMontoAproximado(BigDecimal montoAproximado) { this.montoAproximado = montoAproximado; }
+    public BigDecimal getGastoAdicional() { return gastoAdicional; }
+    public void setGastoAdicional(BigDecimal gastoAdicional) { this.gastoAdicional = gastoAdicional; }
     public Geometry getTramo() { return tramo; }
     public void setTramo(Geometry tramo) { this.tramo = tramo; }
 

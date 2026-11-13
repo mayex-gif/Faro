@@ -129,37 +129,76 @@ public class OrdenTrabajoService {
                     "No se puede pasar una orden de " + desde + " a " + nuevo.getNombre());
         }
 
+        boolean finaliza = nuevo.isCierre() && !esCancelacion(nuevo);
+        validarDatosDelCierre(request, finaliza);
+
         orden.setEstado(nuevo);
         if (nuevo.isCierre()) {
             orden.setFechaFinalizacion(LocalDateTime.now());
         } else if (actual != null && actual.isCierre()) {
             orden.setFechaFinalizacion(null);
         }
-        // Pestaña Luminarias: si se terminó el trabajo de una luminaria, vuelve sola a "Funciona".
-        // Si la OT se canceló, la luminaria queda como estaba.
-        if (nuevo.isCierre() && !esCancelacion(nuevo)) {
-            dejarLuminariaFuncionando(orden.getLugar());
+        if (!finaliza) {
+            // Si la OT se canceló (o pasó a cualquier otro estado), el lugar queda como estaba
+            OrdenTrabajo guardada = ordenRepository.save(orden);
+            // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
+            eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
+            return convertirADto(guardada);
+        }
+
+        // Pop-up de "Finalizar": la casilla "El lugar quedó funcionando" y el gasto adicional
+        PuntoInfraestructura lugar = orden.getLugar();
+        boolean estabaFueraDeServicio = lugar != null && Boolean.FALSE.equals(lugar.getEstadoOperativo());
+        dejarElLugarComoDijeron(lugar, request.lugarFunciona());
+        if (request.gastoAdicional() != null) {
+            orden.setGastoAdicional(request.gastoAdicional());
         }
         OrdenTrabajo guardada = ordenRepository.save(orden);
-        // Anotamos en la bitácora lo que pasó: de qué estado a qué estado
-        eventoRepository.save(EventoOrden.cambioDeEstado(orden, actual, nuevo));
+        // En la bitácora va el cambio de estado + lo del pop-up (para la ficha del lugar)
+        Boolean volvioAFuncionar = estabaFueraDeServicio ? Boolean.TRUE.equals(lugar.getEstadoOperativo()) : null;
+        eventoRepository.save(EventoOrden.finalizacion(orden, actual, nuevo, request.gastoAdicional(), volvioAFuncionar));
         return convertirADto(guardada);
     }
 
+    // La casilla y el gasto son del pop-up de "Finalizar": en otro cambio de estado no tienen sentido.
+    private static void validarDatosDelCierre(CambioEstadoRequestDTO request, boolean finaliza) {
+        if (finaliza) {
+            return;
+        }
+        if (request.gastoAdicional() != null) {
+            throw new DatoInvalidoException("gastoAdicional", "El gasto adicional se carga solo al finalizar la orden");
+        }
+        if (request.lugarFunciona() != null) {
+            throw new DatoInvalidoException("lugarFunciona", "Si el lugar quedó funcionando se indica solo al finalizar la orden");
+        }
+    }
+
     // Los estados son configurables: "Cancelada" se reconoce por el nombre (igual que en los reportes).
-    private static boolean esCancelacion(EstadoOrden estado) {
+    // (Sin "private": también lo usa SincronizacionService.)
+    static boolean esCancelacion(EstadoOrden estado) {
         return estado.getNombre() != null && estado.getNombre().trim().toLowerCase().startsWith("cancel");
     }
 
-    // El lugar lo trajo Hibernate junto con la OT: al cambiarle los datos acá, se guarda solo al terminar
-    // la transacción (y el cambio queda en la Auditoría).
-    // Una luminaria a futuro no tiene OT, así que acá nunca se la marca como instalada: eso lo hace el encargado.
-    private static void dejarLuminariaFuncionando(PuntoInfraestructura lugar) {
-        if (lugar == null || !PuntoInfraestructuraService.TIPO_LUMINARIA.equals(lugar.getTipo())
-                || Boolean.FALSE.equals(lugar.getInstalada())) {
+    /**
+     * La casilla "El lugar quedó funcionando" del pop-up de "Finalizar" (sirve para todos los tipos de lugar):
+     * - true  → el lugar vuelve a "Funciona".
+     * - false → el lugar queda como está (ej: tiene otro trabajo abierto).
+     * - null  → no vino la casilla (pantallas viejas, comandas sin señal de antes): lo de siempre,
+     *           una luminaria vuelve sola a "Funciona" y los demás lugares quedan como están.
+     * El lugar lo trajo Hibernate junto con la OT: al cambiarle los datos acá, se guarda solo al terminar
+     * la transacción (y el cambio queda en la Auditoría).
+     * Una luminaria a futuro no tiene OT, así que acá nunca se la marca como instalada: eso lo hace el encargado.
+     */
+    private static void dejarElLugarComoDijeron(PuntoInfraestructura lugar, Boolean lugarFunciona) {
+        if (lugar == null || Boolean.FALSE.equals(lugar.getInstalada())) {
             return;
         }
-        lugar.setEstadoOperativo(true);
+        boolean ponerloEnFunciona = (lugarFunciona == null)
+                ? PuntoInfraestructuraService.TIPO_LUMINARIA.equals(lugar.getTipo())
+                : lugarFunciona;
+        if (ponerloEnFunciona) {
+            lugar.setEstadoOperativo(true);
+        }
     }
 
     /**
@@ -365,7 +404,8 @@ public class OrdenTrabajoService {
                 orden.getFechaFinalizacion(),
                 orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
                 orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado(),
-                orden.getTramo()
+                orden.getTramo(),
+                orden.getGastoAdicional()
         );
     }
 }

@@ -113,7 +113,9 @@ public class HistoriaLugarService {
                 nuevo != null ? nuevo.getColor() : null,
                 nuevo != null && nuevo.isCierre(),
                 cuadrilla != null ? cuadrilla.getNombre() : null,
-                cuadrillaAnterior != null ? cuadrillaAnterior.getNombre() : null
+                cuadrillaAnterior != null ? cuadrillaAnterior.getNombre() : null,
+                anotacion.getGastoAdicional(),
+                anotacion.getLugarFunciona()
         );
     }
 

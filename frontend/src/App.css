@@ -153,6 +153,7 @@
   .filtros-ordenes .filtro-busqueda { grid-column: auto; }
 }
 .numero-orden { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
+.gasto-orden { display: block; margin-top: 6px; color: var(--texto-secundario); font-size: 0.75rem; white-space: nowrap; }
 .fecha-tabla { white-space: nowrap; }
 
 /* Prioridad: color + texto (nunca solo color) */
@@ -199,6 +200,7 @@
 .evento-encabezado time { color: var(--texto-secundario); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 .evento-encabezado strong { font-weight: 650; }
 .evento-detalle { margin-top: 3px; font-size: 0.8125rem; }
+.evento-datos-cierre { color: var(--texto-secundario); } /* lo del pop-up de "Finalizar": lugar funcionando, gasto adicional */
 .evento-orden { margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; overflow-wrap: anywhere; }
 .marca-cierre { padding: 2px 8px; border: 1px solid var(--borde); border-radius: 5px; background: #F1F4F5; color: var(--texto); font-size: 0.6875rem; font-weight: 650; }
 @media (max-width: 760px) {

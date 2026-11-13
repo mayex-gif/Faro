@@ -44,7 +44,7 @@ El estado **no se guarda**: el front lo calcula con los datos del lugar y sus OT
 | Una luminaria a futuro **no lleva OT** (crear, modificar, sincronización sin señal) **ni mantenimiento periódico** (crear/modificar regla). | `PuntoInfraestructuraService.validarQueAdmiteTrabajos`, usada en `OrdenTrabajoService.copiarDatos` y `ReglaMantenimientoService` | 400 `errores.lugarId` |
 | Una luminaria que ya tuvo OT no puede volver a "a futuro". | `PuntoInfraestructuraService.modificarLugar` | 409 |
 | Cargar una luminaria a futuro (POST con `instalada: false`) es solo del encargado. | `PuntoInfraestructuraController.crear` | 403 |
-| Al **finalizar** (no cancelar) una OT de una luminaria instalada, queda **funcionando** (`estadoOperativo = true`). "Cancelada" se reconoce por el nombre, como en los reportes. | `OrdenTrabajoService.cambiarEstado` | — |
+| Al **finalizar** (no cancelar) una OT, el pop-up pregunta "El lugar quedó funcionando" (si estaba fuera de servicio): marcada → `estadoOperativo = true`. Sin el dato (pantallas o comandas viejas), una luminaria instalada vuelve sola a funcionar, como antes. "Cancelada" se reconoce por el nombre, como en los reportes. Ver `CIERRE_DE_OT.md`. | `OrdenTrabajoService.cambiarEstado` → `dejarElLugarComoDijeron` | — |
 
 La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que no aplica la trampa del `CHECK` de Hibernate).
 
@@ -80,7 +80,7 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 1. `docker compose up --build` (el backend cambió). Hace falta `FARO_JWT_SECRET` en el `.env` (copiala de `.env.example`).
 2. Entrar como encargado → Mapa → pestaña **Luminarias**.
 3. Tocar una luminaria → "Apagada" → aparece roja y en "Apagadas sin arreglo" → "Crear OT de arreglo" → crearla →
-   pasa a "En arreglo" → finalizar la OT (En curso → Finalizada) → vuelve a "Funciona".
+   pasa a "En arreglo" → finalizar la OT (En curso → Finalizada) dejando marcada "El lugar quedó funcionando" → vuelve a "Funciona".
 4. "Agregar luminaria a futuro" → tocar el mapa → registrar → aparece en "A futuro" sin "Nueva OT acá" →
    "Marcar como instalada" → queda "Funciona".
 5. Más → Luminarias e Infraestructura: cada una muestra lo suyo.
