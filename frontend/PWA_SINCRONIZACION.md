@@ -26,7 +26,7 @@ Endpoints aparte de `/api/ordenes-trabajo` (que no cambia). Son **PUT** con el n
 
 | Endpoint | Body | Quién |
 |---|---|---|
-| `PUT /api/sincronizacion/cambios-estado/{operacionId}` | `{ ordenId, estadoId, estadoAnteriorId, hechoEn }` | encargado y capataz |
+| `PUT /api/sincronizacion/cambios-estado/{operacionId}` | `{ ordenId, estadoId, estadoAnteriorId, hechoEn, lugarFunciona?, gastoAdicional? }` (los dos últimos, solo al finalizar con el pop-up: ver `CIERRE_DE_OT.md`) | encargado y capataz |
 | `PUT /api/sincronizacion/altas-orden/{operacionId}` | `{ orden: { descripcion, tipo, origen, prioridad, lugarId }, hechoEn }` | encargado y mesa |
 
 - Responde **200** con la OT. Si la misma comanda vuelve a llegar, responde lo mismo que la primera vez (la OT como está ahora, o el mismo conflicto) **sin volver a aplicarla**. Un número usado por otra persona u otra OT → 409.

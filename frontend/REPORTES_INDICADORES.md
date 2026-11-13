@@ -14,17 +14,20 @@ El backend valida lo mismo y responde 403 para cualquier otro rol.
    Con un período rápido se manda solo `atajo` y el backend calcula las fechas con su reloj.
    Al pasar a "Otras fechas" se completan con el rango que se estaba viendo, para no mostrar un error antes de tiempo.
    "Agrupar la evolución" elige `granularidad` (día, semana o mes); se sugiere una según el período.
-2. **Totales**: órdenes creadas, resueltas (con su %), las que siguen abiertas y el % del plan de
+2. **Totales**: órdenes creadas, resueltas (con su %), las que siguen abiertas, el **total gastado** en las finalizadas
+   (`montoAproximadoTotal` + `gastoAdicionalTotal`, con el detalle debajo) y el % del plan de
    mantenimiento cumplido a tiempo (`porcentajeCumplimiento` del backend).
 3. **Evolución**: gráfico de áreas (Recharts) con creadas y cerradas por período. Al pasar el mouse
    aparece el detalle; "Ver los datos en una tabla" tiene los mismos números para teclado y lector de pantalla.
+   **Monto gastado** (`GraficoMontos`): barras apiladas por período con lo declarado al crear las OT finalizadas
+   (verde) y el gasto adicional declarado al finalizarlas (naranja), con leyenda, globo y tabla (`montoPorPeriodo`).
 4. **Por estado**: dona con el total en el centro y los colores que informa el backend; al lado, una leyenda
    (lista HTML) con cantidad y %.
 5. **Por tipo de trabajo y por cuadrilla**: barras horizontales (Recharts) con cantidad y % al final de cada
    barra, y su tabla de datos.
 6. **Mantenimiento programado**: dona con el % cumplido a tiempo en el centro y cuántas órdenes del plan
    terminaron a tiempo, adelantadas, demoradas, pendientes o canceladas; debajo, el desvío promedio en días.
-7. **Descargas CSV**: "Trabajos finalizados" (`/reportes/ots-resueltas/csv`) y "Desvíos del plan"
+7. **Descargas CSV** (el de trabajos trae "Monto Aproximado Gastado" y "Gasto Adicional"): "Trabajos finalizados" (`/reportes/ots-resueltas/csv`) y "Desvíos del plan"
    (`/reportes/desvios/csv`) para el mismo período. Se piden con el token (un enlace común no lo manda)
    y se guardan con el nombre que propone el backend.
 

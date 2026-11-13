@@ -174,8 +174,15 @@ con su nombre y cuántos trabajos abiertos tiene; los detalles se ven en la fich
 Cada tarea del capataz es una tarjeta (`li.tarjeta-tarea`) con un único botón principal de ancho completo y
 56 px de alto: la acción que sigue ("Iniciar tarea" o "Finalizar tarea"). Las demás opciones quedan en
 "Otras opciones". El borde izquierdo repite la prioridad con los colores del mapa; la prioridad siempre está
-escrita. Cerrar una tarea pide confirmación, igual que en Órdenes de trabajo. Los textos de los botones salen
+escrita. Cerrar una tarea abre su pop-up ("Finalizar" o "Cancelar"), igual que en Órdenes de trabajo. Los textos de los botones salen
 del flujo de estados que informa el backend, no de nombres escritos en el código.
+
+### Pop-ups de cierre (Finalizar y Cancelar)
+`components/PopUpFinalizar.jsx` y `components/PopUpCancelar.jsx`, estilos en `estilos-cierre.css` (prefijo `.popup-cierre`).
+En la compu, ventana en el medio (580 px Finalizar, 480 px Cancelar) con los botones abajo a la derecha; en el celular, Finalizar
+ocupa toda la pantalla y Cancelar es una hoja que sube desde abajo, con los botones siempre a la vista. "Volver" a la izquierda;
+la acción a la derecha ("Finalizar la OT" naranja, "Cancelar la OT" rojo `--error`). Foco al título al abrir, Tab da la vuelta
+adentro, Escape cierra y devuelve el foco; no se cierra tocando afuera (`hooks/useDialogo.js`). Detalle en `CIERRE_DE_OT.md`.
 
 ## Referencias
 
