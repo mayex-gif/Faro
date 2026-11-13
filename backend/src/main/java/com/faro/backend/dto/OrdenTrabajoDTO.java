@@ -32,7 +32,7 @@ public record OrdenTrabajoDTO(
         String altura,
         BigDecimal montoAproximado,
         Geometry tramo,       // null = toda la calle (o el lugar no es una calle)
-        BigDecimal gastoAdicional // lo que se gastó de más al finalizar (null = no se declaró)
+        BigDecimal gastoReal  // cuánto se gastó en total al finalizar (null = no se informó)
 ) {
     /** Constructor de conveniencia para casos donde no hay cuadrilla asignada */
     public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
@@ -78,7 +78,7 @@ public record OrdenTrabajoDTO(
                 calleEntre1, calleEntre2, altura, montoAproximado, null, null);
     }
 
-    /** Compatibilidad con el constructor canónico anterior al gasto adicional. */
+    /** Compatibilidad con el constructor canónico anterior al gasto real. */
     public OrdenTrabajoDTO(Long id, String descripcion, TipoTrabajo tipo, OrigenOrden origen,
                            PrioridadOrden prioridad, Long lugarId, String lugarNombre,
                            LocalDateTime fechaCreacion, Long estadoId, String estadoNombre,

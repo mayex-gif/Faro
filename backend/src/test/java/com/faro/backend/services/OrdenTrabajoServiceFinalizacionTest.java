@@ -27,7 +27,8 @@ import static org.mockito.Mockito.*;
 
 /**
  * Tests del pop-up de "Finalizar": la casilla "El lugar quedó funcionando" (todos los tipos de lugar)
- * y el gasto adicional. Todos los repositories son mocks: no se usa la base de datos.
+ * y "¿Cuánto se gastó en total?" (gasto real, con la compatibilidad del gasto adicional viejo de #74).
+ * Todos los repositories son mocks: no se usa la base de datos.
  */
 @ExtendWith(MockitoExtension.class)
 class OrdenTrabajoServiceFinalizacionTest {
@@ -74,12 +75,21 @@ class OrdenTrabajoServiceFinalizacionTest {
         return orden;
     }
 
-    private OrdenTrabajoDTO pasarA(OrdenTrabajo orden, EstadoOrden destino, Boolean lugarFunciona, BigDecimal gasto) {
+    private OrdenTrabajoDTO pasarA(OrdenTrabajo orden, EstadoOrden destino, Boolean lugarFunciona, BigDecimal gastoReal) {
+        return pasarA(orden, new CambioEstadoRequestDTO(destino.getId(), lugarFunciona, gastoReal), destino);
+    }
+
+    private OrdenTrabajoDTO pasarA(OrdenTrabajo orden, CambioEstadoRequestDTO pedido, EstadoOrden destino) {
         when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
         when(estadoRepository.findById(destino.getId())).thenReturn(Optional.of(destino));
         when(transicionRepository.existsByOrigenIdAndDestinoId(3L, destino.getId())).thenReturn(true);
         lenient().when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
-        return service.cambiarEstado(7L, new CambioEstadoRequestDTO(destino.getId(), lugarFunciona, gasto), ENCARGADO);
+        return service.cambiarEstado(7L, pedido, ENCARGADO);
+    }
+
+    /** Lo que mandan las pantallas y comandas viejas (pop-up de #74): solo el gasto adicional. */
+    private OrdenTrabajoDTO finalizarConGastoAdicional(OrdenTrabajo orden, BigDecimal gastoAdicional) {
+        return pasarA(orden, new CambioEstadoRequestDTO(finalizada.getId(), null, null, gastoAdicional), finalizada);
     }
 
     /** El renglón que quedó en la bitácora. */
@@ -162,51 +172,111 @@ class OrdenTrabajoServiceFinalizacionTest {
         assertNull(eventoAnotado().getLugarFunciona());
     }
 
-    // ===================== El gasto adicional =====================
+    // ===================== "¿Cuánto se gastó en total?" (gasto real) =====================
 
     @Test
-    void elGastoAdicionalSeGuardaEnLaOtYEnLaBitacora() {
+    void elGastoRealSeGuardaEnLaOtYEnLaBitacora() {
         OrdenTrabajo orden = ordenEnCurso("CALLE", true);
+        orden.setMontoAproximado(new BigDecimal("20000"));
 
-        OrdenTrabajoDTO resultado = pasarA(orden, finalizada, null, new BigDecimal("8000.50"));
+        // Se declararon $ 20.000 y se gastaron $ 15.000: se puede registrar que se gastó MENOS
+        OrdenTrabajoDTO resultado = pasarA(orden, finalizada, null, new BigDecimal("15000.50"));
 
-        assertEquals(new BigDecimal("8000.50"), orden.getGastoAdicional());
-        assertEquals(new BigDecimal("8000.50"), resultado.gastoAdicional());
+        assertEquals(new BigDecimal("15000.50"), orden.getGastoReal());
+        assertEquals(new BigDecimal("15000.50"), resultado.gastoReal());
+        assertEquals(new BigDecimal("20000"), orden.getMontoAproximado()); // lo declarado no se toca
         EventoOrden evento = eventoAnotado();
-        assertEquals(new BigDecimal("8000.50"), evento.getGastoAdicional());
+        assertEquals(new BigDecimal("15000.50"), evento.getGastoReal());
         assertEquals("Finalizada", evento.getEstadoNuevo().getNombre());
     }
 
     @Test
-    void sinGastoAdicional_laOtQuedaSinGasto() {
+    void unGastoRealDeCeroSeGuarda() {
+        OrdenTrabajo orden = ordenEnCurso("CALLE", true);
+        orden.setMontoAproximado(new BigDecimal("5000"));
+
+        pasarA(orden, finalizada, null, BigDecimal.ZERO);
+
+        assertEquals(BigDecimal.ZERO, orden.getGastoReal());
+    }
+
+    @Test
+    void sinGasto_laOtQuedaSinGastoReal() {
         OrdenTrabajo orden = ordenEnCurso("CALLE", true);
 
         OrdenTrabajoDTO resultado = pasarA(orden, finalizada, null, null);
 
-        assertNull(orden.getGastoAdicional());
-        assertNull(resultado.gastoAdicional());
-        assertNull(eventoAnotado().getGastoAdicional());
+        assertNull(orden.getGastoReal());
+        assertNull(resultado.gastoReal());
+        assertNull(eventoAnotado().getGastoReal());
     }
 
     @Test
-    void sinGastoAdicional_noBorraUnGastoQueYaTenia() {
-        // Ej: una OT reabierta que se vuelve a finalizar desde una pantalla vieja
+    void sinGasto_noBorraUnGastoQueYaTenia() {
+        // Ej: una OT reabierta que se vuelve a finalizar desde una pantalla sin el campo
         OrdenTrabajo orden = ordenEnCurso("CALLE", true);
-        orden.setGastoAdicional(new BigDecimal("500"));
+        orden.setGastoReal(new BigDecimal("500"));
 
         pasarA(orden, finalizada, null, null);
 
-        assertEquals(new BigDecimal("500"), orden.getGastoAdicional());
+        assertEquals(new BigDecimal("500"), orden.getGastoReal());
+    }
+
+    // ===================== Compatibilidad: el gasto adicional viejo (#74) =====================
+
+    @Test
+    void conElGastoAdicionalViejo_elGastoRealEsLoDeclaradoMasElAdicional() {
+        // Una pantalla guardada en el celular (o una comanda del cuaderno) del pop-up de #74
+        OrdenTrabajo orden = ordenEnCurso("CALLE", true);
+        orden.setMontoAproximado(new BigDecimal("20000"));
+
+        OrdenTrabajoDTO resultado = finalizarConGastoAdicional(orden, new BigDecimal("3000"));
+
+        assertEquals(new BigDecimal("23000"), orden.getGastoReal());
+        assertEquals(new BigDecimal("23000"), resultado.gastoReal());
+        assertEquals(new BigDecimal("23000"), eventoAnotado().getGastoReal());
+    }
+
+    @Test
+    void conElGastoAdicionalViejoYSinMontoDeclarado_elGastoRealEsElAdicional() {
+        OrdenTrabajo orden = ordenEnCurso("CALLE", true);
+
+        finalizarConGastoAdicional(orden, new BigDecimal("8000.50"));
+
+        assertEquals(new BigDecimal("8000.50"), orden.getGastoReal());
+    }
+
+    @Test
+    void siVienenLosDos_ganaElGastoReal() {
+        OrdenTrabajo orden = ordenEnCurso("CALLE", true);
+        orden.setMontoAproximado(new BigDecimal("20000"));
+
+        pasarA(orden, new CambioEstadoRequestDTO(4L, null, new BigDecimal("15000"), new BigDecimal("3000")), finalizada);
+
+        assertEquals(new BigDecimal("15000"), orden.getGastoReal());
     }
 
     // ===================== Fuera del cierre, esos datos no van =====================
 
     @Test
-    void alCancelar_unGastoAdicionalSeRechazaYNoSeGuardaNada() {
+    void alCancelar_unGastoRealSeRechazaYNoSeGuardaNada() {
         OrdenTrabajo orden = ordenEnCurso("CALLE", false);
 
         DatoInvalidoException error = assertThrows(DatoInvalidoException.class,
                 () -> pasarA(orden, cancelada, null, new BigDecimal("100")));
+
+        assertEquals("gastoReal", error.getCampo());
+        assertSame(enCurso, orden.getEstado());
+        verify(ordenRepository, never()).save(any());
+        verify(eventoRepository, never()).save(any());
+    }
+
+    @Test
+    void alCancelar_unGastoAdicionalViejoSeRechazaYNoSeGuardaNada() {
+        OrdenTrabajo orden = ordenEnCurso("CALLE", false);
+
+        DatoInvalidoException error = assertThrows(DatoInvalidoException.class,
+                () -> pasarA(orden, new CambioEstadoRequestDTO(5L, null, null, new BigDecimal("100")), cancelada));
 
         assertEquals("gastoAdicional", error.getCampo());
         assertSame(enCurso, orden.getEstado());
@@ -234,6 +304,6 @@ class OrdenTrabajoServiceFinalizacionTest {
         assertFalse(orden.getLugar().getEstadoOperativo());
         EventoOrden evento = eventoAnotado();
         assertNull(evento.getLugarFunciona());
-        assertNull(evento.getGastoAdicional());
+        assertNull(evento.getGastoReal());
     }
 }

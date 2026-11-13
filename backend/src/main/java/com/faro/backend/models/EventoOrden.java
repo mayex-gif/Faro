@@ -48,9 +48,10 @@ public class EventoOrden {
     @JoinColumn(name = "cuadrilla_anterior_id", updatable = false)
     private Cuadrilla cuadrillaAnterior;
 
-    // Solo al FINALIZAR una OT (pop-up de "Finalizar"): lo que se gastó de más (null = no se declaró)
-    @Column(name = "gasto_adicional", precision = 14, scale = 2, updatable = false)
-    private BigDecimal gastoAdicional;
+    // Solo al FINALIZAR una OT (pop-up de "Finalizar"): cuánto se gastó en total (null = no se informó).
+    // (La columna vieja "gasto_adicional" de #74 queda en la base: la pasa a esta InicializadorGastoReal.)
+    @Column(name = "gasto_real", precision = 14, scale = 2, updatable = false)
+    private BigDecimal gastoReal;
 
     // Solo al FINALIZAR una OT: qué pasó con el lugar.
     // true = estaba Fuera de servicio y volvió a funcionar · false = sigue Fuera de servicio
@@ -90,12 +91,12 @@ public class EventoOrden {
 
     /**
      * La OT se FINALIZÓ: además del cambio de estado, se anota lo que dijo el pop-up de "Finalizar"
-     * (cuánto se gastó de más y si el lugar volvió a funcionar), para mostrarlo en la ficha del lugar.
+     * (cuánto se gastó en total y si el lugar volvió a funcionar), para mostrarlo en la ficha del lugar.
      */
     public static EventoOrden finalizacion(OrdenTrabajo orden, EstadoOrden anterior, EstadoOrden nuevo,
-                                           BigDecimal gastoAdicional, Boolean lugarFunciona) {
+                                           BigDecimal gastoReal, Boolean lugarFunciona) {
         EventoOrden evento = cambioDeEstado(orden, anterior, nuevo);
-        evento.gastoAdicional = gastoAdicional;
+        evento.gastoReal = gastoReal;
         evento.lugarFunciona = lugarFunciona;
         return evento;
     }
@@ -123,7 +124,7 @@ public class EventoOrden {
     public EstadoOrden getEstadoNuevo() { return estadoNuevo; }
     public Cuadrilla getCuadrilla() { return cuadrilla; }
     public Cuadrilla getCuadrillaAnterior() { return cuadrillaAnterior; }
-    public BigDecimal getGastoAdicional() { return gastoAdicional; }
+    public BigDecimal getGastoReal() { return gastoReal; }
     public Boolean getLugarFunciona() { return lugarFunciona; }
     public LocalDateTime getFecha() { return fecha; }
 

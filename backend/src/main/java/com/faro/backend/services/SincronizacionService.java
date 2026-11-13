@@ -23,6 +23,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -126,7 +127,7 @@ public class SincronizacionService {
         }
         try {
             // Las reglas de siempre (permisos, caminos entre estados) y el evento de la ficha
-            // (con la casilla "El lugar quedó funcionando" y el gasto adicional, si es un cierre)
+            // (con la casilla "El lugar quedó funcionando" y el gasto total, si es un cierre)
             return ordenService.cambiarEstado(pedido.ordenId(), pedido.comoPedido(), usuario);
         } catch (RecursoNoEncontradoException e) {
             throw new ConflictoSincronizacionException(Motivo.DATO_NO_EXISTE,
@@ -141,16 +142,20 @@ public class SincronizacionService {
     }
 
     /**
-     * Otra persona ya había finalizado la OT, pero el capataz (sin señal) había declarado un gasto adicional.
-     * Para no perder ese gasto: si la OT todavía no tiene uno, se guarda. Si ya tiene, queda el primero que llegó
-     * (la misma regla de siempre: gana el primero). La casilla del lugar NO se aplica: el que la finalizó ya decidió.
-     * La OT la trajo Hibernate en esta transacción: el cambio se guarda solo al terminar.
+     * Otra persona ya había finalizado la OT, pero el capataz (sin señal) había informado cuánto se gastó.
+     * Para no perder ese gasto: si la OT todavía no tiene gasto total, se guarda el del capataz (o, si su comanda
+     * es de antes y trae el "gasto adicional" viejo, lo declarado + el adicional). Si ya tiene, queda el primero
+     * que llegó (la misma regla de siempre: gana el primero). La casilla del lugar NO se aplica: el que la
+     * finalizó ya decidió. La OT la trajo Hibernate en esta transacción: el cambio se guarda solo al terminar.
      */
     private static void guardarElGastoQueFaltaba(OrdenTrabajo orden, CambioEstadoSinSenalDTO pedido) {
         EstadoOrden estado = orden.getEstado();
         boolean finalizada = estado != null && estado.isCierre() && !OrdenTrabajoService.esCancelacion(estado);
-        if (finalizada && pedido.gastoAdicional() != null && orden.getGastoAdicional() == null) {
-            orden.setGastoAdicional(pedido.gastoAdicional());
+        if (finalizada && orden.getGastoReal() == null) {
+            BigDecimal gastoReal = pedido.comoPedido().gastoTotal(orden.getMontoAproximado());
+            if (gastoReal != null) {
+                orden.setGastoReal(gastoReal);
+            }
         }
     }
 

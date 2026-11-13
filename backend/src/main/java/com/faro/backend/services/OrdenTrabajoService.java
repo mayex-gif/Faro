@@ -25,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -146,17 +147,19 @@ public class OrdenTrabajoService {
             return convertirADto(guardada);
         }
 
-        // Pop-up de "Finalizar": la casilla "El lugar quedó funcionando" y el gasto adicional
+        // Pop-up de "Finalizar": la casilla "El lugar quedó funcionando" y "¿Cuánto se gastó en total?"
         PuntoInfraestructura lugar = orden.getLugar();
         boolean estabaFueraDeServicio = lugar != null && Boolean.FALSE.equals(lugar.getEstadoOperativo());
         dejarElLugarComoDijeron(lugar, request.lugarFunciona());
-        if (request.gastoAdicional() != null) {
-            orden.setGastoAdicional(request.gastoAdicional());
+        // El gasto total (o, si llegó el dato viejo "gasto adicional", lo declarado + el adicional)
+        BigDecimal gastoReal = request.gastoTotal(orden.getMontoAproximado());
+        if (gastoReal != null) {
+            orden.setGastoReal(gastoReal);
         }
         OrdenTrabajo guardada = ordenRepository.save(orden);
         // En la bitácora va el cambio de estado + lo del pop-up (para la ficha del lugar)
         Boolean volvioAFuncionar = estabaFueraDeServicio ? Boolean.TRUE.equals(lugar.getEstadoOperativo()) : null;
-        eventoRepository.save(EventoOrden.finalizacion(orden, actual, nuevo, request.gastoAdicional(), volvioAFuncionar));
+        eventoRepository.save(EventoOrden.finalizacion(orden, actual, nuevo, gastoReal, volvioAFuncionar));
         return convertirADto(guardada);
     }
 
@@ -164,6 +167,9 @@ public class OrdenTrabajoService {
     private static void validarDatosDelCierre(CambioEstadoRequestDTO request, boolean finaliza) {
         if (finaliza) {
             return;
+        }
+        if (request.gastoReal() != null) {
+            throw new DatoInvalidoException("gastoReal", "El gasto total se carga solo al finalizar la orden");
         }
         if (request.gastoAdicional() != null) {
             throw new DatoInvalidoException("gastoAdicional", "El gasto adicional se carga solo al finalizar la orden");
@@ -405,7 +411,7 @@ public class OrdenTrabajoService {
                 orden.getReglaMantenimiento() != null ? orden.getReglaMantenimiento().getId() : null,
                 orden.getCalleEntre1(), orden.getCalleEntre2(), orden.getAltura(), orden.getMontoAproximado(),
                 orden.getTramo(),
-                orden.getGastoAdicional()
+                orden.getGastoReal()
         );
     }
 }
