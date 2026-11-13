@@ -103,7 +103,7 @@ public class ReporteService {
                 resumenDesvios,
                 java.util.Optional.ofNullable(reporteRepository.sumarMontosAproximados(desdeTs, hastaTs))
                         .orElse(BigDecimal.ZERO),
-                java.util.Optional.ofNullable(reporteRepository.sumarGastosAdicionales(desdeTs, hastaTs))
+                java.util.Optional.ofNullable(reporteRepository.sumarGastosReales(desdeTs, hastaTs))
                         .orElse(BigDecimal.ZERO)
         );
     }
@@ -115,9 +115,9 @@ public class ReporteService {
             case SEMANA -> reporteRepository.sumarMontosPorSemana(desde, hasta);
             case MES -> reporteRepository.sumarMontosPorMes(desde, hasta);
         };
-        // Cada fila: [período, monto aproximado, gasto adicional]
+        // Cada fila: [período, monto declarado, gasto total]
         return filas.stream()
-                .map(fila -> new MontoPorPeriodoDTO((String) fila[0], comoMonto(fila, 1), comoMonto(fila, 2)))
+                .map(fila -> MontoPorPeriodoDTO.de((String) fila[0], comoMonto(fila, 1), comoMonto(fila, 2)))
                 .toList();
     }
 

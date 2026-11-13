@@ -34,13 +34,9 @@ public class OrdenTrabajo {
     // Lo que se gastó EN TOTAL (materiales, nafta, repuestos...). Lo declara quien finaliza la OT
     // (encargado o capataz) en el pop-up de "Finalizar": viene cargado con el monto aproximado y se corrige
     // hacia arriba o hacia abajo. Opcional (null = no se informó). La diferencia = gastoReal − montoAproximado.
-    // (Las OT finalizadas con el pop-up de #74 tienen "gasto_adicional": InicializadorGastoReal las pasa acá.)
+    // (La columna vieja "gasto_adicional" de #74 queda en la base sin usar: InicializadorGastoReal la pasa acá.)
     @Column(name = "gasto_real", precision = 14, scale = 2)
     private BigDecimal gastoReal;
-    // Dato VIEJO de #74 ("lo que se gastó de más"). Ya no se escribe: lo siguen leyendo los reportes
-    // y el CSV hasta que pasen a usar gastoReal (paso 2 de feature/gasto-real-ot).
-    @Column(name = "gasto_adicional", precision = 14, scale = 2)
-    private BigDecimal gastoAdicional;
 
     // Parte de la calle donde se trabaja (línea sobre la calle). null = toda la calle o no es una calle.
     // Ver services/TramoDeCalle. Columna opcional: las OT viejas quedan con null.
@@ -116,8 +112,6 @@ public class OrdenTrabajo {
     public void setMontoAproximado(BigDecimal montoAproximado) { this.montoAproximado = montoAproximado; }
     public BigDecimal getGastoReal() { return gastoReal; }
     public void setGastoReal(BigDecimal gastoReal) { this.gastoReal = gastoReal; }
-    public BigDecimal getGastoAdicional() { return gastoAdicional; }
-    public void setGastoAdicional(BigDecimal gastoAdicional) { this.gastoAdicional = gastoAdicional; }
     public Geometry getTramo() { return tramo; }
     public void setTramo(Geometry tramo) { this.tramo = tramo; }
 
