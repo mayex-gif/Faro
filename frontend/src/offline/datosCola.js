@@ -44,8 +44,11 @@ function base(usuario, tipo, ahora, numero) {
 }
 
 // "Pasé la OT a otro estado". Guarda en qué estado la VIO (estadoAnteriorId): con eso el backend detecta conflictos.
-export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero() } = {}) {
+// Al FINALIZAR, datosCierre trae lo del pop-up: { lugarFunciona?, gastoAdicional? } (lo que no vino, no se guarda:
+// así el backend hace lo de siempre, igual que con las comandas de antes del pop-up).
+export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero(), datosCierre = {} } = {}) {
   return {
+    ...soloDatosDeCierre(datosCierre),
     ...base(usuario, CAMBIO_ESTADO, ahora, numero),
     ordenId: orden.id,
     estadoId: estadoNuevo.id,
@@ -57,6 +60,14 @@ export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Dat
     estadoColor: estadoNuevo.color,
     estadoAnteriorNombre: orden.estadoNombre,
   }
+}
+
+// La casilla "El lugar quedó funcionando" (true/false) y el gasto adicional (un número ≥ 0), si vinieron
+function soloDatosDeCierre(datos = {}) {
+  const cierre = {}
+  if (typeof datos.lugarFunciona === 'boolean') cierre.lugarFunciona = datos.lugarFunciona
+  if (typeof datos.gastoAdicional === 'number' && Number.isFinite(datos.gastoAdicional)) cierre.gastoAdicional = datos.gastoAdicional
+  return cierre
 }
 
 // "Cargué una OT nueva". Copia los campos conocidos del alta normal, incluidos los opcionales añadidos después.
@@ -126,6 +137,7 @@ export function cuerpoDeEnvio(operacion) {
     estadoId: operacion.estadoId,
     estadoAnteriorId: operacion.estadoAnteriorId,
     hechoEn: operacion.creadaEn,
+    ...soloDatosDeCierre(operacion), // solo en un cierre hecho con el pop-up de "Finalizar"
   }
 }
 

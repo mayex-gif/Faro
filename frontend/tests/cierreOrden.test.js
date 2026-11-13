@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  CANCELAR, FINALIZAR, MAX_MOTIVO, PREFIJO_MOTIVO, armarCancelacion, armarFinalizacion, avisoOtrasAbiertas,
+  CANCELAR, FINALIZAR, MAX_MOTIVO, detalleDeCierre, PREFIJO_MOTIVO, armarCancelacion, armarFinalizacion, avisoOtrasAbiertas,
   casillaDelLugar, esCancelacion, esFinalizacion, formatearPesos, hayErrores, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre,
   otrasAbiertasDelLugar, popUpDelCambio, resumenLugares, textoMontoDeclarado, validarGasto,
 } from '../src/utils/cierreOrden.js'
@@ -231,4 +231,11 @@ test('el mensaje de error dice qué parte falló', () => {
     'El comentario se guardó, pero no se pudo finalizar la OT: No se puede pasar una orden de Pendiente a Finalizada')
   assert.equal(mensajeDeErrorCierre(Object.assign(new Error('Esta orden no es de tu cuadrilla'), { etapa: 'estado' })),
     'No se pudo finalizar la OT: Esta orden no es de tu cuadrilla')
+})
+
+test('el cartel del cuaderno dice qué se marcó en el pop-up', () => {
+  assert.equal(detalleDeCierre({ lugarFunciona: true, gastoAdicional: 1500 }), 'El lugar queda funcionando · Gasto adicional $ 1.500')
+  assert.equal(detalleDeCierre({ lugarFunciona: false }), 'El lugar sigue fuera de servicio')
+  assert.equal(detalleDeCierre({ gastoAdicional: 0 }), 'Gasto adicional $ 0')
+  assert.equal(detalleDeCierre({ estadoId: 4 }), '')
 })

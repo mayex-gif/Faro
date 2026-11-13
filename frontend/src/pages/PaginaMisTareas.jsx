@@ -266,11 +266,14 @@ function PaginaMisTareas({ onNavegar }) {
   // Sin señal (solo el capataz): el comentario y el cambio de estado van al cuaderno del celular, en ese orden
   // (el comentario un milisegundo antes: el cartero manda primero lo más viejo). El comentario usa el MISMO número
   // de comanda que en el pop-up: si con señal ya había llegado, el servidor no lo repite.
-  async function guardarCierreSinSenal(orden, estado, { comentario, numeroComentario }) {
+  // El cambio lleva la casilla "El lugar quedó funcionando" y el gasto adicional (datos.cambio).
+  async function guardarCierreSinSenal(orden, estado, { cambio, comentario, numeroComentario }) {
     const ahora = new Date()
     try {
       if (comentario) await guardarOperacion(crearComentario(usuario, orden, comentario, { ahora, numero: numeroComentario }))
-      await guardarOperacion(crearCambioEstado(usuario, orden, estado, { ahora: new Date(ahora.getTime() + 1) }))
+      await guardarOperacion(crearCambioEstado(usuario, orden, estado, { ahora: new Date(ahora.getTime() + 1), datosCierre: cambio }))
+      // Para el próximo pop-up en este celular, el lugar ya figura como quedó
+      setLugares((anteriores) => lugaresDespuesDelCierre(anteriores, orden.lugarId, cambio))
       setMensaje(`No hay señal: la OT #${orden.id} quedó en "${estado.nombre}" en este celular`
         + `${comentario ? ', con su comentario' : ''}. Se envía sola cuando vuelva la señal.`)
       setCierre(null)

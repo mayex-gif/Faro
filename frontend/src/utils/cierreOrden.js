@@ -187,3 +187,13 @@ export function mensajeDeErrorCierre(error) {
   if (error?.etapa === 'estado' && error?.conComentario) return `El comentario se guardó, pero no se pudo finalizar la OT: ${motivo}`
   return `No se pudo finalizar la OT: ${motivo}`
 }
+
+// Lo que se ve en el cartel del cuaderno debajo de "OT #4: pasar a Finalizada", para saber qué se va a mandar.
+// Ej: "El lugar queda funcionando · Gasto adicional $ 1.500". Vacío si no hay nada de eso.
+export function detalleDeCierre(operacion) {
+  const partes = []
+  if (operacion?.lugarFunciona === true) partes.push('El lugar queda funcionando')
+  if (operacion?.lugarFunciona === false) partes.push('El lugar sigue fuera de servicio')
+  if (typeof operacion?.gastoAdicional === 'number') partes.push(`Gasto adicional ${formatearPesos(operacion.gastoAdicional)}`)
+  return partes.join(' · ')
+}

@@ -109,6 +109,7 @@ public class SincronizacionService {
         }
         if (Objects.equals(actualId, pedido.estadoId())) {
             // Alguien ya la dejó como la querías: no hay nada que cambiar (y no se anota otro evento en la ficha)
+            guardarElGastoQueFaltaba(orden, pedido);
             return ordenService.obtener(pedido.ordenId());
         }
         if (actual != null && actual.isCierre()) {
@@ -136,6 +137,20 @@ public class SincronizacionService {
         } catch (SinPermisoException e) {
             throw new ConflictoSincronizacionException(Motivo.SIN_PERMISO,
                     e.getMessage() + ": tu cambio no se aplicó.", actualId, actualNombre, false);
+        }
+    }
+
+    /**
+     * Otra persona ya había finalizado la OT, pero el capataz (sin señal) había declarado un gasto adicional.
+     * Para no perder ese gasto: si la OT todavía no tiene uno, se guarda. Si ya tiene, queda el primero que llegó
+     * (la misma regla de siempre: gana el primero). La casilla del lugar NO se aplica: el que la finalizó ya decidió.
+     * La OT la trajo Hibernate en esta transacción: el cambio se guarda solo al terminar.
+     */
+    private static void guardarElGastoQueFaltaba(OrdenTrabajo orden, CambioEstadoSinSenalDTO pedido) {
+        EstadoOrden estado = orden.getEstado();
+        boolean finalizada = estado != null && estado.isCierre() && !OrdenTrabajoService.esCancelacion(estado);
+        if (finalizada && pedido.gastoAdicional() != null && orden.getGastoAdicional() == null) {
+            orden.setGastoAdicional(pedido.gastoAdicional());
         }
     }
 

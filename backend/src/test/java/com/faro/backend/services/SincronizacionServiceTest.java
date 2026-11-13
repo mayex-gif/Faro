@@ -102,7 +102,7 @@ class SincronizacionServiceTest {
     }
 
     /** La OT 7 tal como está en el servidor: en ese estado y de esa cuadrilla. */
-    private void enElServidor(EstadoOrden estado, Long cuadrillaId) {
+    private OrdenTrabajo enElServidor(EstadoOrden estado, Long cuadrillaId) {
         OrdenTrabajo orden = new OrdenTrabajo();
         orden.setId(7L);
         orden.setEstado(estado);
@@ -110,6 +110,7 @@ class SincronizacionServiceTest {
         cuadrilla.setId(cuadrillaId);
         orden.setCuadrilla(cuadrilla);
         when(ordenRepository.buscarParaCambiar(7L)).thenReturn(Optional.of(orden));
+        return orden;
     }
 
     private static OrdenTrabajoDTO orden(Long id, String estado) {
@@ -519,5 +520,32 @@ class SincronizacionServiceTest {
 
         assertEquals("Finalizada", resultado.estadoNombre());
     }
-}
 
+    @Test
+    void siOtraPersonaYaLaFinalizoSeGuardaElGastoQueTodaviaNoTenia() {
+        // El encargado la finalizó con señal (sin gasto); el capataz, sin señal, había declarado $ 2500
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        OrdenTrabajo orden = enElServidor(FINALIZADA, 1L);
+        when(ordenService.obtener(7L)).thenReturn(orden(7L, "Finalizada"));
+
+        service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
+                new java.math.BigDecimal("2500")), capataz);
+
+        assertEquals(new java.math.BigDecimal("2500"), orden.getGastoAdicional());
+        verify(ordenService, never()).cambiarEstado(any(), any(), any()); // no se anota otro evento en la ficha
+        verify(operacionRepository, never()).save(any()); // no es un conflicto
+    }
+
+    @Test
+    void siOtraPersonaYaLaFinalizoConGastoQuedaElPrimero() {
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        OrdenTrabajo orden = enElServidor(FINALIZADA, 1L);
+        orden.setGastoAdicional(new java.math.BigDecimal("900"));
+        when(ordenService.obtener(7L)).thenReturn(orden(7L, "Finalizada"));
+
+        service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, null,
+                new java.math.BigDecimal("2500")), capataz);
+
+        assertEquals(new java.math.BigDecimal("900"), orden.getGastoAdicional()); // gana el primero que llegó
+    }
+}

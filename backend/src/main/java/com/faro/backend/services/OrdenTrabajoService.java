@@ -174,7 +174,8 @@ public class OrdenTrabajoService {
     }
 
     // Los estados son configurables: "Cancelada" se reconoce por el nombre (igual que en los reportes).
-    private static boolean esCancelacion(EstadoOrden estado) {
+    // (Sin "private": también lo usa SincronizacionService.)
+    static boolean esCancelacion(EstadoOrden estado) {
         return estado.getNombre() != null && estado.getNombre().trim().toLowerCase().startsWith("cancel");
     }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Icono from './Icono'
 import { guardarOperacion, quitarOperacion } from '../offline/cola'
 import { ALTA_ORDEN, COMENTARIO, CONFLICTO, PENDIENTE, aplicarIgual, estaEsperando } from '../offline/datosCola'
+import { detalleDeCierre } from '../utils/cierreOrden'
 import '../estilos-cola.css'
 
 // El cartel del cuaderno: lo que se hizo sin señal y todavía no llegó, y lo que llegó pero ya no valía.
@@ -16,7 +17,9 @@ function queSeHizo(operacion) {
     const conFotos = fotos === 0 ? '' : fotos === 1 ? ' con 1 foto' : ` con ${fotos} fotos`
     return `OT #${operacion.ordenId}: comentario${conFotos}`
   }
-  return `OT #${operacion.ordenId}: pasar a ${operacion.estadoNombre}`
+  // Si es un cierre hecho con el pop-up de "Finalizar", también lo que se marcó (lugar funcionando, gasto adicional)
+  const detalle = detalleDeCierre(operacion)
+  return `OT #${operacion.ordenId}: pasar a ${operacion.estadoNombre}${detalle ? ` (${detalle})` : ''}`
 }
 
 function cuando(fecha) {
