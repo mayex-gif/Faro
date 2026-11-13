@@ -239,3 +239,16 @@ test('el cartel del cuaderno dice qué se marcó en el pop-up', () => {
   assert.equal(detalleDeCierre({ gastoAdicional: 0 }), 'Gasto adicional $ 0')
   assert.equal(detalleDeCierre({ estadoId: 4 }), '')
 })
+
+test('al cancelar, el aviso habla del motivo y el error dice "cancelar"', () => {
+  const orden = { id: 12, estadoNombre: 'Cancelada' }
+  const { comentario } = armarCancelacion(CANCELADA, 'Lo arregló la cooperativa')
+  assert.equal(mensajeDeCierre(orden, comentario), 'La OT #12 pasó a "Cancelada". Se guardó el motivo.')
+  const sinRed = Object.assign(new TypeError('Failed to fetch'), { etapa: 'comentario' })
+  assert.equal(mensajeDeErrorCierre(sinRed, { cancelar: true }),
+    'No se pudo guardar el motivo: No hay conexión con el servidor. Probá de nuevo en un rato. La OT sigue abierta.')
+  const conflicto = Object.assign(new Error('Esta orden no es de tu cuadrilla'), { etapa: 'estado', conComentario: true })
+  assert.equal(mensajeDeErrorCierre(conflicto, { cancelar: true }),
+    'El motivo se guardó, pero no se pudo cancelar la OT: Esta orden no es de tu cuadrilla')
+  assert.equal(mensajeDeErrorCierre(new Error('x'), { cancelar: true }), 'No se pudo cancelar la OT: x')
+})

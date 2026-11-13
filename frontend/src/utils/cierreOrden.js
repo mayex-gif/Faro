@@ -157,6 +157,7 @@ export function hayErrores(errores) {
 export function mensajeDeCierre(orden, comentario) {
   const base = `La OT #${orden.id} pasó a "${orden.estadoNombre}".`
   if (!comentario) return base
+  if (comentario.texto?.startsWith(PREFIJO_MOTIVO)) return `${base} Se guardó el motivo.`
   const fotos = comentario.fotos?.length ?? 0
   if (fotos === 0) return `${base} Se guardó el comentario.`
   const conFotos = fotos === 1 ? '1 foto' : `${fotos} fotos`
@@ -181,11 +182,16 @@ export function lugaresDespuesDelCierre(lugares = [], lugarId, cambio = {}) {
 // Qué se le dice a la persona si el envío falló (error.etapa la pone api/cierreOrden.js).
 // - Falló el comentario: la OT sigue abierta y lo escrito sigue en el pop-up, para corregir y reintentar.
 // - El comentario llegó pero falló el cambio de estado: se avisa que el comentario ya está (al reintentar no se repite).
-export function mensajeDeErrorCierre(error) {
+// cancelar = true en el pop-up de Cancelar (ahí el comentario es "el motivo").
+export function mensajeDeErrorCierre(error, { cancelar = false } = {}) {
   const motivo = mensajeDeError(error)
-  if (error?.etapa === 'comentario') return `No se pudo guardar el comentario: ${motivo} La OT sigue abierta.`
-  if (error?.etapa === 'estado' && error?.conComentario) return `El comentario se guardó, pero no se pudo finalizar la OT: ${motivo}`
-  return `No se pudo finalizar la OT: ${motivo}`
+  const accion = cancelar ? 'cancelar' : 'finalizar'
+  const texto = cancelar ? 'el motivo' : 'el comentario'
+  if (error?.etapa === 'comentario') return `No se pudo guardar ${texto}: ${motivo} La OT sigue abierta.`
+  if (error?.etapa === 'estado' && error?.conComentario) {
+    return `${texto[0].toUpperCase()}${texto.slice(1)} se guardó, pero no se pudo ${accion} la OT: ${motivo}`
+  }
+  return `No se pudo ${accion} la OT: ${motivo}`
 }
 
 // Lo que se ve en el cartel del cuaderno debajo de "OT #4: pasar a Finalizada", para saber qué se va a mandar.

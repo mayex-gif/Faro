@@ -1,12 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { useDialogo } from '../hooks/useDialogo'
 import { useFotosElegidas } from '../hooks/useFotosElegidas'
 import { nuevoNumero } from '../offline/datosCola'
 import { armarFinalizacion, casillaDelLugar, hayErrores, textoMontoDeclarado } from '../utils/cierreOrden'
 import { MAX_TEXTO, contadorTexto, fotosQueQuedan } from '../utils/comentarios'
 import Icono from './Icono'
 import '../estilos-cierre.css'
-
-const ENFOCABLES = 'button:not([disabled]), input:not([disabled]):not([hidden]), textarea:not([disabled]), [href]'
 
 // El pop-up que sale al tocar "Finalizar" en Trabajos o en Mis tareas (encargado y capataz). Todo es opcional:
 // - la casilla "El lugar quedó funcionando" (solo si el lugar está Fuera de servicio),
@@ -32,40 +31,8 @@ function PopUpFinalizar({ orden, estado, lugar, otrasAbiertas = 0, enviando = fa
   const { fotos, preparando, problema, agregar, quitar } = useFotosElegidas()
   const ocupado = enviando || preparando
 
-  // Al abrir: el foco va al título de la ventana; al cerrar, vuelve al botón que la abrió
-  useEffect(() => {
-    const anterior = document.activeElement
-    ventana.current?.querySelector('h2')?.focus()
-    return () => anterior?.focus?.()
-  }, [])
-
-  // Escape cierra (si no se está mandando). Tab no se escapa de la ventana: da la vuelta adentro.
-  useEffect(() => {
-    function alApretar(evento) {
-      if (evento.key === 'Escape' && !enviando) onCerrar()
-      if (evento.key !== 'Tab' || !ventana.current) return
-      const enfocables = [...ventana.current.querySelectorAll(ENFOCABLES)]
-      if (enfocables.length === 0) return
-      const primero = enfocables[0]
-      const ultimo = enfocables[enfocables.length - 1]
-      if (evento.shiftKey && (document.activeElement === primero || !ventana.current.contains(document.activeElement))) {
-        evento.preventDefault()
-        ultimo.focus()
-      } else if (!evento.shiftKey && document.activeElement === ultimo) {
-        evento.preventDefault()
-        primero.focus()
-      }
-    }
-    document.addEventListener('keydown', alApretar)
-    return () => document.removeEventListener('keydown', alApretar)
-  }, [enviando, onCerrar])
-
-  // Mientras está abierta, la página de atrás no se mueve
-  useEffect(() => {
-    const antes = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = antes }
-  }, [])
+  // Foco, Escape, Tab y la página de atrás quieta (hooks/useDialogo.js)
+  useDialogo(ventana, { ocupado: enviando, onCerrar })
 
   // Al corregir un campo, se borra su aviso de error
   function sinError(campo) {
