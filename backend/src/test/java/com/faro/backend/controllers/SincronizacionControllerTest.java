@@ -214,4 +214,30 @@ class SincronizacionControllerTest {
                 .andExpect(jsonPath("$.errores.orden").value("Faltan los datos de la orden"));
         verifyNoInteractions(service);
     }
+
+    @Test
+    void unCambioSinSenalTraeLosDatosDelPopUpDeFinalizar() throws Exception {
+        when(service.cambiarEstado(eq(UUID.fromString(COMANDA)), any(), any(Usuario.class))).thenReturn(orden(7L, "Finalizada"));
+
+        mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"ordenId\": 7, \"estadoId\": 4, \"estadoAnteriorId\": 3, "
+                                + "\"lugarFunciona\": false, \"gastoAdicional\": 1500 }"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<CambioEstadoSinSenalDTO> pedido = ArgumentCaptor.forClass(CambioEstadoSinSenalDTO.class);
+        verify(service).cambiarEstado(eq(UUID.fromString(COMANDA)), pedido.capture(), any(Usuario.class));
+        assertEquals(Boolean.FALSE, pedido.getValue().lugarFunciona());
+        assertEquals(new java.math.BigDecimal("1500"), pedido.getValue().gastoAdicional());
+    }
+
+    @Test
+    void unCambioSinSenalConGastoNegativoResponde400() throws Exception {
+        mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"ordenId\": 7, \"estadoId\": 4, \"gastoAdicional\": -5 }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.gastoAdicional").value("El gasto adicional no puede ser negativo"));
+
+        verifyNoInteractions(service);
+    }
 }
+

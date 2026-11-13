@@ -24,9 +24,24 @@ const trazos = {
   clave: 'M7.5 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z M10.5 12H21 M18 12v3 M15 12v2',
   baja: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 11h5',
   // Tipos de lugar (lista del mapa)
+  luna: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z',
+  sol: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4',
   luminaria: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3Z',
   espacioVerde: 'M12 22V12 M12 12c-4 0-6-3-6-6 3 0 6 2 6 6Z M12 12c4 0 6-3 6-6-3 0-6 2-6 6Z',
   calle: 'M4 21 9 3 M20 21 15 3 M12 5v2 M12 11v2 M12 17v2',
+  // Mantenimiento periódico y Auditoría (Sprint 4)
+  mantenimiento: 'M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-3 3-2-2Z',
+  auditoria: 'M9 3h6v3H9Z M9 4.5H6V21h12V4.5h-3 M9 10h6 M9 14l1.5 1.5L14 12',
+  // Reportes e indicadores (Sprint 4)
+  reportes: 'M3 3v18h18 M7 16v-4 M12 16V8 M17 16v-7',
+  descargar: 'M12 4v11 M7 10l5 5 5-5 M5 20h14',
+  pausar: 'M9 5v14 M15 5v14',
+  // Comentarios y fotos de las OT (tarjetas 16 + 21)
+  comentario: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z',
+  camara: 'M4 8h3l2-3h6l2 3h3v11H4Z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  foto: 'M4 5h16v14H4Z M4 16l5-5 4 4 2-2 5 5 M15.5 9.5h.01',
+  anterior: 'm15 18-6-6 6-6',
+  siguiente: 'm9 18 6-6-6-6',
 }
 
 function Icono({ nombre, className = '' }) {

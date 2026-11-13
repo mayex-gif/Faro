@@ -18,6 +18,7 @@ Segunda parte de la [tarjeta PWA: Sincronización Offline](https://trello.com/c/
 | 2 | Si al volver la red el cambio ya no vale | Se avisa y **decide la persona solo si todavía se puede**: "Aplicar igual" o "Descartar". Si ya no se puede (OT cerrada, de otra cuadrilla, borrada, lugar borrado) → solo "Entendido". |
 | 3 | ¿Y si la sesión venció o la cuenta fue dada de baja? | El cuaderno **espera a que vuelva a entrar la misma persona** (nunca se manda con otra cuenta). Si al entrar la cuenta figura desactivada, se ofrece descartar. |
 | 4 | ¿Dónde se ve lo pendiente? | **Cartel** con el detalle (Mis tareas, Trabajos y la consulta local) **y contador** en la barra de arriba. |
+| 5 | (Sprint 4, 08/11/2026) ¿Comentarios y fotos sin señal? | Sí, para los tres roles: el comentario y sus fotos (ya achicadas) van al mismo cuaderno como un tercer tipo de renglón, `COMENTARIO`, y se mandan al `PUT /api/ordenes-trabajo/{id}/comentarios/{operacionId}` de siempre (como formulario). Ver [COMENTARIOS_Y_FOTOS.md](../COMENTARIOS_Y_FOTOS.md#4-sin-señal). |
 
 ## 3. Backend: la "ventanilla de comandas atrasadas"
 
@@ -25,7 +26,7 @@ Endpoints aparte de `/api/ordenes-trabajo` (que no cambia). Son **PUT** con el n
 
 | Endpoint | Body | Quién |
 |---|---|---|
-| `PUT /api/sincronizacion/cambios-estado/{operacionId}` | `{ ordenId, estadoId, estadoAnteriorId, hechoEn }` | encargado y capataz |
+| `PUT /api/sincronizacion/cambios-estado/{operacionId}` | `{ ordenId, estadoId, estadoAnteriorId, hechoEn, lugarFunciona?, gastoAdicional? }` (los dos últimos, solo al finalizar con el pop-up: ver `CIERRE_DE_OT.md`) | encargado y capataz |
 | `PUT /api/sincronizacion/altas-orden/{operacionId}` | `{ orden: { descripcion, tipo, origen, prioridad, lugarId }, hechoEn }` | encargado y mesa |
 
 - Responde **200** con la OT. Si la misma comanda vuelve a llegar, responde lo mismo que la primera vez (la OT como está ahora, o el mismo conflicto) **sin volver a aplicarla**. Un número usado por otra persona u otra OT → 409.
@@ -72,6 +73,7 @@ Endpoints aparte de `/api/ordenes-trabajo` (que no cambia). Son **PUT** con el n
 - FARO no abre de cero sin señal (tiene que verificar la cuenta): sin señal se entra por **Consultar copia local** (solo capataz). El encargado y la mesa crean OT sin señal solo si FARO ya estaba abierto.
 - Una copia local guardada antes del 26/10/2026 (versión 1) no se muestra: hay que tocar "Actualizar copia local" una vez con señal.
 - Si se recibe un cambio por Background Sync, la copia local se pone al día recién la próxima vez que se guarde.
+- Los comentarios con fotos ocupan lugar en el celular mientras esperan (~300–400 KB por foto) y la consulta local no los muestra.
 
 ## 6. Cómo probar
 

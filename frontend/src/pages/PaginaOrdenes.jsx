@@ -6,12 +6,19 @@ import FormularioOrden from '../components/FormularioOrden'
 import TablaOrdenes from '../components/TablaOrdenes'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
+import HojaComentarios from '../components/HojaComentarios'
+import PopUpFinalizar from '../components/PopUpFinalizar'
+import PopUpCancelar from '../components/PopUpCancelar'
+import { enviarCierre } from '../api/cierreOrden'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 import { useSesion } from '../context/useSesion'
-import { puedeAsignar } from '../utils/permisos'
+import { puedeAsignar, puedeGestionarMantenimiento } from '../utils/permisos'
 import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import { REINTENTAR, aplicarPendientes, clasificarError } from '../offline/datosCola'
+import {
+  CANCELAR, FINALIZAR, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre, otrasAbiertasDelLugar, popUpDelCambio,
+} from '../utils/cierreOrden'
 
 // Lo último que se cargó con señal, por persona. Vive mientras FARO esté abierto (no se guarda en el celular):
 // si se corta la señal, la lista y el desplegable de lugares siguen a la vista (y se puede cargar una OT sin señal).
@@ -23,9 +30,16 @@ function horaDe(fecha) {
 
 // params.lugarId llega con "+ Nueva OT acá" (ficha del lugar en el mapa): el formulario arranca con ese lugar.
 // params.desde === 'mapa': se muestra "Volver al mapa" para seguir donde estaba.
+// params.tipo (ej. 'ALUMBRADO', desde la pestaña Luminarias): el formulario arranca con ese tipo de trabajo.
+// params.pestana: la pestaña del mapa a la que vuelve "Volver al mapa".
+// params.tramo, params.calleEntre1, params.calleEntre2: el tramo de calle marcado en el mapa (ver PaginaMapa).
 function PaginaOrdenes({ params, onNavegar }) {
   const { usuario } = useSesion()
   const puedeGestionar = puedeAsignar(usuario)
+  const [ordenComentarios, setOrdenComentarios] = useState(null) // la OT cuya hoja de comentarios está abierta
+  const [cierre, setCierre] = useState(null) // { orden, estado }: el pop-up de "Finalizar" o "Cancelar" abierto
+  const [enviandoCierre, setEnviandoCierre] = useState(false)
+  const [errorCierre, setErrorCierre] = useState('')
   const lugarInicial = params?.lugarId
   // Fijo mientras la pantalla está abierta (App la vuelve a armar si entra otra persona)
   const idUsuario = useRef(usuario.id)
@@ -125,11 +139,14 @@ function PaginaOrdenes({ params, onNavegar }) {
   // Botones "Pasar a ..." de la tabla
   function cambiarEstado(orden, estadoNuevo) {
     if (!puedeGestionar) return
-    // Finalizada y Cancelada no tienen vuelta atrás: pedimos confirmación
-    if (estadoNuevo.cierre) {
-      const confirmado = window.confirm(
-        `¿Pasar la OT #${orden.id} a "${estadoNuevo.nombre}"? Después ya no se va a poder modificar.`)
-      if (!confirmado) return
+    // Finalizar y Cancelar no tienen vuelta atrás: abren su pop-up (lo manda confirmarCierre).
+    // Finalizar: lugar funcionando, gasto, comentario y fotos. Cancelar: motivo opcional.
+    if (popUpDelCambio(estadoNuevo)) {
+      setMensaje('')
+      setErrorAccion('')
+      setErrorCierre('')
+      setCierre({ orden, estado: estadoNuevo })
+      return
     }
     setIdCambiandoEstado(orden.id)
     setMensaje('')
@@ -150,11 +167,38 @@ function PaginaOrdenes({ params, onNavegar }) {
       .finally(() => setIdCambiandoEstado(null))
   }
 
+  // "Finalizar la OT" o "Cancelar la OT" en el pop-up: primero el comentario o el motivo (si hay), después el cambio
+  // de estado (api/cierreOrden.js). Si algo falla, el pop-up queda abierto con lo escrito y el motivo, para reintentar.
+  function confirmarCierre(datos) {
+    const { orden, estado } = cierre
+    const finaliza = popUpDelCambio(estado) === FINALIZAR
+    setEnviandoCierre(true)
+    setErrorCierre('')
+    setIdCambiandoEstado(orden.id)
+    enviarCierre(orden.id, datos)
+      .then(({ orden: actualizada }) => {
+        setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
+        // Al finalizar, el lugar puede volver a "Funciona"; al cancelar queda como estaba
+        if (finaliza) setLugares((anteriores) => lugaresDespuesDelCierre(anteriores, actualizada.lugarId, datos.cambio))
+        setMensaje(mensajeDeCierre(actualizada, datos.comentario))
+        if (ordenEditando?.id === orden.id) setOrdenEditando(null) // quedó cerrada: ya no se edita
+        setCierre(null)
+      })
+      .catch((e) => {
+        console.error(e)
+        setErrorCierre(mensajeDeErrorCierre(e, { cancelar: !finaliza }))
+      })
+      .finally(() => {
+        setEnviandoCierre(false)
+        setIdCambiandoEstado(null)
+      })
+  }
+
   // Cuando el formulario guardó bien. Si quedó guardada sin señal, no se pide la lista (no hay red): ya se ve arriba.
-  function alGuardar(texto, { sinSenal: quedoEnElCelular = false } = {}) {
+  function alGuardar(texto, { sinSenal: quedoEnElCelular = false, programacion = false } = {}) {
     setOrdenEditando(null)
     setMensaje(texto)
-    if (!quedoEnElCelular) recargarOrdenes()
+    if (!quedoEnElCelular && !programacion) recargarOrdenes()
   }
 
   return (
@@ -163,6 +207,8 @@ function PaginaOrdenes({ params, onNavegar }) {
         <p className="sobre-titulo">TRABAJOS DEL CORRALÓN</p>
         <h1>Órdenes de trabajo</h1>
         <p>Registrá los trabajos a realizar en cada lugar del pueblo: de dónde surgen, de qué tipo son, qué tan urgentes y en qué estado están.</p>
+        {puedeGestionarMantenimiento(usuario) && <button type="button" className="boton boton-secundario acceso-programaciones"
+          onClick={() => onNavegar('mantenimiento')}><Icono nombre="mantenimiento" />Ver programaciones</button>}
       </div>
 
       {params?.desde === 'mapa' && (
@@ -171,7 +217,7 @@ function PaginaOrdenes({ params, onNavegar }) {
             Nueva orden para <strong>{lugares.find((lugar) => lugar.id === lugarInicial)?.nombre ?? 'el lugar elegido'}</strong>.
             Cuando la registres, podés volver al mapa.
           </p>
-          <button type="button" className="boton boton-secundario" onClick={() => onNavegar('mapa', { lugarId: lugarInicial })}>
+          <button type="button" className="boton boton-secundario" onClick={() => onNavegar('mapa', { lugarId: lugarInicial, pestana: params?.pestana })}>
             <Icono nombre="volver" />Volver al mapa
           </button>
         </div>
@@ -186,6 +232,10 @@ function PaginaOrdenes({ params, onNavegar }) {
         onGuardado={alGuardar}
         onCancelar={() => setOrdenEditando(null)}
         lugarInicial={lugarInicial}
+        ubicacionDelMapa={params?.tramo ? { tramo: params.tramo, calleEntre1: params.calleEntre1, calleEntre2: params.calleEntre2 } : null}
+        tipoInicial={params?.tipo}
+        programarInicial={params?.programar}
+        onVerProgramaciones={() => onNavegar('mantenimiento')}
       />
 
       <div className="notificaciones" aria-live="polite" aria-atomic="true">
@@ -242,9 +292,25 @@ function PaginaOrdenes({ params, onNavegar }) {
             estados={estados} 
             onCambiarEstado={puedeGestionar ? cambiarEstado : undefined}
             idCambiandoEstado={idCambiandoEstado} 
+            onVerComentarios={setOrdenComentarios}
           />
         )}
       </section>
+
+      {ordenComentarios && <HojaComentarios orden={ordenComentarios} onCerrar={() => setOrdenComentarios(null)} />}
+
+      {cierre && popUpDelCambio(cierre.estado) === CANCELAR && (
+        <PopUpCancelar key={cierre.orden.id} orden={cierre.orden} estado={cierre.estado}
+          enviando={enviandoCierre} error={errorCierre}
+          onConfirmar={confirmarCierre} onCerrar={() => setCierre(null)} />
+      )}
+      {cierre && popUpDelCambio(cierre.estado) === FINALIZAR && (
+        <PopUpFinalizar key={cierre.orden.id} orden={cierre.orden} estado={cierre.estado}
+          lugar={lugares.find((lugar) => String(lugar.id) === String(cierre.orden.lugarId)) ?? null}
+          otrasAbiertas={otrasAbiertasDelLugar(cierre.orden, ordenesVistas, estados)}
+          enviando={enviandoCierre} error={errorCierre}
+          onConfirmar={confirmarCierre} onCerrar={() => setCierre(null)} />
+      )}
     </>
   )
 }

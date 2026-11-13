@@ -45,6 +45,7 @@ docker compose up --build
 | Servicio | URL |
 |---|---|
 | Frontend | http://localhost:5173 |
+| Frontend PWA (versión compilada, para probar sin conexión) | http://localhost:4173 (`npm run pwa` o `docker compose --profile pwa up --build frontend-pwa`) |
 | Backend | http://localhost:8080 |
 | PostgreSQL | localhost:5432 |
 
@@ -87,6 +88,14 @@ La pantalla de acceso ya utiliza la API de autenticación. La protección por ro
 - [Consulta local de tareas](./frontend/PWA_CONSULTA_LOCAL.md): el capataz guarda una copia de sus tareas y la abre sin señal.
 - [Sincronización sin señal](./frontend/PWA_SINCRONIZACION.md): lo que se hace sin señal (iniciar/finalizar tareas, crear OT) se guarda en el celular, se manda solo cuando vuelve la red y el backend resuelve los conflictos (`/api/sincronizacion`). Incluye el aviso "Hay una versión nueva de FARO" después de cada deploy.
 
+## Mapa de luminarias (pestaña Luminarias)
+
+Ver [Pestaña Luminarias y luminarias a futuro](./frontend/MAPA_LUMINARIAS.md): el alumbrado público aparte en el mapa (postes por estado, % que funciona, "¿Dónde falta luz?", modo noche), cambiar el estado desde la ficha, la sección Más → Luminarias y las luminarias a futuro (sin OT hasta marcarlas como instaladas).
+
+## Mantenimiento periódico y consulta de auditoría
+
+Ver [recorrido de mantenimiento, integración de Auditoría y pendientes de coordinación](./frontend/MANTENIMIENTO_PERIODICO.md). Incluye creación de programaciones desde Trabajos, gestión de reglas, pruebas realizadas y el error de backend que todavía bloquea la verificación completa de Auditoría.
+
 ## Tests del backend
 
 Los tests usan **JUnit 5** y **Mockito**. Se necesita **Java 21** instalado.
@@ -126,3 +135,11 @@ El frontend y el backend están desplegados en Render y la base de datos en Neon
 La API exige iniciar sesión (token JWT) y valida el rol en cada operación: 401 sin token, 403 si al rol no le corresponde. Ver [la tabla de quién puede qué y cómo usar Swagger con login](./LOGIN_Y_ACCESOS_BACKEND.md#9-permisos-por-rol).
 
 El encargado y la mesa de entradas gestionan el personal (altas, bajas, roles y claves) en **Más → Usuarios**: ver [Gestión de usuarios](./LOGIN_Y_ACCESOS_BACKEND.md#10-gestión-de-usuarios).
+
+## Comentarios y fotos de las OT
+
+Cada orden de trabajo tiene un muro de comentarios con fotos (evidencia del trabajo), también sin señal. Las fotos van a un almacén S3 aparte: RustFS en Docker y Backblaze B2 en Render. Ver [COMENTARIOS_Y_FOTOS.md](./COMENTARIOS_Y_FOTOS.md) (cómo probarlo en la compu) y [DESPLIEGUE.md](./DESPLIEGUE.md#9-almacén-de-fotos-backblaze-b2) (cómo configurarlo en Render).
+
+## Finalizar y cancelar una OT
+
+Al finalizar una OT sale un pop-up (todo opcional, también sin señal): si el lugar quedó funcionando, si hubo algún otro gasto (gasto adicional), un comentario y fotos de evidencia. Al cancelar, un motivo opcional. El gasto adicional se ve en Trabajos, en la ficha del lugar, en Reportes y en el CSV. Ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md).

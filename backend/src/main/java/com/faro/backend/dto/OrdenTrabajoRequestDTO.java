@@ -6,6 +6,10 @@ import com.faro.backend.models.TipoTrabajo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import java.math.BigDecimal;
+import org.locationtech.jts.geom.Geometry;
 
 /** Datos que manda la pantalla para crear o modificar una Orden de Trabajo. */
 public record OrdenTrabajoRequestDTO(
@@ -24,5 +28,34 @@ public record OrdenTrabajoRequestDTO(
         PrioridadOrden prioridad,
 
         @NotNull(message = "El lugar es obligatorio")
-        Long lugarId
-) {}
+        Long lugarId,
+
+        @Size(max = 120, message = "El nombre de la primera calle no puede superar 120 caracteres")
+        String calleEntre1,
+
+        @Size(max = 120, message = "El nombre de la segunda calle no puede superar 120 caracteres")
+        String calleEntre2,
+
+        @Size(max = 20, message = "La altura no puede superar 20 caracteres")
+        String altura,
+
+        @DecimalMin(value = "0.00", message = "El monto aproximado no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El monto admite hasta 12 enteros y 2 decimales")
+        BigDecimal montoAproximado,
+
+        // Solo para calles: línea GeoJSON con la parte de la calle donde se trabaja. null = toda la calle.
+        Geometry tramo
+) {
+    /** Compatibilidad con altas anteriores al detalle de ubicación y gasto. */
+    public OrdenTrabajoRequestDTO(String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                                  PrioridadOrden prioridad, Long lugarId) {
+        this(descripcion, tipo, origen, prioridad, lugarId, null, null, null, null, null);
+    }
+
+    /** Compatibilidad con altas anteriores al tramo de calle (OT de toda la calle). */
+    public OrdenTrabajoRequestDTO(String descripcion, TipoTrabajo tipo, OrigenOrden origen,
+                                  PrioridadOrden prioridad, Long lugarId, String calleEntre1,
+                                  String calleEntre2, String altura, BigDecimal montoAproximado) {
+        this(descripcion, tipo, origen, prioridad, lugarId, calleEntre1, calleEntre2, altura, montoAproximado, null);
+    }
+}

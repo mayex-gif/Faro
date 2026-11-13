@@ -1,0 +1,148 @@
+import { useEffect } from 'react'
+import { ESTADOS_LUMINARIA, luminariaEnZona, luminariasDelEstado, textoDeZona, zonasDeLuminarias } from '../utils/luminarias'
+import { htmlPoste } from '../utils/poste'
+import { subtituloLugar } from '../utils/listaLugares'
+import Icono from './Icono'
+
+// El poste chiquito de la leyenda y de los conteos. htmlPoste es HTML fijo (no lleva datos de usuarios).
+export function MuestraPoste({ estado }) {
+  return <span className="muestra-poste" aria-hidden="true" dangerouslySetInnerHTML={{ __html: htmlPoste(estado) }} />
+}
+
+// "OT #12 · En curso · Cuadrilla Alumbrado": la OT abierta más urgente de una luminaria en arreglo
+function textoDeLaOrden(resumen) {
+  const orden = resumen.principal
+  if (!orden) return ''
+  return [`OT #${orden.id}`, orden.estadoNombre, orden.cuadrillaNombre].filter(Boolean).join(' · ')
+}
+
+// Una lista de luminarias de un estado (apagadas, en arreglo, a futuro). Tocar una la elige en el mapa.
+// accion: { texto, alHacer } = un botón debajo del título (ej. "Agregar luminaria a futuro")
+function ListaDelEstado({ id, titulo, ayuda, items, vacio, lugarActivoId, onElegir, conOrden = false, accion = null }) {
+  return (
+    <section className="luminarias-seccion" aria-labelledby={id}>
+      <h2 id={id}>{titulo} <span className="luminarias-cantidad">({items.length})</span></h2>
+      {ayuda && <p className="luminarias-ayuda">{ayuda}</p>}
+      {accion && (
+        <button type="button" className="boton boton-secundario luminarias-accion" onClick={accion.alHacer}>
+          <Icono nombre="agregar" />{accion.texto}
+        </button>
+      )}
+      {items.length === 0 ? (
+        <p className="luminarias-vacio">{vacio}</p>
+      ) : (
+        <ul className="filas-lugares">
+          {items.map(({ resumen, estado }) => {
+            const { lugar } = resumen
+            const activo = lugar.id === lugarActivoId
+            return (
+              <li key={lugar.id}>
+                <button type="button" id={`fila-luminaria-${lugar.id}`} aria-pressed={activo}
+                  className={activo ? 'fila-lugar fila-lugar-activa' : 'fila-lugar'} onClick={() => onElegir(lugar.id)}>
+                  <MuestraPoste estado={estado} />
+                  <span className="fila-lugar-texto">
+                    <strong>{lugar.nombre}</strong>
+                    <span>{subtituloLugar(resumen)}</span>
+                    {conOrden && <span>{textoDeLaOrden(resumen)}</span>}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+// Columna de la izquierda en la pestaña Luminarias: cuánto alumbrado funciona, cuántas hay de cada estado
+// y las que hay que mirar (apagadas sin arreglo, en arreglo y las luminarias a futuro).
+// Props:
+// - items: [{ resumen, estado }] de todas las luminarias (utils/luminarias.js)
+// - totales: resumirLuminarias(items) → { total, cuenta, porcentaje }
+// - lugarActivoId, onElegir(lugarId): como en la lista de lugares
+// - zonaElegida: clave de la zona marcada en el mapa (o null) · onElegirZona(zona | null)
+// - onAgregarAFuturo(): "Agregar luminaria a futuro" (solo si el usuario puede; si no, no se pasa)
+function PanelLuminarias({ items, totales, lugarActivoId, onElegir, zonaElegida = null, onElegirZona, onAgregarAFuturo }) {
+  useEffect(() => {
+    if (lugarActivoId == null) return
+    document.getElementById(`fila-luminaria-${lugarActivoId}`)?.scrollIntoView({ block: 'nearest' })
+  }, [lugarActivoId])
+
+  const { total, cuenta, porcentaje } = totales
+  // "¿Dónde falta luz?": las zonas, primero la que tiene menos luminarias andando
+  const zonas = zonasDeLuminarias(items)
+  const zona = zonas.find((opcion) => opcion.clave === zonaElegida) ?? null
+  // Con una zona elegida, las listas de abajo muestran solo las de esa zona
+  const enLaZona = zona ? items.filter((item) => luminariaEnZona(item, zona)) : items
+  const deLaZona = zona ? ` · ${zona.nombre}` : ''
+
+  return (
+    <section className="columna-lugares panel-luminarias" aria-labelledby="titulo-luminarias">
+      <div className="lugares-encabezado">
+        <div className="lugares-titulo">
+          <h1 id="titulo-luminarias">Luminarias</h1>
+          <span>{total} {total === 1 ? 'cargada' : 'cargadas'}</span>
+        </div>
+
+        {porcentaje === null ? (
+          <p className="luminarias-porcentaje">Todavía no hay luminarias instaladas.</p>
+        ) : (
+          <p className="luminarias-porcentaje"><strong>{porcentaje}%</strong> del alumbrado instalado funciona</p>
+        )}
+        {total > 0 && (
+          <div className="luminarias-barra" aria-hidden="true">
+            {ESTADOS_LUMINARIA.filter((estado) => cuenta[estado.clave] > 0).map((estado) => (
+              <span key={estado.clave} style={{ width: `${(cuenta[estado.clave] * 100) / total}%`, background: estado.color }} />
+            ))}
+          </div>
+        )}
+
+        <ul className="luminarias-conteos" aria-label="Cantidad de luminarias por estado">
+          {ESTADOS_LUMINARIA.map((estado) => (
+            <li key={estado.clave}>
+              <MuestraPoste estado={estado.clave} />
+              <strong>{cuenta[estado.clave]}</strong>
+              <span>{estado.plural}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="luminarias-listas">
+        {zonas.length > 1 && (
+          <section className="luminarias-seccion" aria-labelledby="titulo-zonas">
+            <h2 id="titulo-zonas">¿Dónde falta luz?</h2>
+            <p className="luminarias-ayuda">Zonas del pueblo, primero la que tiene menos luminarias andando. Tocá una para marcarla en el mapa.</p>
+            <ul className="luminarias-zonas">
+              {zonas.map((opcion) => {
+                const activa = opcion.clave === zonaElegida
+                return (
+                  <li key={opcion.clave}>
+                    <button type="button" aria-pressed={activa} className={activa ? 'zona-luz zona-luz-activa' : 'zona-luz'}
+                      onClick={() => onElegirZona?.(activa ? null : opcion)}>
+                      <span className="zona-luz-titulo"><strong>{opcion.nombre}</strong><strong>{opcion.porcentaje}%</strong></span>
+                      <span className="zona-luz-barra" aria-hidden="true"><span style={{ width: `${opcion.porcentaje}%` }} /></span>
+                      <span className="zona-luz-texto">{textoDeZona(opcion)}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
+        <ListaDelEstado id="titulo-apagadas" titulo={`Apagadas sin arreglo${deLaZona}`} items={luminariasDelEstado(enLaZona, 'apagada')}
+          ayuda="No andan y todavía no tienen una OT abierta." vacio="No hay luminarias apagadas sin arreglo."
+          lugarActivoId={lugarActivoId} onElegir={onElegir} />
+        <ListaDelEstado id="titulo-en-arreglo" titulo={`En arreglo${deLaZona}`} items={luminariasDelEstado(enLaZona, 'arreglo')}
+          vacio="Ninguna luminaria está en arreglo." lugarActivoId={lugarActivoId} onElegir={onElegir} conOrden />
+        <ListaDelEstado id="titulo-a-futuro" titulo={`A futuro${deLaZona}`} items={luminariasDelEstado(enLaZona, 'falta')}
+          ayuda="Planificadas por el intendente. No llevan OT; cuando se ponen, se marcan como instaladas desde su ficha."
+          vacio="No hay luminarias a futuro cargadas." lugarActivoId={lugarActivoId} onElegir={onElegir}
+          accion={onAgregarAFuturo ? { texto: 'Agregar luminaria a futuro', alHacer: onAgregarAFuturo } : null} />
+      </div>
+    </section>
+  )
+}
+
+export default PanelLuminarias

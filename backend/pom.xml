@@ -33,7 +33,21 @@
 		<jacoco.version>0.8.15</jacoco.version>
 		<!-- Le dice a SonarCloud dónde está el reporte de cobertura que genera JaCoCo -->
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<!-- Versión del SDK de AWS (lo usamos para hablar con el almacén de fotos S3) -->
+		<aws.sdk.version>2.46.2</aws.sdk.version>
 	</properties>
+	<!-- Lista de versiones del SDK de AWS: así todas sus piezas usan la misma versión -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws.sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -102,6 +116,27 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.12.6</version>
 			<scope>runtime</scope>
+		</dependency>
+		<!-- Fotos de las OT: cliente S3 (sirve para RustFS en la compu, Backblaze B2 o Cloudflare R2 en Render).
+		     Se sacan los clientes HTTP pesados (netty y apache) para ahorrar memoria en Render (512 MB). -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>apache5-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- Cliente HTTP liviano, el que ya trae Java -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>url-connection-client</artifactId>
 		</dependency>
 	</dependencies>
 

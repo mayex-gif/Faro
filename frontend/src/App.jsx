@@ -1,34 +1,45 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import Icono from './components/Icono'
 import Buscador from './components/Buscador'
 import MenuDesplegable from './components/MenuDesplegable'
 import BarraUsuario from './components/BarraUsuario'
+import BotonAyuda from './components/BotonAyuda'
 import RutaProtegida from './components/RutaProtegida'
 import AvisoVersionNueva from './components/AvisoVersionNueva'
 import { useSesion } from './context/useSesion'
 import { inicioDe, puedeVer, tieneRol } from './utils/permisos'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
+import PaginaLuminarias from './pages/PaginaLuminarias'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
 import PaginaFichaLugar from './pages/PaginaFichaLugar'
 import PaginaMisTareas from './pages/PaginaMisTareas'
 import PaginaUsuarios from './pages/PaginaUsuarios'
+import PaginaMantenimiento from './pages/PaginaMantenimiento'
+import PaginaAuditoria from './pages/PaginaAuditoria'
 import { MAS, NUEVO, SECCIONES, esPantallaCompleta, tituloDe } from './utils/navegacion'
 import { iniciarSincronizacion } from './offline/sincronizar'
 import './App.css'
 import './estilos-navegacion.css'
 
+// Reportes se baja recién al abrirla: trae Recharts (~100 KB) y solo la usa el encargado del corralón.
+const PaginaReportes = lazy(() => import('./pages/PaginaReportes'))
+
 // Qué pantalla se dibuja para cada clave. El orden del menú y los nombres están en utils/navegacion.js.
 // Para agregar una pantalla nueva: sumarla acá y en utils/navegacion.js.
 const PAGINAS = {
   infraestructura: PaginaInfraestructura,
+  luminarias: PaginaLuminarias,
   ordenes: PaginaOrdenes,
   asignacion: PaginaAsignacion,
   mapa: PaginaMapa,
   ficha: PaginaFichaLugar,
   tareas: PaginaMisTareas,
   usuarios: PaginaUsuarios,
+  mantenimiento: PaginaMantenimiento,
+  auditoria: PaginaAuditoria,
+  reportes: PaginaReportes,
 }
 
 function Aplicacion() {
@@ -72,13 +83,17 @@ function Aplicacion() {
       <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
       <header className="barra-superior">
-        <div className="marca">
+        <a className="marca" href="#contenido" aria-label="FARO, volver al mapa de Todo el pueblo"
+          onClick={(evento) => {
+            evento.preventDefault()
+            navegar('mapa', { pestana: 'todo', vez: Date.now() })
+          }}>
           <img src="/logo-faro.png" alt="" className="marca-logo" width="40" height="40" />
           <div>
             <span className="marca-nombre">FARO</span>
             <span className="marca-lugar">Estación General Paz</span>
           </div>
-        </div>
+        </a>
 
         {/* Elegir un lugar o un trabajo lleva al mapa con ese lugar elegido.
             "vez" cambia en cada búsqueda: así el mapa se vuelve a armar aunque ya se esté viendo. */}
@@ -102,11 +117,15 @@ function Aplicacion() {
         {nuevas.length > 0 && <MenuDesplegable opciones={nuevas} onElegir={(clave) => navegar(clave)}
           claseBoton="boton boton-primario boton-nuevo"
           contenidoBoton={<><Icono nombre="agregar" />Nuevo</>} />}
+        {/* "?": qué se hace en la pantalla actual (contenido en utils/ayuda.js) */}
+        <BotonAyuda clave={paginaActual} rol={usuario.rol} />
         <BarraUsuario />
       </header>
 
       <main className={completa ? 'pagina-completa' : 'pagina'} id="contenido" tabIndex={-1}>
-        <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
+        <Suspense fallback={<CargandoPantalla />}>
+          <Componente key={`${paginaActual}-${vista.params.vez ?? ''}`} params={vista.params} onNavegar={navegar} />
+        </Suspense>
 
         {!completa && (
           <footer className="pie-pagina">
@@ -131,6 +150,16 @@ function Aplicacion() {
           claseBoton={estaEnMas ? 'nav-abajo nav-abajo-activo' : 'nav-abajo'}
           contenidoBoton={<><span className="nav-abajo-icono"><Icono nombre="mas" /></span>Más</>} />}
       </nav>
+    </div>
+  )
+}
+
+// Mientras se baja una pantalla que se carga aparte (hoy, Reportes)
+function CargandoPantalla() {
+  return (
+    <div className="panel estado-listado" role="status">
+      <span className="indicador-carga" aria-hidden="true" />
+      <p>Abriendo la pantalla…</p>
     </div>
   )
 }

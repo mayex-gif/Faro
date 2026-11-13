@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  agruparPorDia, contar, detalleEvento, horaEvento, nombreDia, nombreTipoLugar, ordenDelEvento, tituloEvento,
+  agruparPorDia, cierreDelEvento, contar, detalleEvento, horaEvento, nombreDia, nombreTipoLugar, ordenDelEvento, tituloEvento,
 } from '../src/utils/historia.js'
 
 // Solo datos en memoria, con la misma forma que devuelve GET /api/infraestructura/{id}/historia
@@ -71,7 +71,16 @@ test('singular y plural', () => {
 })
 
 test('el tipo de lugar se muestra con texto para el usuario', () => {
-  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Espacio verde')
+  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Lugar')
   assert.equal(nombreTipoLugar('LUMINARIA'), 'Luminaria')
   assert.equal(nombreTipoLugar('OTRO_TIPO'), 'OTRO_TIPO')
+})
+test('la finalización muestra lo que se marcó en el pop-up de "Finalizar"', () => {
+  const fin = { tipo: 'CAMBIO_ESTADO', estadoNuevo: 'Finalizada', cierre: true }
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: true, gastoAdicional: 8000 }), 'El lugar volvió a funcionar · Gasto adicional $\u00a08.000')
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: false }), 'El lugar siguió fuera de servicio')
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: null, gastoAdicional: 1500.5 }), 'Gasto adicional $\u00a01.500,50')
+  // Antes del pop-up (o un cambio de estado común) no dice nada
+  assert.equal(cierreDelEvento(fin), '')
+  assert.equal(cierreDelEvento({ tipo: 'ORDEN_CREADA', gastoAdicional: 5 }), '')
 })

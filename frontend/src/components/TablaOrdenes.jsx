@@ -1,5 +1,7 @@
 import Icono from './Icono'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '../utils/ordenesTrabajo'
+import { fechaProgramada } from '../utils/recurrencia'
+import { formatearPesos } from '../utils/cierreOrden'
 
 // Props:
 // - ordenes: la lista a mostrar
@@ -9,8 +11,10 @@ import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '
 // - estados: los estados posibles, cada uno con "siguientes" (ids de los estados a los que se puede pasar)
 // - onCambiarEstado: función a llamar al tocar "Pasar a ..." → onCambiarEstado(orden, estadoNuevo)
 // - idCambiandoEstado: id de la OT que está cambiando de estado (sus botones se deshabilitan)
+// - onVerComentarios: función a llamar al tocar "Comentarios" → onVerComentarios(orden) (si no se pasa, no se muestra)
 // Una OT cargada sin señal (sinEnviar) todavía no tiene número: se marca "Nueva · Sin enviar" y no tiene acciones.
-function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado, sinCoincidencias, onLimpiarFiltros }) {
+function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [], onCambiarEstado, idCambiandoEstado, sinCoincidencias, onLimpiarFiltros, onVerComentarios }) {
+  const conAcciones = Boolean(onEditar || onVerComentarios)
   // "Diccionario" id → estado, para encontrar rápido el estado de cada OT
   const estadosPorId = new Map(estados.map((estado) => [estado.id, estado]))
 
@@ -43,12 +47,13 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
             <tr>
               <th scope="col">Trabajo</th>
               <th scope="col">Lugar</th>
+              <th scope="col">Ubicación</th>
               <th scope="col">Tipo</th>
               <th scope="col">Origen</th>
               <th scope="col">Prioridad</th>
               <th scope="col">Estado</th>
               <th scope="col">Creada</th>
-              {onEditar && <th scope="col">Acciones</th>}
+              {conAcciones && <th scope="col">Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -67,8 +72,13 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   {orden.id != null ? <span className="numero-orden">OT #{orden.id}</span>
                     : <span className="estado estado-sin-enviar">Nueva · Sin enviar</span>}
                   {orden.id === idEditando && <span className="marca-edicion">En edición</span>}
+                  {orden.reglaMantenimientoId != null && <span className="marca-periodica">
+                    <Icono nombre="mantenimiento" />Periódica
+                    {orden.fechaPlanificada && <span className="fecha-prevista">Prevista: <time dateTime={orden.fechaPlanificada}>{fechaProgramada(orden.fechaPlanificada)}</time></span>}
+                  </span>}
                 </th>
                 <td>{orden.lugarNombre}</td>
+                <td>{orden.altura ? `Altura ${orden.altura}` : (orden.calleEntre1 ? `Entre ${orden.calleEntre1} y ${orden.calleEntre2}` : '—')}</td>
                 <td><span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span></td>
                 <td>{etiqueta(ORIGENES, orden.origen)}</td>
                 <td>
@@ -85,15 +95,25 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                       {orden.estadoNombre}
                     </span>
                   ) : '—'}
+                  {/* Lo que se gastó de más, declarado al finalizar (pop-up de "Finalizar") */}
+                  {orden.gastoAdicional != null && (
+                    <span className="gasto-orden">Gasto adicional {formatearPesos(orden.gastoAdicional)}</span>
+                  )}
                 </td>
                 <td className="fecha-tabla">{formatearFecha(orden.fechaCreacion)}</td>
-                {onEditar && orden.sinEnviar && orden.id == null && (
+                {conAcciones && orden.sinEnviar && orden.id == null && (
                   <td><span className="orden-cerrada">Se registra cuando vuelva la señal</span></td>
                 )}
-                {onEditar && !(orden.sinEnviar && orden.id == null) && (
+                {conAcciones && !(orden.sinEnviar && orden.id == null) && (
                   <td>
                     <div className="acciones acciones-orden">
-                      {!cerrada && (
+                      {onVerComentarios && (
+                        <button type="button" className="boton boton-tabla" onClick={() => onVerComentarios(orden)}
+                          aria-label={`Ver los comentarios y fotos de la orden ${orden.id}`}>
+                          <Icono nombre="comentario" />Comentarios
+                        </button>
+                      )}
+                      {onEditar && !cerrada && (
                         <button type="button" className="boton boton-tabla" onClick={() => onEditar(orden)}
                           aria-label={`Editar la orden ${orden.id}`} disabled={cambiando}>
                           <Icono nombre="editar" />Editar
@@ -106,7 +126,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                           Pasar a {estado.nombre}
                         </button>
                       ))}
-                      {cerrada && <span className="orden-cerrada">Cerrada, sin cambios</span>}
+                      {onEditar && cerrada && <span className="orden-cerrada">Cerrada, sin cambios</span>}
                     </div>
                   </td>
                 )}

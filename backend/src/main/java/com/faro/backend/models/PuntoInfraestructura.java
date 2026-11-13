@@ -23,6 +23,11 @@ public class PuntoInfraestructura {
     @Column(name = "estado_operativo")
     private Boolean estadoOperativo; // Para identificar si la luminaria funciona, por ejemplo[cite: 3]
 
+    // false = la luminaria está planificada pero todavía no se puso ("Falta poner" en la pestaña Luminarias).
+    // Los lugares cargados antes de este campo quedan en null y cuentan como instalados.
+    @Column(name = "instalada")
+    private Boolean instalada;
+
     // Mapeo espacial para PostGIS
     // El SRID 4326 es el estándar GPS (WGS84) que usa Google Maps
     @Column(columnDefinition = "geometry(Geometry, 4326)", nullable = false)
@@ -46,6 +51,9 @@ public class PuntoInfraestructura {
 
     public Boolean getEstadoOperativo() { return estadoOperativo; }
     public void setEstadoOperativo(Boolean estadoOperativo) { this.estadoOperativo = estadoOperativo; }
+
+    public Boolean getInstalada() { return instalada; }
+    public void setInstalada(Boolean instalada) { this.instalada = instalada; }
 
     public Geometry getUbicacion() { return ubicacion; }
     public void setUbicacion(Geometry ubicacion) { this.ubicacion = ubicacion; }

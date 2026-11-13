@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>FARO · Manual de usuario</title>
+<!--
+  Manual de usuario de FARO (entrega de la cátedra).
+  Este HTML es la fuente: el PDF se genera con generar-pdf.cmd (usa Microsoft Edge, ya instalado en Windows).
+  Las capturas van en la carpeta capturas/ con el nombre que indica cada <img>. Si falta una, el PDF muestra
+  un recuadro "Captura pendiente" en su lugar.
+  La ayuda en línea (botón "?") está en frontend/src/utils/ayuda.js: si cambia una pantalla, actualizar los dos.
+-->
+<style>
+  @page { size: A4; margin: 22mm 18mm 20mm; @bottom-right { content: "Página " counter(page); font: 9pt "Segoe UI", sans-serif; color: #566A73; } @bottom-left { content: "FARO · Manual de usuario · v1.0"; font: 9pt "Segoe UI", sans-serif; color: #566A73; } }
+  @page :first { margin: 0; @bottom-right { content: none; } @bottom-left { content: none; } }
+  :root { --lateral: #143D48; --naranja: #EA6A25; --cian: #1B9FB5; --celeste: #5FC0D8; --texto: #233A44; --secundario: #566A73; --borde: #DCE5E8; --fondo: #F4F7F8; --enlace: #086C80; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; color: var(--texto); font: 10.5pt/1.55 "Segoe UI", system-ui, sans-serif; background: #fff; }
+  h1, h2, h3, h4 { color: var(--lateral); line-height: 1.25; break-after: avoid; }
+  h1 { margin: 0 0 6mm; padding-bottom: 3mm; border-bottom: 3px solid var(--naranja); font-size: 22pt; }
+  h2 { margin: 9mm 0 3mm; font-size: 15pt; }
+  h3 { margin: 6mm 0 2mm; font-size: 12pt; }
+  h4 { margin: 4mm 0 1.5mm; font-size: 10.5pt; color: var(--enlace); }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  a { color: var(--enlace); text-decoration: none; }
+  strong.boton, .boton { display: inline-block; padding: 0 1.6mm; border: 1px solid #81949D; border-radius: 4px; background: #fff; font-weight: 650; font-size: 9.5pt; white-space: nowrap; }
+  .capitulo { break-before: page; }
+  table { width: 100%; margin: 2mm 0 4mm; border-collapse: collapse; font-size: 9.5pt; break-inside: avoid; }
+  th, td { padding: 2mm 2.5mm; border: 1px solid var(--borde); text-align: left; vertical-align: top; }
+  th { background: var(--lateral); color: #fff; font-weight: 650; }
+  tr:nth-child(even) td { background: var(--fondo); }
+  .nota, .cuidado { margin: 3mm 0 4mm; padding: 3mm 4mm; border-left: 4px solid var(--cian); border-radius: 4px; background: #EEF7F9; break-inside: avoid; }
+  .cuidado { border-left-color: var(--naranja); background: #FDF1EA; }
+  .nota strong:first-child, .cuidado strong:first-child { color: var(--lateral); }
+  .pasos { counter-reset: paso; list-style: none; padding-left: 0; }
+  .pasos > li { position: relative; padding-left: 9mm; counter-increment: paso; }
+  .pasos > li::before { content: counter(paso); position: absolute; left: 0; top: 0.3mm; display: grid; place-items: center; width: 6mm; height: 6mm; border-radius: 50%; background: var(--lateral); color: #fff; font-size: 8.5pt; font-weight: 700; }
+  body { counter-reset: figura; }
+  figure { margin: 4mm 0 5mm; break-inside: avoid; text-align: center; counter-increment: figura; }
+  figure img { max-width: 100%; max-height: 125mm; border: 1px solid var(--borde); border-radius: 6px; box-shadow: 0 1mm 3mm rgb(20 61 72 / 12%); }
+  figure.celular img { max-height: 135mm; }
+  figure.par { display: flex; gap: 6mm; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  figure.par img { max-width: 48%; }
+  figure.par figcaption { flex-basis: 100%; }
+  figcaption { margin-top: 2mm; color: var(--secundario); font-size: 9pt; font-style: italic; }
+  figcaption::before { content: "Figura " counter(figura) ". "; font-style: normal; font-weight: 650; color: var(--lateral); }
+  .pendiente { display: grid; place-items: center; height: 55mm; margin: 0 auto; border: 2px dashed #81949D; border-radius: 6px; background: var(--fondo); color: var(--secundario); font-size: 10pt; }
+  .ficha-pantalla { display: grid; grid-template-columns: auto 1fr; gap: 1mm 4mm; margin: 2mm 0 4mm; padding: 3mm 4mm; border: 1px solid var(--borde); border-radius: 6px; background: var(--fondo); font-size: 9.5pt; break-inside: avoid; }
+  .ficha-pantalla dt { font-weight: 650; color: var(--lateral); }
+  .ficha-pantalla dd { margin: 0; }
+  .pantalla { break-before: page; }
+  .diagrama { display: block; width: 100%; margin: 3mm 0 2mm; break-inside: avoid; }
+
+  /* Portada */
+  .portada { position: relative; display: flex; flex-direction: column; justify-content: space-between; height: 297mm; padding: 28mm 22mm 22mm; background: var(--lateral); color: #fff; break-after: page; }
+  .portada-marca { display: flex; align-items: center; gap: 6mm; }
+  .portada-marca img { width: 30mm; height: 30mm; border-radius: 50%; background: #fff; }
+  .portada-marca span { display: block; }
+  .portada-nombre { color: var(--naranja); font-size: 34pt; font-weight: 750; letter-spacing: 2px; line-height: 1; }
+  .portada-lugar { color: var(--celeste); font-size: 13pt; }
+  .portada h1 { margin: 0 0 4mm; padding: 0; border: 0; color: #fff; font-size: 34pt; }
+  .portada-sub { max-width: 140mm; color: #DCEFF4; font-size: 13pt; }
+  .portada-datos { display: grid; grid-template-columns: auto 1fr; gap: 1.5mm 6mm; padding-top: 6mm; border-top: 1px solid rgb(255 255 255 / 30%); color: #DCEFF4; font-size: 10.5pt; }
+  .portada-datos dt { color: var(--celeste); font-weight: 650; }
+  .portada-datos dd { margin: 0; }
+
+  /* Índice */
+  .indice ol { list-style: none; padding-left: 0; }
+  .indice ol ol { padding-left: 7mm; }
+  .indice li { margin: 1.2mm 0; }
+  .indice > ol > li { margin-top: 3mm; font-weight: 650; }
+  .indice > ol > li li { font-weight: 400; }
+  .indice a { color: var(--texto); }
+  .indice .num { display: inline-block; min-width: 9mm; color: var(--enlace); font-weight: 650; }
+
+  @media screen { body { max-width: 210mm; margin: 0 auto; padding: 0 0 20mm; background: #E9EEF0; } body > *:not(.portada) { padding-inline: 18mm; background: #fff; } .portada { height: auto; min-height: 297mm; } }
+</style>
+</head>
+<body>
+
+<!-- ============================== PORTADA ============================== -->
+<section class="portada">
+  <div class="portada-marca">
+    <img src="../../frontend/public/logo-faro.png" alt="">
+    <div><span class="portada-nombre">FARO</span><span class="portada-lugar">Estación General Paz</span></div>
+  </div>
+  <div>
+    <h1>Manual de usuario</h1>
+    <p class="portada-sub">Sistema de gestión del mantenimiento municipal: lugares, órdenes de trabajo, cuadrillas y mantenimiento periódico.</p>
+  </div>
+  <dl class="portada-datos">
+    <dt>Organización</dt><dd>Municipalidad de Estación General Paz · Córdoba, Argentina</dd>
+    <dt>Versión</dt><dd>1.0 · Noviembre de 2026</dd>
+    <dt>Equipo</dt><dd>Equipo de desarrollo FARO</dd>
+    <dt>Destinatarios</dt><dd>Encargado del corralón, mesa de entradas y capataces de cuadrilla</dd>
+  </dl>
+</section>
+
+<!-- ======================== HISTORIA DE REVISIÓN ======================== -->
+<section>
+  <h1>Historia de revisión</h1>
+  <table>
+    <thead><tr><th style="width:14%">Versión</th><th style="width:18%">Fecha</th><th>Descripción del cambio</th><th style="width:24%">Autor</th></tr></thead>
+    <tbody>
+      <tr><td>1.0</td><td>09/11/2026</td><td>Primera versión del manual: propósito, configuración, módulos y descripción de todas las pantallas del sistema.</td><td>Equipo de desarrollo FARO</td></tr>
+    </tbody>
+  </table>
+  <p>Cada vez que cambie el sistema de una manera que afecte lo que ve o hace el usuario, se agrega una fila a esta tabla con la versión nueva del manual.</p>
+
+  <!-- ============================== ÍNDICE ============================== -->
+  <nav class="indice capitulo">
+    <h1>Tabla de contenido</h1>
+    <ol>
+      <li><a href="#proposito"><span class="num">1</span>Propósito del documento</a>
+        <ol>
+          <li><a href="#que-es"><span class="num">1.1</span>Qué es FARO</a></li>
+          <li><a href="#a-quien"><span class="num">1.2</span>A quién está dirigido</a></li>
+          <li><a href="#como-leer"><span class="num">1.3</span>Cómo leer este manual</a></li>
+          <li><a href="#glosario"><span class="num">1.4</span>Palabras que se usan en FARO</a></li>
+        </ol>
+      </li>
+      <li><a href="#configuracion"><span class="num">2</span>Configuración</a>
+        <ol>
+          <li><a href="#requisitos"><span class="num">2.1</span>Qué se necesita</a></li>
+          <li><a href="#acceso"><span class="num">2.2</span>Cómo entrar a FARO</a></li>
+          <li><a href="#instalar"><span class="num">2.3</span>Instalar FARO en el celular</a></li>
+          <li><a href="#roles"><span class="num">2.4</span>Cuentas y roles</a></li>
+          <li><a href="#sin-senal"><span class="num">2.5</span>Trabajar sin señal</a></li>
+          <li><a href="#version-nueva"><span class="num">2.6</span>Actualizaciones del sistema</a></li>
+        </ol>
+      </li>
+      <li><a href="#modulos"><span class="num">3</span>Módulos</a>
+        <ol>
+          <li><a href="#mapa-modulos"><span class="num">3.1</span>Los subsistemas de FARO</a></li>
+          <li><a href="#ciclo-ot"><span class="num">3.2</span>El recorrido de un trabajo</a></li>
+        </ol>
+      </li>
+      <li><a href="#funciones"><span class="num">4</span>Descripción de funciones</a>
+        <ol>
+          <li><a href="#general"><span class="num">4.1</span>Elementos comunes a todas las pantallas</a></li>
+          <li><a href="#sub-acceso"><span class="num">4.2</span>Subsistema de acceso</a></li>
+          <li><a href="#sub-lugares"><span class="num">4.3</span>Subsistema de lugares</a></li>
+          <li><a href="#sub-trabajos"><span class="num">4.4</span>Subsistema de órdenes de trabajo</a></li>
+          <li><a href="#sub-plan"><span class="num">4.5</span>Subsistema de planificación</a></li>
+          <li><a href="#sub-gestion"><span class="num">4.6</span>Subsistema de gestión y control</a></li>
+        </ol>
+      </li>
+      <li><a href="#problemas"><span class="num">5</span>Preguntas frecuentes y problemas comunes</a></li>
+    </ol>
+  </nav>
+</section>
+
+<!-- ============================ 1. PROPÓSITO ============================ -->
+<section class="capitulo" id="proposito">
+  <h1>1. Propósito del documento</h1>
+  <p>Este manual explica, paso a paso y con imágenes, cómo usar FARO. Está pensado para que cualquier persona del corralón pueda consultarlo, sin necesidad de conocimientos técnicos.</p>
+
+  <h2 id="que-es">1.1 Qué es FARO</h2>
+  <p>FARO es el sistema con el que la Municipalidad de Estación General Paz organiza el mantenimiento del pueblo: el alumbrado, los espacios verdes y las calles. Reemplaza las planillas y los papeles por un único lugar donde:</p>
+  <ul>
+    <li>se registran los <strong>lugares</strong> que mantiene el corralón (cada luminaria, plaza o calle) y se los ve en un <strong>mapa</strong>;</li>
+    <li>se cargan los <strong>trabajos</strong> que hay que hacer (por un reclamo de un vecino, por el plan de mantenimiento o por decisión del corralón);</li>
+    <li>se reparten los trabajos entre las <strong>cuadrillas</strong>, que registran desde el celular cuándo empiezan y cuándo terminan, incluso sin señal;</li>
+    <li>se programan los trabajos que se <strong>repiten</strong> (por ejemplo, cortar el pasto de una plaza cada 15 días);</li>
+    <li>se consulta la <strong>historia</strong> de cada lugar, quién cambió cada dato y los <strong>números</strong> del corralón.</li>
+  </ul>
+  <p>FARO funciona en el navegador de la computadora y del celular. No hace falta instalar nada, aunque en el celular se puede agregar como aplicación (ver <a href="#instalar">2.3</a>).</p>
+
+  <h2 id="a-quien">1.2 A quién está dirigido</h2>
+  <p>A las tres funciones que usan FARO en el día a día. Cada una ve solo las pantallas que necesita:</p>
+  <table>
+    <thead><tr><th style="width:28%">Rol</th><th>Qué hace en FARO</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Encargado del corralón</strong></td><td>Organiza todo el trabajo: registra lugares y trabajos, los asigna a las cuadrillas, programa el mantenimiento periódico, gestiona al personal y consulta la auditoría y los reportes.</td></tr>
+      <tr><td><strong>Mesa de entradas</strong></td><td>Recibe los reclamos de los vecinos y los carga como órdenes de trabajo. Consulta el mapa y la historia de los lugares, y gestiona las cuentas del personal.</td></tr>
+      <tr><td><strong>Capataz de cuadrilla</strong></td><td>Desde el celular, consulta los trabajos asignados a su cuadrilla, registra su inicio y su finalización, y suma comentarios y fotos.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="como-leer">1.3 Cómo leer este manual</h2>
+  <ul>
+    <li>El capítulo <a href="#configuracion">2</a> explica lo que hay que saber antes de empezar: cómo entrar, los roles y el trabajo sin señal.</li>
+    <li>El capítulo <a href="#modulos">3</a> da una vista general: qué partes tiene FARO y cómo se relacionan.</li>
+    <li>El capítulo <a href="#funciones">4</a> describe cada pantalla en detalle, ordenadas por subsistema. Al principio de cada una hay un recuadro que dice para qué sirve, quién la usa y cómo se llega.</li>
+    <li>El capítulo <a href="#problemas">5</a> responde las dudas más comunes.</li>
+  </ul>
+  <p>Convenciones que se usan en el texto:</p>
+  <ul>
+    <li>Los botones se muestran así: <span class="boton">Registrar orden</span>. El texto es el mismo que se ve en la pantalla.</li>
+    <li>Los nombres de campos, listas y secciones de la pantalla van entre comillas: "Prioridad", "Órdenes registradas".</li>
+  </ul>
+  <div class="nota"><strong>Ayuda dentro del sistema.</strong> Cada pantalla de FARO tiene un botón <span class="boton">?</span> arriba a la derecha. Al tocarlo se abre un resumen de esa pantalla con las opciones que tiene tu rol. Este manual amplía esa misma información.</div>
+
+  <h2 id="glosario">1.4 Palabras que se usan en FARO</h2>
+  <table>
+    <thead><tr><th style="width:26%">Palabra</th><th>Qué significa</th></tr></thead>
+    <tbody>
+      <tr><td>Lugar (punto de infraestructura)</td><td>Cada cosa del pueblo que mantiene el corralón: una luminaria, un espacio verde o una calle. Tiene nombre, tipo, ubicación, datos técnicos y un estado operativo.</td></tr>
+      <tr><td>Estado operativo</td><td>Si el lugar <em>Funciona</em> o está <em>Fuera de servicio</em>.</td></tr>
+      <tr><td>Orden de trabajo (OT)</td><td>Un trabajo a realizar en un lugar. Se identifica con un número (por ejemplo, OT #25).</td></tr>
+      <tr><td>Tipo de trabajo</td><td>Poda, Corte de pasto, Pintura, Bacheo, Limpieza, Alumbrado u Otro.</td></tr>
+      <tr><td>Origen</td><td>De dónde surge la orden: <em>Reclamo vecinal</em>, <em>Plan de mantenimiento</em> u <em>Orden directa</em>.</td></tr>
+      <tr><td>Prioridad</td><td>Qué tan urgente es: Baja, Media, Alta o Urgente.</td></tr>
+      <tr><td>Estado de la orden</td><td>En qué punto está el trabajo: Pendiente, Planificada, En curso, Finalizada o Cancelada (ver <a href="#ciclo-ot">3.2</a>).</td></tr>
+      <tr><td>Cuadrilla</td><td>Grupo de trabajadores a cargo de un capataz. Cada cuadrilla realiza ciertos tipos de trabajo y está <em>Disponible</em> u <em>Ocupada</em>.</td></tr>
+      <tr><td>Regla de mantenimiento</td><td>Un trabajo programado para repetirse (cada semana, cada mes…). FARO crea sola una orden nueva en cada fecha.</td></tr>
+      <tr><td>Desvío</td><td>La diferencia entre la fecha en que se planificó un trabajo periódico y la fecha en que realmente se terminó.</td></tr>
+      <tr><td>Sin enviar</td><td>Un cambio hecho sin señal, guardado en el celular, que todavía no llegó al servidor. Se envía solo cuando vuelve la señal.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =========================== 2. CONFIGURACIÓN =========================== -->
+<section class="capitulo" id="configuracion">
+  <h1>2. Configuración</h1>
+  <p>FARO no necesita instalación ni configuración en la computadora o el celular de cada persona: se usa desde el navegador. Este capítulo explica qué se necesita, cómo entrar y cómo se organizan las cuentas.</p>
+
+  <h2 id="requisitos">2.1 Qué se necesita</h2>
+  <table>
+    <thead><tr><th style="width:28%">Requisito</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td>Dispositivo</td><td>Una computadora, una tablet o un celular. Las pantallas se adaptan solas al tamaño.</td></tr>
+      <tr><td>Navegador</td><td>Google Chrome, Microsoft Edge, Mozilla Firefox o Safari, en una versión actualizada.</td></tr>
+      <tr><td>Conexión</td><td>Internet para entrar y para ver los datos al día. El capataz puede seguir trabajando sin señal (ver <a href="#sin-senal">2.5</a>).</td></tr>
+      <tr><td>Cuenta</td><td>Un correo y una contraseña que da el encargado del corralón o mesa de entradas desde la pantalla Usuarios.</td></tr>
+      <tr><td>Fotos (opcional)</td><td>Para sumar fotos a un trabajo, el celular tiene que permitir que el navegador use la cámara o la galería.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="acceso">2.2 Cómo entrar a FARO</h2>
+  <ol class="pasos">
+    <li>Abrí el navegador y entrá a la dirección de FARO que te pasó el municipio. Conviene guardarla en favoritos.</li>
+    <li>En la pantalla "Iniciar sesión", escribí tu correo electrónico y tu contraseña.</li>
+    <li>Tocá <span class="boton">Iniciar sesión</span>. FARO te lleva a la pantalla de inicio de tu rol: el capataz entra directo a "Mis tareas"; el resto, al Mapa.</li>
+  </ol>
+  <p>Para salir, tocá <span class="boton">Cerrar sesión</span>, arriba a la derecha. Es importante hacerlo si usás una computadora compartida. Por seguridad, la sesión también se cierra sola después de un tiempo; en ese caso FARO avisa y hay que volver a entrar.</p>
+  <p>La pantalla de ingreso se describe en detalle en <a href="#pantalla-login">4.2</a>.</p>
+
+  <h2 id="instalar">2.3 Instalar FARO en el celular</h2>
+  <p>FARO se puede agregar a la pantalla de inicio del celular para abrirlo como una aplicación más, a pantalla completa y sin la barra del navegador:</p>
+  <ul>
+    <li><strong>Android (Chrome):</strong> abrí FARO, tocá el menú <span class="boton">⋮</span> y elegí "Agregar a la pantalla principal" o "Instalar aplicación".</li>
+    <li><strong>iPhone (Safari):</strong> abrí FARO, tocá el botón Compartir y elegí "Agregar a inicio".</li>
+  </ul>
+  <p>Queda un ícono con el logo de FARO. Se usa igual que desde el navegador, con la misma cuenta.</p>
+
+  <h2 id="roles">2.4 Cuentas y roles</h2>
+  <p>Cada persona tiene una cuenta propia, con un <strong>rol</strong>. El rol define qué pantallas ve y qué puede hacer en cada una. Las cuentas se crean, modifican y dan de baja desde la pantalla Usuarios (ver <a href="#pantalla-usuarios">4.6.1</a>).</p>
+  <table>
+    <thead><tr><th>Pantalla</th><th style="width:18%">Encargado</th><th style="width:18%">Mesa de entradas</th><th style="width:18%">Capataz</th></tr></thead>
+    <tbody>
+      <tr><td>Mapa</td><td>Sí</td><td>Sí</td><td>Sí (solo consulta)</td></tr>
+      <tr><td>Infraestructura</td><td>Sí</td><td>—</td><td>—</td></tr>
+      <tr><td>Ficha histórica</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+      <tr><td>Trabajos</td><td>Sí (registra y modifica)</td><td>Sí (registra y consulta)</td><td>—</td></tr>
+      <tr><td>Cuadrillas (asignación)</td><td>Sí</td><td>—</td><td>—</td></tr>
+      <tr><td>Mis tareas</td><td>Sí (supervisa)</td><td>—</td><td>Sí (pantalla de inicio)</td></tr>
+      <tr><td>Mantenimiento periódico</td><td>Sí</td><td>—</td><td>—</td></tr>
+      <tr><td>Usuarios</td><td>Sí</td><td>Sí</td><td>—</td></tr>
+      <tr><td>Auditoría</td><td>Sí</td><td>—</td><td>—</td></tr>
+      <tr><td>Reportes</td><td>Sí</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="nota"><strong>Una persona dada de baja</strong> ya no puede entrar a FARO, pero no se borra: su nombre sigue apareciendo en la historia de los trabajos que hizo.</div>
+
+  <h2 id="sin-senal">2.5 Trabajar sin señal</h2>
+  <p>En el terreno muchas veces no hay señal. FARO está preparado para eso:</p>
+  <ul>
+    <li><strong>Lo que ya estaba cargado se sigue viendo.</strong> Si se corta la señal, las listas de trabajos y tareas siguen en pantalla, con un aviso que dice a qué hora se cargaron.</li>
+    <li><strong>Los cambios se guardan en el celular.</strong> Si el capataz inicia o finaliza una tarea, o alguien registra una orden o publica un comentario sin señal, el cambio queda guardado y marcado como <em>Sin enviar</em>.</li>
+    <li><strong>Se envían solos.</strong> Cuando vuelve la señal, FARO manda todo automáticamente y avisa cuántos cambios se enviaron. Si se cierra la sesión antes, no se pierden: se envían al volver a entrar.</li>
+    <li><strong>Siempre a la vista.</strong> Arriba, junto al nombre, un contador muestra cuántos cambios faltan enviar.</li>
+    <li><strong>Copia para consultar.</strong> El capataz puede guardar una copia de sus tareas antes de salir, para consultarlas aunque abra FARO sin señal (ver <a href="#pantalla-tareas">4.4.3</a>).</li>
+  </ul>
+  <div class="cuidado"><strong>Si aparece "para revisar".</strong> Puede pasar que, mientras no tenías señal, otra persona haya cambiado el mismo trabajo (por ejemplo, lo canceló). En ese caso tu cambio no se aplica solo: FARO te muestra qué pasó y vos decidís qué hacer.</div>
+
+  <h2 id="version-nueva">2.6 Actualizaciones del sistema</h2>
+  <p>Cuando el equipo publica una versión nueva de FARO, aparece abajo el cartel "Hay una versión nueva de FARO". Terminá lo que estabas haciendo y tocá <span class="boton">Actualizar</span>. No se pierde ningún dato guardado.</p>
+</section>
+
+<!-- ============================== 3. MÓDULOS ============================== -->
+<section class="capitulo" id="modulos">
+  <h1>3. Módulos</h1>
+  <p>FARO está organizado en cinco subsistemas. Cada uno agrupa las pantallas que trabajan sobre lo mismo. El capítulo 4 sigue este mismo orden.</p>
+
+  <h2 id="mapa-modulos">3.1 Los subsistemas de FARO</h2>
+  <svg class="diagrama" viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif" role="img" aria-label="Subsistemas de FARO y sus pantallas">
+    <defs><marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#81949D"/></marker></defs>
+    <rect x="250" y="8" width="200" height="56" rx="10" fill="#143D48"/>
+    <text x="350" y="32" fill="#EA6A25" font-size="15" font-weight="700" text-anchor="middle">Acceso</text>
+    <text x="350" y="51" fill="#DCEFF4" font-size="11.5" text-anchor="middle">Iniciar sesión · roles</text>
+    <g stroke="#81949D" stroke-width="1.5" fill="none" marker-end="url(#flecha)">
+      <path d="M350 64v22H73v24"/><path d="M350 86h137v24"/><path d="M350 86H211v24"/><path d="M350 86h275v24"/><path d="M349 86v24"/>
+    </g>
+    <g font-size="11">
+      <rect x="8" y="112" width="130" height="140" rx="10" fill="#EEF7F9" stroke="#1B9FB5"/>
+      <text x="73" y="134" fill="#143D48" font-size="13" font-weight="700" text-anchor="middle">Lugares</text>
+      <text x="73" y="160" fill="#233A44" text-anchor="middle">Mapa</text>
+      <text x="73" y="180" fill="#233A44" text-anchor="middle">Infraestructura</text>
+      <text x="73" y="200" fill="#233A44" text-anchor="middle">Ficha histórica</text>
+
+      <rect x="146" y="112" width="130" height="140" rx="10" fill="#FDF1EA" stroke="#EA6A25"/>
+      <text x="211" y="134" fill="#143D48" font-size="13" font-weight="700" text-anchor="middle">Órdenes de trabajo</text>
+      <text x="211" y="160" fill="#233A44" text-anchor="middle">Trabajos</text>
+      <text x="211" y="180" fill="#233A44" text-anchor="middle">Cuadrillas</text>
+      <text x="211" y="200" fill="#233A44" text-anchor="middle">Mis tareas</text>
+      <text x="211" y="220" fill="#233A44" text-anchor="middle">Comentarios y fotos</text>
+
+      <rect x="284" y="112" width="130" height="140" rx="10" fill="#EEF7F9" stroke="#1B9FB5"/>
+      <text x="349" y="134" fill="#143D48" font-size="13" font-weight="700" text-anchor="middle">Planificación</text>
+      <text x="349" y="160" fill="#233A44" text-anchor="middle">Mantenimiento</text>
+      <text x="349" y="176" fill="#233A44" text-anchor="middle">periódico</text>
+      <text x="349" y="196" fill="#233A44" text-anchor="middle">Desvíos</text>
+
+      <rect x="422" y="112" width="130" height="140" rx="10" fill="#EEF7F9" stroke="#1B9FB5"/>
+      <text x="487" y="134" fill="#143D48" font-size="13" font-weight="700" text-anchor="middle">Gestión y control</text>
+      <text x="487" y="160" fill="#233A44" text-anchor="middle">Usuarios</text>
+      <text x="487" y="180" fill="#233A44" text-anchor="middle">Auditoría</text>
+      <text x="487" y="200" fill="#233A44" text-anchor="middle">Reportes</text>
+
+      <rect x="560" y="112" width="130" height="140" rx="10" fill="#F4F7F8" stroke="#81949D" stroke-dasharray="4 3"/>
+      <text x="625" y="134" fill="#143D48" font-size="13" font-weight="700" text-anchor="middle">Transversal</text>
+      <text x="625" y="160" fill="#233A44" text-anchor="middle">Buscador</text>
+      <text x="625" y="180" fill="#233A44" text-anchor="middle">Ayuda (?)</text>
+      <text x="625" y="200" fill="#233A44" text-anchor="middle">Trabajo sin señal</text>
+    </g>
+    <text x="350" y="282" fill="#566A73" font-size="11.5" text-anchor="middle">Los lugares son la base: cada orden de trabajo y cada regla de mantenimiento pertenece a un lugar.</text>
+    <text x="350" y="302" fill="#566A73" font-size="11.5" text-anchor="middle">Las reglas de mantenimiento crean órdenes de trabajo; los reportes y la auditoría leen lo que pasó en todo el sistema.</text>
+  </svg>
+
+  <table>
+    <thead><tr><th style="width:20%">Subsistema</th><th style="width:26%">Pantallas</th><th>Para qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Acceso</strong></td><td>Iniciar sesión</td><td>Identifica a cada persona y le muestra solo lo que corresponde a su rol.</td></tr>
+      <tr><td><strong>Lugares</strong></td><td>Mapa, Infraestructura, Ficha histórica</td><td>Registrar los lugares del pueblo, verlos en el mapa con sus trabajos abiertos y consultar todo lo que pasó en cada uno.</td></tr>
+      <tr><td><strong>Órdenes de trabajo</strong></td><td>Trabajos, Cuadrillas, Mis tareas</td><td>Registrar los trabajos, asignarlos a las cuadrillas y seguirlos hasta que se terminan, con comentarios y fotos.</td></tr>
+      <tr><td><strong>Planificación</strong></td><td>Mantenimiento periódico</td><td>Programar los trabajos que se repiten y controlar si se cumplen a tiempo.</td></tr>
+      <tr><td><strong>Gestión y control</strong></td><td>Usuarios, Auditoría, Reportes</td><td>Administrar las cuentas del personal, saber quién cambió cada dato y medir el trabajo del corralón.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="ciclo-ot">3.2 El recorrido de un trabajo</h2>
+  <p>Toda orden de trabajo pasa por una serie de <strong>estados</strong>. FARO solo permite los pasos que tienen sentido (por ejemplo, no se puede finalizar algo que nunca empezó):</p>
+  <svg class="diagrama" viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif" role="img" aria-label="Estados de una orden de trabajo">
+    <defs><marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#566A73"/></marker></defs>
+    <g font-size="13" font-weight="700" text-anchor="middle">
+      <rect x="10" y="60" width="120" height="46" rx="23" fill="#566A73"/><text x="70" y="88" fill="#fff">Pendiente</text>
+      <rect x="190" y="60" width="120" height="46" rx="23" fill="#086C80"/><text x="250" y="88" fill="#fff">Planificada</text>
+      <rect x="370" y="60" width="120" height="46" rx="23" fill="#9A4A12"/><text x="430" y="88" fill="#fff">En curso</text>
+      <rect x="560" y="20" width="130" height="46" rx="23" fill="#22633E"/><text x="625" y="48" fill="#fff">Finalizada</text>
+      <rect x="560" y="140" width="130" height="46" rx="23" fill="#A52A27"/><text x="625" y="168" fill="#fff">Cancelada</text>
+    </g>
+    <g stroke="#566A73" stroke-width="1.6" fill="none" marker-end="url(#f2)">
+      <path d="M130 76h58"/><path d="M190 92h-58"/><path d="M310 83h58"/>
+      <path d="M70 60V34h300v24" /><path d="M490 76l68-26"/><path d="M490 96l68 52"/>
+      <path d="M250 106v57h308"/><path d="M70 106v77h488"/>
+    </g>
+    <g font-size="10.5" fill="#233A44" text-anchor="middle">
+      <text x="160" y="70">asignar</text><text x="160" y="108">liberar</text><text x="340" y="76">iniciar</text>
+      <text x="220" y="28">iniciar sin planificar</text><text x="525" y="52">finalizar</text>
+    </g>
+  </svg>
+  <ol class="pasos">
+    <li><strong>Pendiente.</strong> Mesa de entradas o el encargado registran la orden en Trabajos (o la crea sola una regla de mantenimiento). Todavía no tiene cuadrilla.</li>
+    <li><strong>Planificada.</strong> El encargado la asigna a una cuadrilla en la pantalla Cuadrillas o desde la ficha del lugar en el Mapa.</li>
+    <li><strong>En curso.</strong> El capataz toca <span class="boton">Iniciar tarea</span> en Mis tareas cuando la cuadrilla empieza.</li>
+    <li><strong>Finalizada.</strong> El capataz toca <span class="boton">Finalizar tarea</span> y, si quiere, suma fotos del trabajo terminado.</li>
+  </ol>
+  <p>Una orden también puede pasar a <strong>Cancelada</strong> si el trabajo ya no hace falta. <em>Finalizada</em> y <em>Cancelada</em> son estados de cierre: después ya no se pueden modificar, por eso FARO pide confirmación antes.</p>
+  <div class="nota"><strong>¿Dónde se ve cada paso?</strong> En el Mapa, el color de cada lugar muestra el trabajo abierto más urgente; en la Ficha histórica queda registrado cada cambio de estado, con fecha y persona.</div>
+</section>
+
+<!-- ======================= 4. DESCRIPCIÓN DE FUNCIONES ======================= -->
+<section class="capitulo" id="funciones">
+  <h1>4. Descripción de funciones</h1>
+  <p>Este capítulo describe cada pantalla de FARO, ordenadas por subsistema. Para cada una se indica para qué sirve, quién la usa y cómo se llega; después se explican sus partes, los pasos para las tareas más comunes y qué hace cada botón.</p>
+
+  <h2 id="general">4.1 Elementos comunes a todas las pantallas</h2>
+  <figure>
+    <img src="capturas/barra-superior.png" alt="Barra superior de FARO">
+    <figcaption>La barra superior, igual en todas las pantallas.</figcaption>
+  </figure>
+  <table>
+    <thead><tr><th style="width:26%">Elemento</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td>Logo FARO</td><td>Indica que estás dentro del sistema de la Municipalidad de Estación General Paz.</td></tr>
+      <tr><td>Buscador</td><td>"Buscar un lugar, una calle o un trabajo…": escribí al menos 2 letras y elegí un resultado. Te lleva al Mapa con ese lugar elegido. Funciona con el teclado: flechas para moverse, Enter para elegir y Escape para cerrar.</td></tr>
+      <tr><td>Secciones</td><td>Los accesos a <strong>Mapa</strong>, <strong>Trabajos</strong> y <strong>Cuadrillas</strong> (según el rol). La sección actual se ve resaltada.</td></tr>
+      <tr><td><span class="boton">Más</span></td><td>Despliega el resto de las pantallas: Infraestructura, Mis tareas, Usuarios, Mantenimiento periódico, Auditoría y Reportes (según el rol).</td></tr>
+      <tr><td><span class="boton">+ Nuevo</span></td><td>Atajo para crear: "Nueva orden de trabajo" o "Nuevo lugar". Está siempre en el mismo lugar.</td></tr>
+      <tr><td><span class="boton">?</span></td><td>Abre la ayuda de la pantalla actual. Se cierra con <span class="boton">Cerrar</span>, tocando afuera o con la tecla Escape.</td></tr>
+      <tr><td>Nombre y rol</td><td>Muestra quién está usando FARO. Si hay cambios hechos sin señal, al lado aparece cuántos faltan enviar.</td></tr>
+      <tr><td><span class="boton">Cerrar sesión</span></td><td>Sale de FARO en ese dispositivo.</td></tr>
+    </tbody>
+  </table>
+  <figure class="par celular">
+    <img src="capturas/celular-barra-inferior.png" alt="FARO en el celular, con la barra de secciones abajo">
+    <img src="capturas/ayuda.png" alt="La hoja de ayuda abierta">
+    <figcaption>En el celular las secciones bajan, al alcance del pulgar (izquierda). A la derecha, la ayuda abierta con el botón "?".</figcaption>
+  </figure>
+  <h4>Mensajes que se repiten en todas las pantallas</h4>
+  <ul>
+    <li><strong>Mensaje verde</strong> (por ejemplo, "La orden de trabajo se registró correctamente."): la acción salió bien.</li>
+    <li><strong>Mensaje rojo "No se pudo completar la operación"</strong>: algo falló, casi siempre la conexión. Tocá <span class="boton">Volver a cargar</span>.</li>
+    <li><strong>Campos marcados en rojo</strong> al guardar un formulario: falta un dato obligatorio o tiene un formato incorrecto; debajo del campo se explica qué corregir. Los datos que ya escribiste no se pierden.</li>
+    <li><strong>"Deslizá la tabla hacia los lados…"</strong>: en pantallas angostas, las tablas anchas se recorren deslizando hacia los costados.</li>
+  </ul>
+</section>
+
+<!-- ------------------------------ 4.2 ACCESO ------------------------------ -->
+<section class="pantalla" id="sub-acceso">
+  <h2>4.2 Subsistema de acceso</h2>
+  <h3 id="pantalla-login">4.2.1 Iniciar sesión</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Entrar a FARO con la cuenta personal.</dd>
+    <dt>Quién la usa</dt><dd>Todas las personas, antes de empezar.</dd>
+    <dt>Cómo se llega</dt><dd>Es lo primero que aparece al abrir FARO sin haber iniciado sesión.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/login.png" alt="Pantalla de inicio de sesión">
+    <figcaption>Pantalla de ingreso a FARO.</figcaption>
+  </figure>
+  <h4>Paso a paso</h4>
+  <ol class="pasos">
+    <li>Escribí tu correo en "Correo electrónico".</li>
+    <li>Escribí tu contraseña en "Contraseña". Con <span class="boton">Mostrar</span> podés verla para revisar que esté bien; <span class="boton">Ocultar</span> la vuelve a tapar.</li>
+    <li>Tocá <span class="boton">Iniciar sesión</span>.</li>
+  </ol>
+  <h4>Situaciones especiales</h4>
+  <ul>
+    <li><strong>"Correo o contraseña incorrectos"</strong>: revisá lo que escribiste. Si no te acordás la contraseña, pedile al encargado o a mesa de entradas que la restablezcan (botón <span class="boton">Clave</span> en Usuarios).</li>
+    <li><strong>"Tu cuenta no tiene acceso habilitado"</strong>: la cuenta fue dada de baja. Consultá al encargado.</li>
+    <li><strong>"Hay cambios guardados en este celular"</strong>: son cambios que hiciste sin señal en una sesión anterior. Se envían solos al entrar con tu cuenta.</li>
+  </ul>
+</section>
+
+<!-- ------------------------------ 4.3 LUGARES ------------------------------ -->
+<section class="pantalla" id="sub-lugares">
+  <h2>4.3 Subsistema de lugares</h2>
+  <p>Agrupa las pantallas que trabajan sobre los lugares del pueblo: el Mapa (la pantalla principal), Infraestructura (el registro de lugares) y la Ficha histórica (todo lo que pasó en un lugar).</p>
+
+  <h3 id="pantalla-mapa">4.3.1 Mapa</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Ver de un vistazo todos los lugares del pueblo y dónde hay trabajos abiertos, y actuar sobre cada lugar.</dd>
+    <dt>Quién la usa</dt><dd>Encargado, mesa de entradas y capataz (el capataz solo consulta).</dd>
+    <dt>Cómo se llega</dt><dd>Es la pantalla de inicio del encargado y de mesa de entradas. También desde la sección <strong>Mapa</strong> o eligiendo un resultado del buscador.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/mapa.png" alt="Pantalla Mapa en la computadora">
+    <figcaption>El Mapa en la computadora: lista de lugares a la izquierda, mapa en el centro y ficha del lugar elegido a la derecha.</figcaption>
+  </figure>
+  <h4>Partes de la pantalla</h4>
+  <ul>
+    <li><strong>Lista de lugares</strong> (izquierda): todos los lugares, con su tipo y cuántos trabajos abiertos tienen. Arriba están los botoncitos de filtro y "Más filtros".</li>
+    <li><strong>Mapa</strong> (centro): cada marca es un lugar. El <strong>color</strong> indica la prioridad del trabajo abierto más urgente y el <strong>tamaño</strong> crece con la urgencia. Los lugares sin trabajos se ven en gris.</li>
+    <li><strong>Leyenda</strong>: explica los colores. En "Colorear por" se puede elegir <em>Prioridad</em> o <em>Estado</em>.</li>
+    <li><strong>Ficha del lugar</strong> (derecha): aparece al elegir un lugar. Muestra su tipo, si funciona, la ubicación, los "Trabajos abiertos" y la "Historia del lugar" más reciente.</li>
+  </ul>
+  <h4>Paso a paso: consultar un lugar</h4>
+  <ol class="pasos">
+    <li>Tocá la marca del lugar en el mapa, o su nombre en la lista. (También podés buscarlo con el buscador de arriba).</li>
+    <li>A la derecha se abre su ficha, con los trabajos abiertos y la historia reciente.</li>
+    <li>Para ver toda la historia, tocá <span class="boton">Ver toda la historia</span>: se abre la Ficha histórica (ver <a href="#pantalla-ficha">4.3.3</a>).</li>
+    <li>Para cerrar la ficha, tocá la <span class="boton">✕</span>.</li>
+  </ol>
+  <h4>Paso a paso: cargar un trabajo para un lugar (encargado y mesa de entradas)</h4>
+  <ol class="pasos">
+    <li>Elegí el lugar en el mapa o en la lista.</li>
+    <li>En su ficha, tocá <span class="boton">+ Nueva OT acá</span>.</li>
+    <li>FARO abre Trabajos con el lugar ya elegido. Completá el resto de los datos (ver <a href="#pantalla-trabajos">4.4.1</a>).</li>
+    <li>Al terminar, <span class="boton">Volver al mapa</span> te devuelve al mismo lugar.</li>
+  </ol>
+  <h4>Paso a paso: agregar un lugar tocando el mapa (encargado y mesa de entradas)</h4>
+  <ol class="pasos">
+    <li>Tocá <span class="boton">+ Agregar lugar</span>, sobre el mapa.</li>
+    <li>Tocá el punto del mapa donde está el lugar. Aparece un pin; si no quedó justo, arrastralo o tocá otro punto. Solo se aceptan puntos dentro de Estación General Paz.</li>
+    <li>Completá "Nombre" (por ejemplo, "Luminaria San Martín y Belgrano"), "Tipo de lugar" y, si querés, "Datos técnicos". Si el lugar no funciona, desmarcá "Funciona correctamente".</li>
+    <li>Tocá <span class="boton">Registrar lugar</span>. El lugar aparece en el mapa y queda elegido. Para salir sin guardar, tocá <span class="boton">Cancelar</span> o la tecla Escape.</li>
+  </ol>
+  <figure>
+    <img src="capturas/mapa-agregar-lugar.png" alt="Agregar un lugar desde el mapa">
+    <figcaption>Agregar un lugar: se marca el punto en el mapa y se completan sus datos.</figcaption>
+  </figure>
+  <h4>Paso a paso: asignar una cuadrilla desde el mapa (encargado)</h4>
+  <ol class="pasos">
+    <li>Elegí el lugar. En "Trabajos abiertos", los trabajos que esperan cuadrilla muestran una lista para elegirla.</li>
+    <li>Elegí la cuadrilla y tocá <span class="boton">Asignar</span>. El trabajo pasa a <em>Planificada</em>.</li>
+  </ol>
+  <h4>Filtros</h4>
+  <ul>
+    <li><span class="boton">Con trabajos abiertos</span>: muestra solo los lugares que tienen algo pendiente.</li>
+    <li><span class="boton">Luminarias</span> <span class="boton">Espacios verdes</span> <span class="boton">Calles</span>: muestran solo esos tipos. Se pueden combinar; si no hay ninguno prendido, se ven todos.</li>
+    <li><strong>"Más filtros"</strong>: filtra los trabajos por texto, estado, prioridad, tipo, origen, lugar y fechas. Con la casilla "La lista muestra solo lo que se ve en el mapa", la lista se limita a la zona visible.</li>
+  </ul>
+  <h4>En el celular</h4>
+  <figure class="par celular">
+    <img src="capturas/celular-mapa.png" alt="Mapa en el celular">
+    <img src="capturas/celular-mapa-tarjeta.png" alt="Tarjeta de un lugar en el celular">
+    <figcaption>En el celular el mapa ocupa toda la pantalla (izquierda); al tocar un lugar sube su tarjeta desde abajo (derecha).</figcaption>
+  </figure>
+  <ul>
+    <li>El mapa ocupa toda la pantalla y los botoncitos de filtro quedan arriba (se deslizan de costado).</li>
+    <li><span class="boton">Ver como lista</span> muestra los lugares en lista; <span class="boton">Ver mapa</span> vuelve.</li>
+    <li>Al tocar un lugar sube una tarjeta con <span class="boton">+ Nueva OT acá</span> y <span class="boton">Ver ficha e historia</span>.</li>
+  </ul>
+  <div class="nota"><strong>¿No aparece un lugar?</strong> Probablemente un filtro lo esconde. Apagá los botoncitos o limpiá "Más filtros"; si nada coincide, FARO ofrece <span class="boton">Ver todos los lugares</span>. Si la lista avisa que hay lugares "fuera del pueblo", sus coordenadas están mal cargadas: el encargado puede corregirlas en Infraestructura.</div>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-infraestructura">4.3.2 Infraestructura</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Registrar los lugares que mantiene el corralón y mantener sus datos al día.</dd>
+    <dt>Quién la usa</dt><dd>Encargado del corralón.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Más</span> → Infraestructura, o <span class="boton">+ Nuevo</span> → Nuevo lugar.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/infraestructura.png" alt="Pantalla Infraestructura">
+    <figcaption>Formulario para registrar un lugar y, debajo, la lista de lugares registrados.</figcaption>
+  </figure>
+  <h4>Paso a paso: registrar un lugar</h4>
+  <ol class="pasos">
+    <li>En "Registrar un lugar", escribí el "Nombre". Usá uno fácil de reconocer, por ejemplo "Plaza San Martín".</li>
+    <li>Elegí el "Tipo de lugar": Luminaria, Espacio verde o Calle.</li>
+    <li>En "Datos técnicos" anotá lo útil para el trabajo: potencia de la luminaria, altura del poste, características del espacio…</li>
+    <li>Escribí "Latitud" y "Longitud" en grados decimales, con punto (por ejemplo, -31.1448 y -64.1441).</li>
+    <li>Si el lugar está fuera de servicio, desmarcá "Funciona correctamente".</li>
+    <li>Tocá <span class="boton">Registrar lugar</span>.</li>
+  </ol>
+  <div class="nota"><strong>Más fácil desde el mapa.</strong> Para no escribir coordenadas, agregá el lugar desde el Mapa con <span class="boton">+ Agregar lugar</span> (ver <a href="#pantalla-mapa">4.3.1</a>).</div>
+  <h4>Botones de cada lugar</h4>
+  <table>
+    <thead><tr><th style="width:22%">Botón</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td><span class="boton">Ficha</span></td><td>Abre la Ficha histórica del lugar.</td></tr>
+      <tr><td><span class="boton">Editar</span></td><td>Carga el lugar en el formulario de arriba. Corregí lo necesario y tocá <span class="boton">Guardar cambios</span>, o <span class="boton">Cancelar</span> para dejarlo como estaba.</td></tr>
+      <tr><td><span class="boton">Borrar</span></td><td>Elimina el lugar después de pedir confirmación. No se puede deshacer. Si el lugar tiene órdenes de trabajo, FARO no deja borrarlo, para no perder su historia.</td></tr>
+    </tbody>
+  </table>
+  <h4>Buscar y filtrar</h4>
+  <p>En "Buscar y filtrar lugares" podés buscar por nombre o datos técnicos y filtrar por "Tipo de lugar" y "Estado operativo" (Funciona / Fuera de servicio). Arriba de la lista se indica cuántos lugares se están mostrando.</p>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-ficha">4.3.3 Ficha histórica</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Consultar todo lo que pasó en un lugar: sus datos y cada orden de trabajo con todos sus cambios.</dd>
+    <dt>Quién la usa</dt><dd>Encargado, mesa de entradas y capataz.</dd>
+    <dt>Cómo se llega</dt><dd>Desde el Mapa (<span class="boton">Ver toda la historia</span>), desde Infraestructura (<span class="boton">Ficha</span>) o desde Mis tareas (<span class="boton">Ficha del lugar</span>). Siempre llega con el lugar ya elegido.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/ficha.png" alt="Ficha histórica de un lugar">
+    <figcaption>Ficha histórica: datos del lugar, resumen de órdenes y línea de tiempo.</figcaption>
+  </figure>
+  <h4>Partes de la pantalla</h4>
+  <ul>
+    <li><strong>Lugar</strong>: la lista para elegir qué lugar consultar.</li>
+    <li><strong>Datos del lugar</strong>: tipo, estado operativo, ubicación, datos técnicos y un resumen de cuántas órdenes tuvo.</li>
+    <li><strong>Línea de tiempo</strong>: cada orden registrada y cada cambio de estado, del más reciente al más antiguo, con fecha y persona.</li>
+  </ul>
+  <h4>Opciones</h4>
+  <ul>
+    <li>En "Mostrar" elegí <em>Todos</em>, <em>Abiertos</em> o <em>Cerrados</em> para ver solo esos trabajos.</li>
+    <li>Cambiá de lugar desde la lista "Lugar" para consultar otro.</li>
+  </ul>
+  <div class="nota"><strong>Para atender un reclamo.</strong> La ficha permite responder rápido a un vecino: cuándo se trabajó por última vez en el lugar, qué se hizo y si hay algo pendiente.</div>
+</section>
+
+<!-- --------------------------- 4.4 ÓRDENES DE TRABAJO --------------------------- -->
+<section class="pantalla" id="sub-trabajos">
+  <h2>4.4 Subsistema de órdenes de trabajo</h2>
+  <p>Agrupa las pantallas que siguen un trabajo desde que se registra hasta que se termina: Trabajos (registrar y consultar), Cuadrillas (asignar) y Mis tareas (ejecutar en el terreno).</p>
+
+  <h3 id="pantalla-trabajos">4.4.1 Trabajos</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Registrar las órdenes de trabajo y consultar en qué estado está cada una.</dd>
+    <dt>Quién la usa</dt><dd>Encargado (registra, modifica y cambia estados) y mesa de entradas (registra y consulta).</dd>
+    <dt>Cómo se llega</dt><dd>Sección <strong>Trabajos</strong>, <span class="boton">+ Nuevo</span> → Nueva orden de trabajo, o <span class="boton">+ Nueva OT acá</span> en el Mapa.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/trabajos.png" alt="Pantalla Trabajos">
+    <figcaption>Formulario para registrar una orden de trabajo y, debajo, las órdenes registradas.</figcaption>
+  </figure>
+  <h4>Paso a paso: registrar una orden de trabajo</h4>
+  <ol class="pasos">
+    <li>En "Descripción", contá qué hay que hacer. Por ejemplo: "Cortar el pasto del sector juegos". Es obligatoria y admite hasta 500 caracteres.</li>
+    <li>Elegí el "Tipo de trabajo" (Poda, Corte de pasto, Pintura, Bacheo, Limpieza, Alumbrado u Otro).</li>
+    <li>Elegí el "Origen": <em>Reclamo vecinal</em>, <em>Plan de mantenimiento</em> u <em>Orden directa</em>.</li>
+    <li>Elegí el "Lugar" donde se va a trabajar.</li>
+    <li>Elegí la "Prioridad": Baja, Media, Alta o Urgente.</li>
+    <li>Tocá <span class="boton">Registrar orden</span>. La orden queda <em>Pendiente</em> y aparece primera en la lista.</li>
+  </ol>
+  <h4>Paso a paso: programar un trabajo que se repite (encargado)</h4>
+  <ol class="pasos">
+    <li>Completá el trabajo igual que una orden común.</li>
+    <li>En "¿Se repite periódicamente?", marcá "Sí, programar este trabajo".</li>
+    <li>Escribí el "Nombre de la programación" (por ejemplo, "Corte de pasto quincenal de la plaza").</li>
+    <li>Elegí la "Frecuencia" y el "Intervalo" (frecuencia semanal con intervalo 2 = cada dos semanas), el día y la "Fecha de inicio". La "Fecha de fin" es opcional: si no se completa, la programación sigue hasta que se pause.</li>
+    <li>Tocá <span class="boton">Guardar programación</span>. FARO va a crear una orden nueva en cada fecha, con origen "Plan de mantenimiento". Para guardar una programación hace falta conexión.</li>
+  </ol>
+  <h4>Consultar las órdenes</h4>
+  <figure>
+    <img src="capturas/trabajos-lista.png" alt="Lista de órdenes registradas con sus filtros">
+    <figcaption>"Órdenes registradas": los filtros y, en cada orden, sus botones.</figcaption>
+  </figure>
+  <ul>
+    <li>"Órdenes registradas" lista todas las órdenes, de la más reciente a la más antigua, con su trabajo, lugar, tipo, origen, prioridad, estado y fecha. Las que vienen de un plan llevan la marca <em>Periódica</em>.</li>
+    <li>"Buscar y filtrar órdenes" permite buscar por descripción, lugar o número y filtrar por estado, prioridad, tipo, origen, lugar y fechas ("Creada desde" / "Creada hasta"). <span class="boton">Menos filtros</span> los pliega.</li>
+  </ul>
+  <h4>Botones de cada orden</h4>
+  <table>
+    <thead><tr><th style="width:24%">Botón</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td><span class="boton">Comentarios</span></td><td>Abre los comentarios y fotos de la orden (ver <a href="#comentarios">4.4.4</a>).</td></tr>
+      <tr><td><span class="boton">Editar</span></td><td>(Encargado) Carga la orden en el formulario para corregirla. Después, <span class="boton">Guardar cambios</span>. Las órdenes cerradas no se pueden editar.</td></tr>
+      <tr><td><span class="boton">Pasar a…</span></td><td>(Encargado) Cambia el estado de la orden. Solo aparecen los pasos permitidos (ver <a href="#ciclo-ot">3.2</a>). Finalizada y Cancelada piden confirmación.</td></tr>
+    </tbody>
+  </table>
+  <p>El encargado tiene además <span class="boton">Ver programaciones</span>, que lleva a Mantenimiento periódico.</p>
+  <div class="nota"><strong>Sin señal.</strong> Una orden registrada sin señal aparece arriba como "Nueva · Sin enviar", todavía sin número, y se registra sola cuando vuelve la señal.</div>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-cuadrillas">4.4.2 Cuadrillas (asignación)</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Decidir qué cuadrilla hace cada trabajo pendiente y pasar un trabajo de una cuadrilla a otra.</dd>
+    <dt>Quién la usa</dt><dd>Encargado del corralón.</dd>
+    <dt>Cómo se llega</dt><dd>Sección <strong>Cuadrillas</strong>.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/cuadrillas.png" alt="Pantalla de asignación a cuadrillas">
+    <figcaption>Asignación: las cuadrillas con su disponibilidad y las órdenes pendientes de asignar.</figcaption>
+  </figure>
+  <h4>Partes de la pantalla</h4>
+  <ul>
+    <li><strong>Cuadrillas</strong>: cada cuadrilla con sus integrantes, los tipos de trabajo que realiza y si está <em>Disponible</em> u <em>Ocupada</em>. A una cuadrilla ocupada no se le pueden asignar más trabajos.</li>
+    <li><strong>Órdenes pendientes de asignar</strong>: primero las más urgentes y, a igual prioridad, las más antiguas. Tiene los mismos filtros que Trabajos.</li>
+    <li><strong>Órdenes asignadas</strong>: los trabajos que ya tienen cuadrilla y no terminaron.</li>
+  </ul>
+  <h4>Paso a paso: asignar un trabajo</h4>
+  <ol class="pasos">
+    <li>Buscá la orden en "Órdenes pendientes de asignar".</li>
+    <li>En "Asignar a", elegí la cuadrilla. Solo aparecen las que realizan ese tipo de trabajo y no están ocupadas.</li>
+    <li>Tocá <span class="boton">Asignar</span>. La orden pasa a <em>Planificada</em>, sale de la lista de pendientes y aparece en Mis tareas de esa cuadrilla.</li>
+  </ol>
+  <h4>Paso a paso: reasignar un trabajo</h4>
+  <ol class="pasos">
+    <li>En "Órdenes asignadas", buscá la orden.</li>
+    <li>En "Reasignar a", elegí otra cuadrilla que realice esa tarea.</li>
+    <li>Tocá <span class="boton">Reasignar</span>. La orden cambia de cuadrilla y mantiene su estado.</li>
+  </ol>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-tareas">4.4.3 Mis tareas</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Ver los trabajos asignados a una cuadrilla y registrar, desde el lugar, cuándo empiezan y cuándo terminan.</dd>
+    <dt>Quién la usa</dt><dd>Capataz de cuadrilla (es su pantalla de inicio) y encargado (para supervisar).</dd>
+    <dt>Cómo se llega</dt><dd>El capataz entra directo. El encargado, desde <span class="boton">Más</span> → Mis tareas.</dd>
+  </dl>
+  <figure class="par celular">
+    <img src="capturas/celular-mis-tareas.png" alt="Mis tareas en el celular">
+    <img src="capturas/celular-tarea-comentarios.png" alt="Comentarios y fotos de una tarea">
+    <figcaption>Mis tareas en el celular del capataz (izquierda) y los comentarios y fotos de una tarea (derecha).</figcaption>
+  </figure>
+  <h4>Partes de la pantalla</h4>
+  <ul>
+    <li><strong>Consulta sin conexión</strong> (solo capataz): para guardar una copia de las tareas en el celular.</li>
+    <li><strong>Tu cuadrilla</strong>: el capataz ve la cuadrilla de su cuenta; el encargado elige qué cuadrilla supervisar (FARO la recuerda para la próxima vez). <span class="boton">Actualizar tareas</span> trae los trabajos recién asignados.</li>
+    <li><strong>Tareas asignadas</strong>: una tarjeta por trabajo, primero las más urgentes. Cada tarjeta muestra el número, la descripción, el lugar, la prioridad y el estado.</li>
+  </ul>
+  <h4>Paso a paso: hacer un trabajo</h4>
+  <ol class="pasos">
+    <li>Al llegar al lugar, tocá <span class="boton">Iniciar tarea</span> en la tarjeta. El trabajo pasa a <em>En curso</em>.</li>
+    <li>Si hace falta, abrí "Comentarios y fotos" para contar cómo va o mandar fotos.</li>
+    <li>Al terminar, tocá <span class="boton">Finalizar tarea</span> y confirmá. El trabajo pasa a <em>Finalizada</em> y sale de la lista.</li>
+    <li>FARO pregunta "¿Sumás fotos del trabajo terminado?". Podés agregarlas ahí mismo o tocar <span class="boton">Listo, cerrar</span>.</li>
+  </ol>
+  <h4>Otras opciones de cada tarea</h4>
+  <ul>
+    <li>"Otras opciones" muestra los demás estados posibles, por ejemplo <span class="boton">Pasar a Cancelada</span>.</li>
+    <li><span class="boton">Ficha del lugar</span> abre la historia del lugar, útil para saber qué se hizo antes.</li>
+  </ul>
+  <h4>Paso a paso: preparar el celular antes de salir (capataz)</h4>
+  <ol class="pasos">
+    <li>Con señal, en "Consulta sin conexión", tocá <span class="boton">Guardar copia local</span>.</li>
+    <li>Si en el terreno abrís FARO sin señal, tocá <span class="boton">Ver copia local</span> para consultar tus tareas.</li>
+    <li>La copia se renueva con <span class="boton">Actualizar copia local</span> y se borra con <span class="boton">Eliminar copia local</span>.</li>
+  </ol>
+  <div class="nota"><strong>Sin señal también se puede iniciar y finalizar.</strong> El cambio queda en el celular con la marca "Sin enviar" y se envía solo cuando vuelve la señal (ver <a href="#sin-senal">2.5</a>).</div>
+</section>
+
+<section class="pantalla">
+  <h3 id="comentarios">4.4.4 Comentarios y fotos de una orden</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Dejar registro de cómo va un trabajo, con texto y fotos, a la vista de todos.</dd>
+    <dt>Quién la usa</dt><dd>Todos los roles que ven la orden.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Comentarios</span> en Trabajos, o "Comentarios y fotos" en una tarjeta de Mis tareas.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/comentarios.png" alt="Comentarios y fotos de una orden">
+    <figcaption>La hoja de comentarios y fotos de una orden de trabajo.</figcaption>
+  </figure>
+  <h4>Paso a paso: publicar un comentario</h4>
+  <ol class="pasos">
+    <li>Escribí el comentario. Por ejemplo: "Se cambió la lámpara. Falta pintar el poste."</li>
+    <li>Si querés, agregá fotos con la cámara o desde la galería: hasta 5 por comentario. FARO las achica antes de enviarlas para que no gasten muchos datos.</li>
+    <li>Tocá <span class="boton">Publicar</span>.</li>
+  </ol>
+  <p>Al tocar una foto se abre en grande; con las flechas se pasa a la anterior o a la siguiente. Si tenés permiso para borrar un comentario, aparece la opción de borrarlo; FARO pide confirmación antes.</p>
+</section>
+
+<!-- ------------------------------ 4.5 PLANIFICACIÓN ------------------------------ -->
+<section class="pantalla" id="sub-plan">
+  <h2>4.5 Subsistema de planificación</h2>
+  <h3 id="pantalla-mantenimiento">4.5.1 Mantenimiento periódico</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Administrar los trabajos que se repiten y controlar si se cumplen a tiempo.</dd>
+    <dt>Quién la usa</dt><dd>Encargado del corralón.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Más</span> → Mantenimiento periódico, o <span class="boton">Ver programaciones</span> en Trabajos.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/mantenimiento.png" alt="Pantalla Mantenimiento periódico">
+    <figcaption>Las reglas de mantenimiento configuradas, con su recurrencia y próxima fecha.</figcaption>
+  </figure>
+  <h4>Partes de la pantalla</h4>
+  <ul>
+    <li><strong>Reglas configuradas</strong>: cada programación con su lugar, tipo y prioridad, cada cuánto se repite, la "Próxima ejecución" y si está <em>Activa</em> o <em>Pausada</em>. Se puede buscar por texto y filtrar en "Mostrar" (Todas, Activas, Pausadas).</li>
+    <li><span class="boton">Programar desde Trabajos</span>: lleva al formulario de Trabajos con la opción de programar ya marcada, para crear una regla nueva.</li>
+  </ul>
+  <h4>Botones de cada regla</h4>
+  <table>
+    <thead><tr><th style="width:22%">Botón</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td><span class="boton">Editar</span></td><td>Abre "Editar programación": título, descripción, lugar, tipo, prioridad, cuadrilla preasignada y recurrencia. Si se elige una cuadrilla, cada orden que genere la regla arranca ya asignada a ella.</td></tr>
+      <tr><td><span class="boton">Desvíos</span></td><td>Muestra las órdenes que generó la regla, comparando la fecha planificada con la ejecutada.</td></tr>
+      <tr><td><span class="boton">Generar ya</span></td><td>Crea en el momento la próxima orden, sin esperar a su fecha.</td></tr>
+      <tr><td><span class="boton">Pausar</span> / <span class="boton">Reactivar</span></td><td>Pausar deja de crear órdenes nuevas, sin borrar las ya creadas. Reactivar la vuelve a poner en marcha.</td></tr>
+      <tr><td><span class="boton">Borrar</span></td><td>Elimina la regla después de pedir confirmación. No se puede deshacer.</td></tr>
+    </tbody>
+  </table>
+  <h4>Desvíos</h4>
+  <figure>
+    <img src="capturas/desvios.png" alt="Panel de desvíos">
+    <figcaption>El panel de desvíos: planificado contra ejecutado.</figcaption>
+  </figure>
+  <p>El panel de desvíos resume cómo se cumplió el plan: <em>Finalizadas a tiempo</em>, <em>Finalizadas adelantadas</em>, <em>Finalizadas demoradas</em>, <em>Pendientes en plazo</em>, <em>Pendientes vencidas</em> y <em>Canceladas</em>. Debajo, cada orden con su fecha planificada, la fecha en que se cerró y cuántos días de diferencia hubo. <span class="boton">Desvíos globales</span> muestra lo mismo para todas las reglas del municipio.</p>
+</section>
+
+<!-- --------------------------- 4.6 GESTIÓN Y CONTROL --------------------------- -->
+<section class="pantalla" id="sub-gestion">
+  <h2>4.6 Subsistema de gestión y control</h2>
+  <h3 id="pantalla-usuarios">4.6.1 Usuarios</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Administrar las cuentas del personal que usa FARO.</dd>
+    <dt>Quién la usa</dt><dd>Encargado y mesa de entradas.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Más</span> → Usuarios.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/usuarios.png" alt="Pantalla Usuarios">
+    <figcaption>Alta de personas y lista del personal.</figcaption>
+  </figure>
+  <h4>Paso a paso: dar de alta a una persona</h4>
+  <ol class="pasos">
+    <li>En "Dar de alta a una persona", completá "Nombre", "Apellido" y "Email" (es el usuario con el que va a entrar).</li>
+    <li>Elegí el "Rol": Encargado del corralón, Mesa de entradas o Capataz de cuadrilla.</li>
+    <li>Si es capataz, elegí la "Cuadrilla a cargo".</li>
+    <li>Escribí una "Clave inicial" y tocá <span class="boton">Dar de alta</span>.</li>
+    <li>Pasale a la persona su email y su clave en mano.</li>
+  </ol>
+  <h4>Botones de cada persona</h4>
+  <table>
+    <thead><tr><th style="width:22%">Botón</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td><span class="boton">Editar</span></td><td>Carga a la persona en el formulario para cambiar sus datos, su rol o su cuadrilla.</td></tr>
+      <tr><td><span class="boton">Clave</span></td><td>Le pone una contraseña nueva (por ejemplo, si se la olvidó). Hay que pasársela en mano.</td></tr>
+      <tr><td><span class="boton">Dar de baja</span></td><td>Le quita el acceso, aunque tenga la sesión abierta. No se borra nada: sigue en la historia de los trabajos.</td></tr>
+      <tr><td><span class="boton">Reactivar</span></td><td>Devuelve el acceso a alguien dado de baja.</td></tr>
+    </tbody>
+  </table>
+  <p>Para encontrar a alguien, usá "Buscar" (nombre, apellido o email) y "Mostrar" (Activos, De baja o Todos).</p>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-auditoria">4.6.2 Auditoría</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Saber quién creó, modificó o eliminó cada dato importante de FARO, y cuándo.</dd>
+    <dt>Quién la usa</dt><dd>Encargado del corralón.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Más</span> → Auditoría.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/auditoria.png" alt="Pantalla Auditoría">
+    <figcaption>Los movimientos registrados, con el detalle de un cambio abierto.</figcaption>
+  </figure>
+  <p>La auditoría se completa sola: cada vez que alguien registra, cambia o borra una orden, un lugar, un usuario u otro dato importante, FARO lo anota. En esta pantalla solo se consulta.</p>
+  <h4>Paso a paso: buscar un cambio</h4>
+  <ol class="pasos">
+    <li>Completá los filtros que necesites: "Tipo de registro" (orden de trabajo, punto de infraestructura, usuario…), "ID del registro" (por ejemplo, el número de la orden), "Acción" (Creación, Modificación o Eliminación), "Actor" (el email de quien hizo el cambio) y las fechas "Desde" y "Hasta".</li>
+    <li>Tocá <span class="boton">Buscar</span>.</li>
+    <li>En cada movimiento, <span class="boton">Ver cambios</span> muestra campo por campo cómo estaba antes y cómo quedó después.</li>
+    <li>Si hay muchos resultados, pasá de página con <span class="boton">Anterior</span> y <span class="boton">Siguiente</span>.</li>
+  </ol>
+</section>
+
+<section class="pantalla">
+  <h3 id="pantalla-reportes">4.6.3 Reportes</h3>
+  <dl class="ficha-pantalla">
+    <dt>Para qué sirve</dt><dd>Ver los números del corralón: cuántos trabajos entraron, cuántos se resolvieron, quién los hizo y si el plan de mantenimiento se cumple.</dd>
+    <dt>Quién la usa</dt><dd>Encargado del corralón.</dd>
+    <dt>Cómo se llega</dt><dd><span class="boton">Más</span> → Reportes.</dd>
+  </dl>
+  <figure>
+    <img src="capturas/reportes.png" alt="Pantalla Reportes">
+    <figcaption>El tablero de reportes con los totales y los gráficos del período.</figcaption>
+  </figure>
+  <h4>Paso a paso: consultar un período</h4>
+  <ol class="pasos">
+    <li>En "Qué período mirar", elegí <em>Hoy</em>, <em>Esta semana</em>, <em>Este mes</em> o <em>Este año</em>. Con <em>Otras fechas</em> elegís "Desde" y "Hasta".</li>
+    <li>En "Agrupar la evolución", elegí si ver los números por día, por semana o por mes.</li>
+    <li>FARO calcula los indicadores del período.</li>
+  </ol>
+  <h4>Qué muestra</h4>
+  <figure>
+    <img src="capturas/reportes-graficos.png" alt="Gráficos del tablero de reportes">
+    <figcaption>Los gráficos de evolución, por estado, por tipo de trabajo y por cuadrilla.</figcaption>
+  </figure>
+  <table>
+    <thead><tr><th style="width:28%">Sección</th><th>Qué muestra</th></tr></thead>
+    <tbody>
+      <tr><td>Totales</td><td>Órdenes creadas, resueltas, las que siguen abiertas y qué parte del plan se cumplió a tiempo.</td></tr>
+      <tr><td>Evolución</td><td>Gráfico de órdenes creadas y cerradas en cada día, semana o mes.</td></tr>
+      <tr><td>Por estado</td><td>Dónde están hoy las órdenes creadas en el período.</td></tr>
+      <tr><td>Por tipo de trabajo</td><td>Qué se pidió más.</td></tr>
+      <tr><td>Por cuadrilla</td><td>La carga de trabajo de cada cuadrilla.</td></tr>
+      <tr><td>Mantenimiento programado</td><td>Cómo terminaron las órdenes del plan con fecha en el período.</td></tr>
+    </tbody>
+  </table>
+  <p>Debajo de cada gráfico, "Ver los datos en una tabla" muestra los mismos números en forma de tabla.</p>
+  <h4>Descargas</h4>
+  <p><span class="boton">Trabajos finalizados (CSV)</span> y <span class="boton">Desvíos del plan (CSV)</span> descargan los datos del período en un archivo que se abre con Excel u otra planilla de cálculo.</p>
+</section>
+
+<!-- ======================== 5. PREGUNTAS FRECUENTES ======================== -->
+<section class="capitulo" id="problemas">
+  <h1>5. Preguntas frecuentes y problemas comunes</h1>
+  <table>
+    <thead><tr><th style="width:36%">Situación</th><th>Qué hacer</th></tr></thead>
+    <tbody>
+      <tr><td>Me olvidé la contraseña.</td><td>Pedile al encargado o a mesa de entradas que te pongan una nueva desde Usuarios (botón <span class="boton">Clave</span>).</td></tr>
+      <tr><td>No veo una pantalla que usa un compañero.</td><td>Cada rol ve pantallas distintas (ver <a href="#roles">2.4</a>). Si necesitás otra, consultá al encargado.</td></tr>
+      <tr><td>Aparece "No se pudo completar la operación".</td><td>Revisá la conexión y tocá <span class="boton">Volver a cargar</span>. Si sigue pasando, avisá al encargado.</td></tr>
+      <tr><td>No aparece un lugar en el mapa.</td><td>Revisá los filtros (botoncitos y "Más filtros"). Si el lugar figura "fuera del pueblo", hay que corregir sus coordenadas en Infraestructura.</td></tr>
+      <tr><td>No me aparecen tareas en Mis tareas.</td><td>Tocá <span class="boton">Actualizar tareas</span>. Si sigue vacío, todavía no hay trabajos asignados a tu cuadrilla, o tu cuenta no tiene cuadrilla: consultá al encargado.</td></tr>
+      <tr><td>No puedo asignar un trabajo a una cuadrilla.</td><td>Solo se ofrecen las cuadrillas que hacen ese tipo de trabajo y no están ocupadas.</td></tr>
+      <tr><td>No puedo borrar un lugar.</td><td>Los lugares con órdenes de trabajo no se pueden borrar, para no perder su historia. Si dejó de existir, editalo y marcalo como fuera de servicio.</td></tr>
+      <tr><td>Hice algo sin señal, ¿se perdió?</td><td>No. Queda en el celular como "Sin enviar" y se envía solo cuando vuelve la señal, incluso si cerraste la sesión.</td></tr>
+      <tr><td>Dice "para revisar".</td><td>Mientras no tenías señal, el trabajo cambió. Leé lo que muestra FARO y elegí qué hacer con tu cambio.</td></tr>
+      <tr><td>Me equivoqué y finalicé o cancelé una orden.</td><td>Las órdenes cerradas no se pueden reabrir. Registrá una orden nueva para el mismo lugar y, si hace falta, dejá un comentario explicando.</td></tr>
+      <tr><td>Aparece "Hay una versión nueva de FARO".</td><td>Terminá lo que estabas haciendo y tocá <span class="boton">Actualizar</span>.</td></tr>
+      <tr><td>No sé qué hacer en una pantalla.</td><td>Tocá el botón <span class="boton">?</span> arriba a la derecha.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script>
+  // Si falta una captura, en su lugar va un recuadro "Captura pendiente" (para ver el manual antes de tener todas).
+  document.querySelectorAll('figure img').forEach((img) => {
+    const reemplazar = () => {
+      const caja = document.createElement('div')
+      caja.className = 'pendiente'
+      caja.textContent = `Captura pendiente: ${img.getAttribute('src')}`
+      img.replaceWith(caja)
+    }
+    if (img.complete && img.naturalWidth === 0) reemplazar()
+    else img.addEventListener('error', reemplazar)
+  })
+</script>
+</body>
+</html>

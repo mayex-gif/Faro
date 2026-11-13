@@ -2,9 +2,58 @@
 // Los valores de "tipo" son los que guarda el backend.
 
 export const TIPOS_LUGAR = {
-  ESPACIO_VERDE: 'Espacio verde',
+  // ESPACIO_VERDE se muestra como "Lugar": plazas, espacios verdes y cualquier otro lugar con superficie.
+  // El valor que guarda el backend sigue siendo ESPACIO_VERDE.
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
+}
+
+// Las calles y las luminarias tienen pestañas propias en el mapa. Infraestructura registra solo lugares.
+export const CATEGORIAS_LUGAR = {
+  infraestructura: ['ESPACIO_VERDE'],
+  luminarias: ['LUMINARIA'],
+}
+
+// El selector de "Agregar" siempre permite elegir los tres tipos; la página cambia a la pestaña correspondiente.
+export const TIPOS_PARA_AGREGAR = {
+  todo: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
+  luminarias: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
+  calles: ['ESPACIO_VERDE', 'CALLE', 'LUMINARIA'],
+}
+
+export function tiposParaAgregar(pestana) {
+  return TIPOS_PARA_AGREGAR[pestana] ?? TIPOS_PARA_AGREGAR.todo
+}
+
+// Los tipos de una categoría. Una categoría desconocida (o ninguna) = todos los tipos.
+export function tiposDeCategoria(categoria) {
+  return CATEGORIAS_LUGAR[categoria] ?? Object.keys(TIPOS_LUGAR)
+}
+
+// Solo los lugares de una categoría (ej. la lista de Infraestructura sin las luminarias).
+export function lugaresDeCategoria(lugares, categoria) {
+  const tipos = tiposDeCategoria(categoria)
+  return lugares.filter((lugar) => tipos.includes(lugar.tipo))
+}
+
+// Texto del estado de un lugar en las listas: las luminarias a futuro (instalada === false) lo dicen.
+export function textoEstadoLugar(lugar) {
+  if (lugar.instalada === false) return 'A futuro'
+  return textoEstadoOperativo(lugar.estadoOperativo)
+}
+
+// Clase CSS del estado: verde (funciona), rojo (fuera de servicio) o gris (a futuro).
+export function claseEstadoLugar(lugar) {
+  if (lugar.instalada === false) return 'estado estado-pendiente'
+  return lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'
+}
+
+// Los dos datos de estado que se mandan al backend al guardar un lugar desde un formulario.
+// "A futuro" (instalada = false) solo existe para luminarias, y una luminaria que no se puso no puede funcionar.
+export function estadoParaGuardar({ tipo, estadoOperativo, instalada }) {
+  if (tipo !== 'LUMINARIA') return { estadoOperativo, instalada: true }
+  return instalada === false ? { estadoOperativo: false, instalada: false } : { estadoOperativo, instalada: true }
 }
 
 export function etiquetaTipoLugar(tipo) {
@@ -27,6 +76,11 @@ export function describirUbicacion(ubicacion) {
     }
     case 'LineString':
       return `Línea de ${ubicacion.coordinates?.length || 0} puntos`
+    // Una calle cortada en varios tramos (así vienen algunas de OpenStreetMap, por ejemplo Salta)
+    case 'MultiLineString': {
+      const tramos = ubicacion.coordinates?.length || 0
+      return tramos === 1 ? 'Línea de 1 tramo' : `Línea de ${tramos} tramos`
+    }
     case 'Polygon':
       return 'Polígono'
     default:

@@ -1,10 +1,12 @@
 # Despliegue (Render + Neon)
 
-FARO está en la nube en tres partes, todas con plan gratis:
+FARO está en la nube en cuatro partes, todas con plan gratis:
 
 - **Frontend** (las pantallas): **Render, Static Site**. Son solo archivos (HTML, CSS, JS); no se duerme y trae HTTPS.
 - **Backend** (la API): **Render, Web Service** con Docker → https://faro-backend-6cq7.onrender.com (Swagger: `/swagger-ui.html`).
 - **Base de datos**: **Neon** (PostgreSQL + PostGIS).
+- **Almacén de fotos** (comentarios de las OT): **Backblaze B2**, privado (punto 9). El disco de Render se borra en cada
+  deploy, por eso las fotos no pueden quedar en el backend.
 
 El backend y la base están en la misma zona: **Virginia, EE. UU.** (Render no tiene servidores en Sudamérica, y si el backend y la base
 estuvieran lejos, cada consulta tardaría mucho más).
@@ -31,6 +33,12 @@ El código **no tiene ninguna contraseña**: todo lo que cambia entre la compu y
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | Hibernate crea o actualiza las tablas al arrancar |
 | `TZ` | `America/Argentina/Buenos_Aires` | Hora argentina en las fechas |
 | `FARO_CORS_ORIGENES` | `https://<dirección-del-frontend>.onrender.com,http://localhost:5173` | Páginas web que pueden llamar a la API, separadas por comas, **sin espacios y sin `/` al final**. **No usar `*`** (no funciona junto con `allowCredentials`) |
+| `FARO_ALMACEN` | **no definirla** (o `s3`) | Qué almacén de fotos usar. `memoria` es solo para la computadora: en Render las fotos se perderían en cada reinicio |
+| `FARO_S3_ENDPOINT` | `https://s3.<región>.backblazeb2.com` | Dirección del almacén de fotos (punto 9) |
+| `FARO_S3_REGION` | la región de B2, ej. `us-east-005` | La parte del medio del endpoint |
+| `FARO_S3_BUCKET` | el nombre del bucket de B2 | La "caja" donde van las fotos |
+| `FARO_S3_ACCESS_KEY` | (el **keyID** de B2) | Usuario del almacén. Solo acá y en el lugar seguro del equipo |
+| `FARO_S3_SECRET_KEY` | (la **applicationKey** de B2) | Clave del almacén. Solo acá y en el lugar seguro del equipo |
 
 `PORT` **no** se carga: Render la define sola (10000) y el backend la lee (`server.port=${PORT:8080}`).
 
@@ -106,6 +114,8 @@ Cuando termina, Render muestra arriba la dirección del frontend (`https://faro-
    Recién ahí: `GET /api/estados-orden` → 5 estados. `GET /api/cuadrillas` → 4 cuadrillas. Sin token responden **401**.
 3. Abrir la dirección del frontend (en la compu y en el celular) y recorrer el menú: Infraestructura, Órdenes de trabajo,
    Asignación a cuadrillas, Mapa, Ficha histórica y Mis tareas.
+   Fotos: en Trabajos → **Comentarios** de una OT, publicar un comentario con una foto y abrirla. Si responde
+   "El almacén de fotos no está configurado" o "no responde", revisar el punto 9.
 4. Si una pantalla dice **"No se pudo completar la operación"** (con `Failed to fetch`): F12 → **Console**.
    - `blocked by CORS policy` → falta la dirección del frontend en `FARO_CORS_ORIGENES` o está mal escrita (tiene que empezar con `https://`).
    - `Failed to fetch` o `Error 502` sin CORS → el backend está despertando: esperar y recargar.
@@ -137,6 +147,41 @@ docker restart faro-backend
 docker stats faro-backend --no-stream
 ```
 
+## 9. Almacén de fotos: Backblaze B2 (se hace una sola vez)
+
+**Por qué B2:** 10 GB gratis para siempre, habla S3 y no debería pedir tarjeta para el plan gratis
+(Cloudflare R2 también da 10 GB, pero pide tarjeta o PayPal para activarlo). Los nombres de los botones pueden cambiar un poco.
+
+1. **Crear la cuenta** en https://www.backblaze.com → **Sign Up** (B2 Cloud Storage). En **Region** elegir **US East**
+   (está en Virginia, igual que Render y Neon). La región se elige al crear la cuenta y no se cambia después.
+2. **Crear el bucket**: menú **B2 Cloud Storage → Buckets → Create a Bucket**.
+   - **Bucket Unique Name:** un nombre único en todo B2, ej. `faro-fotos-generalpaz` (solo minúsculas, números y guiones).
+   - **Files in Bucket are:** **Private** (las fotos se ven solo a través del backend, con sesión).
+   - Encryption y Object Lock: dejar como vienen. → **Create a Bucket**.
+   - En la tarjeta del bucket anotar el **Endpoint**, ej. `s3.us-east-005.backblazeb2.com`. La región es la parte del medio (`us-east-005`).
+3. **Crear la clave** (la "Master Application Key" **no** sirve para S3): menú **Application Keys → Add a New Application Key**.
+   - **Name of Key:** `faro-render`.
+   - **Allow access to Bucket(s):** solo el bucket del paso 2 (así la clave no puede tocar nada más).
+   - **Type of Access:** **Read and Write**.
+   - Tildar **Allow List All Bucket Names** (lo piden las librerías S3 cuando la clave está limitada a un bucket).
+   - Lo demás vacío → **Create New Key**.
+   - Aparecen **keyID** y **applicationKey**. **La applicationKey se muestra una sola vez**: copiarla directo a Render
+     (y al lugar seguro del equipo). Nunca al repo ni a un chat.
+4. (Recomendado) **Caps & Alerts**: dejar los topes diarios en $0 para que nunca se cobre nada; si se llega al límite gratis,
+   B2 deja de aceptar fotos (el backend responde 503) en vez de cobrar.
+5. **Render → faro-backend → Environment** → cargar las 5 variables `FARO_S3_*` del punto 1:
+   - `FARO_S3_ENDPOINT` = `https://` + el Endpoint del paso 2 (ej. `https://s3.us-east-005.backblazeb2.com`)
+   - `FARO_S3_REGION` = la región (ej. `us-east-005`)
+   - `FARO_S3_BUCKET` = el nombre del bucket
+   - `FARO_S3_ACCESS_KEY` = el keyID · `FARO_S3_SECRET_KEY` = la applicationKey
+   - **Save and deploy** (el backend lee las variables al arrancar).
+6. **Verificar**: en **Logs** del backend tiene que aparecer `Almacén de fotos S3: bucket '<nombre>' en https://s3...`.
+   Después, el paso 3 del punto 6. En B2 → **Buckets → Browse Files** se ven las fotos en la carpeta `comentarios/`.
+
+Si las fotos dan 503: en los Logs del backend aparece el motivo real (`No se pudo guardar ... en el almacén de fotos: ...`).
+Lo más común: `InvalidAccessKeyId` / `SignatureDoesNotMatch` (keyID o applicationKey mal copiadas), `AccessDenied`
+(la clave no tiene acceso a ese bucket o es de solo lectura) o un endpoint/región que no coincide con el bucket.
+
 ## Advertencias
 
 - **El backend se duerme** después de 15 minutos sin visitas y tarda **2 a 3 minutos** en despertar (con 0,1 CPU, Spring arranca
@@ -151,4 +196,6 @@ docker stats faro-backend --no-stream
 - **Enums nuevos:** Hibernate crea una regla `CHECK` con los valores de cada enum y `ddl-auto=update` no la actualiza.
   Si se agrega un valor a un enum (por ejemplo, un tipo de trabajo nuevo), en Neon hay que correr en el SQL Editor
   `ALTER TABLE ... DROP CONSTRAINT ..._check;` y volver a crearla con todos los valores.
-- Plan gratis de Neon: 1 GB de datos.
+- Plan gratis de Neon: 1 GB de datos. Las fotos **no** van a Neon: van a B2 (10 GB gratis; en la base solo queda su nombre).
+- **Las fotos no se pierden en un deploy** (están en B2), pero si se borra el bucket o la clave, las fotos viejas dejan de verse
+  ("No se pudo cargar"). Para cambiar de clave: crear la nueva, cargarla en Render y recién después borrar la vieja.

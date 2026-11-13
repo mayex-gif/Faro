@@ -1,9 +1,11 @@
 package com.faro.backend.models;
 
 import jakarta.persistence.*;
+import org.locationtech.jts.geom.Geometry;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 /**
  * Orden de Trabajo (OT): un trabajo a realizar sobre un lugar del pueblo.
@@ -20,6 +22,24 @@ public class OrdenTrabajo {
 
     @Column(nullable = false, length = 500)
     private String descripcion; // Ej: "Cortar el pasto del sector juegos"
+
+    @Column(name = "calle_entre_1", length = 120)
+    private String calleEntre1;
+    @Column(name = "calle_entre_2", length = 120)
+    private String calleEntre2;
+    @Column(name = "altura", length = 20)
+    private String altura;
+    @Column(name = "monto_aproximado", precision = 14, scale = 2)
+    private BigDecimal montoAproximado;
+    // Lo que se gastó de más y no estaba en el monto aproximado (ej: nafta, materiales o repuestos no previstos).
+    // Lo declara quien finaliza la OT (encargado o capataz), en el pop-up de "Finalizar". Opcional.
+    @Column(name = "gasto_adicional", precision = 14, scale = 2)
+    private BigDecimal gastoAdicional;
+
+    // Parte de la calle donde se trabaja (línea sobre la calle). null = toda la calle o no es una calle.
+    // Ver services/TramoDeCalle. Columna opcional: las OT viejas quedan con null.
+    @Column(columnDefinition = "geometry(Geometry, 4326)")
+    private Geometry tramo;
 
     @Enumerated(EnumType.STRING) // se guarda el NOMBRE ("PODA"), no un número
     @Column(nullable = false, length = 30)
@@ -80,6 +100,18 @@ public class OrdenTrabajo {
 
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getCalleEntre1() { return calleEntre1; }
+    public void setCalleEntre1(String calleEntre1) { this.calleEntre1 = calleEntre1; }
+    public String getCalleEntre2() { return calleEntre2; }
+    public void setCalleEntre2(String calleEntre2) { this.calleEntre2 = calleEntre2; }
+    public String getAltura() { return altura; }
+    public void setAltura(String altura) { this.altura = altura; }
+    public BigDecimal getMontoAproximado() { return montoAproximado; }
+    public void setMontoAproximado(BigDecimal montoAproximado) { this.montoAproximado = montoAproximado; }
+    public BigDecimal getGastoAdicional() { return gastoAdicional; }
+    public void setGastoAdicional(BigDecimal gastoAdicional) { this.gastoAdicional = gastoAdicional; }
+    public Geometry getTramo() { return tramo; }
+    public void setTramo(Geometry tramo) { this.tramo = tramo; }
 
     public TipoTrabajo getTipo() { return tipo; }
     public void setTipo(TipoTrabajo tipo) { this.tipo = tipo; }

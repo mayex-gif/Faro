@@ -5,6 +5,7 @@
 
 export const CAMBIO_ESTADO = 'CAMBIO_ESTADO'
 export const ALTA_ORDEN = 'ALTA_ORDEN'
+export const COMENTARIO = 'COMENTARIO' // un comentario de una OT, con sus fotos (tarjetas 16 + 21)
 
 // Cómo está un renglón del cuaderno
 export const PENDIENTE = 'PENDIENTE' // todavía no llegó al servidor
@@ -14,7 +15,7 @@ export const CONFLICTO = 'CONFLICTO' // llegó, pero ya no valía (otra persona 
 export const REINTENTAR = 'REINTENTAR' // sin red o el servidor tuvo un problema: queda en el cuaderno
 export const SESION = 'SESION'         // 401: la sesión venció o la cuenta se dio de baja; el cuaderno espera
 
-const TIPOS = [CAMBIO_ESTADO, ALTA_ORDEN]
+const TIPOS = [CAMBIO_ESTADO, ALTA_ORDEN, COMENTARIO]
 const ESTADOS = [PENDIENTE, CONFLICTO]
 
 // Número de comanda. crypto.randomUUID solo existe en páginas seguras (https o localhost):
@@ -43,8 +44,11 @@ function base(usuario, tipo, ahora, numero) {
 }
 
 // "Pasé la OT a otro estado". Guarda en qué estado la VIO (estadoAnteriorId): con eso el backend detecta conflictos.
-export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero() } = {}) {
+// Al FINALIZAR, datosCierre trae lo del pop-up: { lugarFunciona?, gastoAdicional? } (lo que no vino, no se guarda:
+// así el backend hace lo de siempre, igual que con las comandas de antes del pop-up).
+export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero(), datosCierre = {} } = {}) {
   return {
+    ...soloDatosDeCierre(datosCierre),
     ...base(usuario, CAMBIO_ESTADO, ahora, numero),
     ordenId: orden.id,
     estadoId: estadoNuevo.id,
@@ -58,15 +62,71 @@ export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Dat
   }
 }
 
-// "Cargué una OT nueva". datos = lo mismo que el alta normal: { descripcion, tipo, origen, prioridad, lugarId }.
+// La casilla "El lugar quedó funcionando" (true/false) y el gasto adicional (un número ≥ 0), si vinieron
+function soloDatosDeCierre(datos = {}) {
+  const cierre = {}
+  if (typeof datos.lugarFunciona === 'boolean') cierre.lugarFunciona = datos.lugarFunciona
+  if (typeof datos.gastoAdicional === 'number' && Number.isFinite(datos.gastoAdicional)) cierre.gastoAdicional = datos.gastoAdicional
+  return cierre
+}
+
+// "Cargué una OT nueva". Copia los campos conocidos del alta normal, incluidos los opcionales añadidos después.
 export function crearAltaOrden(usuario, datos, lugarNombre, { ahora = new Date(), numero = nuevoNumero() } = {}) {
   const { descripcion, tipo, origen, prioridad, lugarId } = datos
+  const orden = { descripcion, tipo, origen, prioridad, lugarId }
+  for (const campo of ['calleEntre1', 'calleEntre2', 'altura', 'tramo', 'montoAproximado']) {
+    if (Object.hasOwn(datos, campo)) orden[campo] = datos[campo]
+  }
   return {
     ...base(usuario, ALTA_ORDEN, ahora, numero),
-    orden: { descripcion, tipo, origen, prioridad, lugarId },
+    orden,
     descripcion,
     lugarNombre,
   }
+}
+
+// "Escribí un comentario". Las fotos ya vienen achicadas (Blobs JPEG): IndexedDB las guarda tal cual en el celular.
+export function crearComentario(usuario, orden, { texto = '', fotos = [] }, { ahora = new Date(), numero = nuevoNumero() } = {}) {
+  return {
+    ...base(usuario, COMENTARIO, ahora, numero),
+    ordenId: orden.id,
+    texto: texto.trim(),
+    fotos: [...fotos],
+    // Para mostrarlo en el cartel mientras no se envía
+    descripcion: orden.descripcion,
+    lugarNombre: orden.lugarNombre,
+  }
+}
+
+// El formulario de un comentario (va como multipart porque lleva archivos): "texto", "hechoEn" y una parte
+// "fotos" por cada foto. Está acá (y no en api/) porque también lo usa el service worker para mandar con FARO cerrado.
+export function formularioDeComentario({ texto = '', fotos = [], hechoEn = new Date() }) {
+  const formulario = new FormData()
+  if (texto.trim()) formulario.append('texto', texto.trim())
+  formulario.append('hechoEn', new Date(hechoEn).toISOString())
+  fotos.forEach((foto, indice) => formulario.append('fotos', foto, `foto-${indice + 1}.jpg`))
+  return formulario
+}
+
+// Adónde y cómo se manda cada renglón (lo usan el cartero de la página y el service worker).
+// Devuelve { ruta, body, esJson }: los comentarios van como formulario; el resto, como JSON.
+export function pedidoDeEnvio(operacion) {
+  if (operacion.tipo === COMENTARIO) {
+    return {
+      ruta: `/ordenes-trabajo/${operacion.ordenId}/comentarios/${operacion.operacionId}`,
+      body: formularioDeComentario({ texto: operacion.texto, fotos: operacion.fotos, hechoEn: operacion.creadaEn }),
+      esJson: false,
+    }
+  }
+  const ventanilla = operacion.tipo === ALTA_ORDEN ? 'altas-orden' : 'cambios-estado'
+  return { ruta: `/sincronizacion/${ventanilla}/${operacion.operacionId}`, body: JSON.stringify(cuerpoDeEnvio(operacion)), esJson: true }
+}
+
+// Los comentarios sin enviar de una OT (para mostrarlos en su muro, arriba de todo, con "Sin enviar")
+export function comentariosSinEnviar(cola, ordenId) {
+  return ordenarCola(cola).reverse()
+    .filter((operacion) => operacion.tipo === COMENTARIO && operacion.estado === PENDIENTE
+      && String(operacion.ordenId) === String(ordenId))
 }
 
 // Lo que viaja al servidor (el número de comanda va en la dirección, no acá)
@@ -77,6 +137,7 @@ export function cuerpoDeEnvio(operacion) {
     estadoId: operacion.estadoId,
     estadoAnteriorId: operacion.estadoAnteriorId,
     hechoEn: operacion.creadaEn,
+    ...soloDatosDeCierre(operacion), // solo en un cierre hecho con el pop-up de "Finalizar"
   }
 }
 
@@ -179,6 +240,10 @@ export function operacionValida(operacion) {
   if (!operacion || typeof operacion.operacionId !== 'string' || !TIPOS.includes(operacion.tipo)
     || operacion.usuarioId == null || !ESTADOS.includes(operacion.estado)
     || !Number.isFinite(Date.parse(operacion.creadaEn))) return false
+  if (operacion.tipo === COMENTARIO) {
+    return operacion.ordenId != null && Array.isArray(operacion.fotos) && typeof operacion.texto === 'string'
+      && (operacion.texto.length > 0 || operacion.fotos.length > 0)
+  }
   return operacion.tipo === CAMBIO_ESTADO
     ? operacion.ordenId != null && operacion.estadoId != null
     : operacion.orden != null && typeof operacion.orden.descripcion === 'string'

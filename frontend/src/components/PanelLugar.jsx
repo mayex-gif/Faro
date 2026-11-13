@@ -1,27 +1,33 @@
 import { useEffect, useState } from 'react'
 import { obtenerHistoria } from '../api/infraestructura'
 import AsignarCuadrilla from './AsignarCuadrilla'
+import EstadoLuminaria from './EstadoLuminaria'
 import Icono from './Icono'
 import { esperaCuadrilla } from '../utils/asignacion'
 import { lineaNovedad, tituloEvento, ultimasNovedades } from '../utils/historia'
-import { describirUbicacion, etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { claseEstadoLugar, describirUbicacion, etiquetaTipoLugar, textoEstadoLugar } from '../utils/lugares'
 import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 import { useSesion } from '../context/useSesion'
-import { puedeAsignar, puedeCrearOrden } from '../utils/permisos'
+import { esLuminaria } from '../utils/luminarias'
+import { puedeAsignar, puedeCambiarEstadoLuminaria, puedeCrearOrden } from '../utils/permisos'
 
 // Ficha del lugar elegido, en el panel derecho de la pantalla Mapa (no en otra página).
 // Muestra los datos del lugar, sus trabajos abiertos y las últimas novedades de su historia.
 // Props:
-// - resumen: { lugar, ordenes } del lugar (ver agruparPorLugar en utils/mapa.js); ordenes = las abiertas
+// - resumen: { lugar, ordenes, tramos? } del lugar (ver agruparPorLugar en utils/mapa.js); ordenes = las abiertas;
+//   tramos (solo calles con trabajos) = dónde es cada OT dentro de la calle
 // - onCerrar(): cerrar el panel
 // - onVerHistoria(lugarId): abrir la Ficha histórica completa
 // - onNuevaOrden(lugarId): "+ Nueva OT acá" (abre el formulario de OT con este lugar ya elegido)
 // - asignacion: { estados, cuadrillas, cargandoCuadrillas, errorCuadrillas, onAsignada(ordenActualizada) }
 //   para "Asignar cuadrilla" en los trabajos pendientes que todavía no tienen cuadrilla
+// - onLugarActualizado(lugar): se cambió el estado de la luminaria desde la ficha (la página actualiza el mapa)
 // La página lo dibuja con key={lugar.id}: al cambiar de lugar, el panel arranca de cero.
-function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion }) {
+function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion, onLugarActualizado }) {
   const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
+  // Calles: el texto del tramo de cada OT abierta (resumen.tramos, ver utils/calles.js → conTramos)
+  const ubicaciones = new Map((resumen.tramos ?? []).map((tramo) => [tramo.orden.id, tramo.texto]))
   const [historia, setHistoria] = useState(null)
   const [error, setError] = useState(null)
   const [intento, setIntento] = useState(0) // cambia con "Volver a cargar" y después de asignar una cuadrilla
@@ -65,20 +71,28 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
           <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)}</p>
           <h2 id="titulo-panel-lugar" tabIndex={-1}>{lugar.nombre}</h2>
           <p className="panel-lugar-estado">
-            <span className={lugar.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
+            <span className={claseEstadoLugar(lugar)}>
               <span className="estado-punto" aria-hidden="true" />
-              {textoEstadoOperativo(lugar.estadoOperativo)}
+              {textoEstadoLugar(lugar)}
             </span>
-            <span className="ubicacion-tabla">{describirUbicacion(lugar.ubicacion)}</span>
+            <span className="ubicacion-tabla">{lugar.ubicacion?.type === 'Polygon' ? 'Lugar' : describirUbicacion(lugar.ubicacion)}</span>
           </p>
         </div>
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar la ficha de ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
         </button>
-        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
+        {/* Las luminarias a futuro no llevan OT (el backend también lo controla) */}
+        {puedeCrearOrden(usuario) && lugar.instalada !== false && <button type="button" className="boton boton-primario boton-nueva-ot" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
         </button>}
       </div>
+
+      {/* Luminarias: cómo está y, para el encargado, cambiarla ahí mismo (Funciona / Apagada, o marcar como instalada) */}
+      {esLuminaria(lugar) && (
+        <EstadoLuminaria resumen={resumen} puedeCambiar={puedeCambiarEstadoLuminaria(usuario)} puedeCrearOT={puedeCrearOrden(usuario)}
+          onCambiado={(actualizado) => { onLugarActualizado?.(actualizado); setIntento((anterior) => anterior + 1) }}
+          onNuevaOrden={onNuevaOrden} />
+      )}
 
       <section className="panel-lugar-seccion" aria-labelledby="titulo-trabajos-abiertos">
         <h3 id="titulo-trabajos-abiertos">Trabajos abiertos ({ordenes.length})</h3>
@@ -106,6 +120,10 @@ function PanelLugar({ resumen, onCerrar, onVerHistoria, onNuevaOrden, asignacion
                 <span className="tarjeta-trabajo-detalle">
                   OT #{orden.id} · {etiqueta(TIPOS_TRABAJO, orden.tipo)} · {orden.cuadrillaNombre ? `Cuadrilla: ${orden.cuadrillaNombre}` : 'Sin cuadrilla asignada'}
                 </span>
+                {/* En una calle: qué parte de la calle (el tramo, "entre calles" o la altura) */}
+                {ubicaciones.has(orden.id) && (
+                  <span className="tarjeta-trabajo-tramo"><Icono nombre="calle" />{ubicaciones.get(orden.id)}</span>
+                )}
                 {puedeAsignar(usuario) && esperaCuadrilla(orden, asignacion.estados) && (
                   <AsignarCuadrilla orden={orden} cuadrillas={asignacion.cuadrillas}
                     cargandoCuadrillas={asignacion.cargandoCuadrillas} errorCuadrillas={asignacion.errorCuadrillas}

@@ -2,6 +2,7 @@ package com.faro.backend.controllers;
 
 import com.faro.backend.dto.PuntoInfraestructuraDTO;
 import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
+import com.faro.backend.exceptions.DatoInvalidoException;
 import com.faro.backend.exceptions.OperacionNoPermitidaException;
 import com.faro.backend.exceptions.RecursoNoEncontradoException;
 import com.faro.backend.services.PuntoInfraestructuraService;
@@ -72,7 +73,8 @@ class PuntoInfraestructuraControllerTest {
                 .andExpect(jsonPath("$[0].nombre").value("Plaza San Martín"))
                 .andExpect(jsonPath("$[0].ubicacion.type").value("Point"))
                 .andExpect(jsonPath("$[0].ubicacion.coordinates[0]").value(-64.18))
-                .andExpect(jsonPath("$[0].ubicacion.coordinates[1]").value(-31.42));
+                .andExpect(jsonPath("$[0].ubicacion.coordinates[1]").value(-31.42))
+                .andExpect(jsonPath("$[0].instalada").value(true));
     }
 
     @Test
@@ -103,6 +105,17 @@ class PuntoInfraestructuraControllerTest {
         assertEquals(-64.18, recibido.getX());
         assertEquals(-31.42, recibido.getY());
         assertEquals(4326, recibido.getSRID());
+    }
+
+    @Test
+    void crearUnaCalleAFuturoResponde400ConElCampo() throws Exception {
+        when(service.crearLugar(any(PuntoInfraestructuraRequestDTO.class)))
+                .thenThrow(new DatoInvalidoException("instalada", "Solo una luminaria puede quedar como \"a futuro\"."));
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(JSON_LUGAR))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.estado").value(400))
+                .andExpect(jsonPath("$.errores.instalada").exists());
     }
 
     @Test

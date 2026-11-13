@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  inicioDe, puedeAsignar, puedeCrearOrden, puedeGestionarUsuarios, puedeVer, rolConocido, tieneRol,
+  inicioDe, puedeAsignar, puedeCambiarEstadoLuminaria, puedeCargarLuminariaAFuturo, puedeCrearOrden, puedeGestionarMantenimiento, puedeGestionarUsuarios, puedeVer,
+  puedeVerAuditoria, puedeVerReportes, rolConocido, tieneRol,
 } from '../src/utils/permisos.js'
 
 const encargado = { activo: true, rol: 'ENCARGADO_CORRALON' }
@@ -46,4 +47,45 @@ test('gestionan usuarios el encargado y mesa de entradas; el capataz no', () => 
   assert.equal(puedeGestionarUsuarios(mesa), true)
   assert.equal(puedeGestionarUsuarios(capataz), false)
   assert.equal(puedeVer(capataz, 'usuarios'), false)
+})
+
+test('mantenimiento periódico y auditoría son solo del encargado del corralón', () => {
+  assert.equal(puedeGestionarMantenimiento(encargado), true)
+  assert.equal(puedeGestionarMantenimiento(mesa), false)
+  assert.equal(puedeGestionarMantenimiento(capataz), false)
+  assert.equal(puedeVerAuditoria(encargado), true)
+  assert.equal(puedeVerAuditoria(mesa), false)
+  assert.equal(puedeVerAuditoria(capataz), false)
+  assert.equal(puedeVer(encargado, 'mantenimiento'), true)
+  assert.equal(puedeVer(encargado, 'auditoria'), true)
+  assert.equal(puedeVer(mesa, 'mantenimiento'), false)
+  assert.equal(puedeVer(mesa, 'auditoria'), false)
+})
+
+test('reportes e indicadores son solo del encargado del corralón', () => {
+  assert.equal(puedeVerReportes(encargado), true)
+  assert.equal(puedeVerReportes(mesa), false)
+  assert.equal(puedeVerReportes(capataz), false)
+  assert.equal(puedeVer(encargado, 'reportes'), true)
+  assert.equal(puedeVer(mesa, 'reportes'), false)
+  assert.equal(puedeVer(capataz, 'reportes'), false)
+})
+
+test('solo el encargado cambia el estado de una luminaria desde el mapa (como en el backend)', () => {
+  assert.equal(puedeCambiarEstadoLuminaria(encargado), true)
+  assert.equal(puedeCambiarEstadoLuminaria(mesa), false)
+  assert.equal(puedeCambiarEstadoLuminaria(capataz), false)
+  assert.equal(puedeCambiarEstadoLuminaria(null), false)
+})
+
+test('la sección Luminarias (Más → Luminarias) es del encargado, como Infraestructura', () => {
+  assert.equal(puedeVer(encargado, 'luminarias'), true)
+  assert.equal(puedeVer(mesa, 'luminarias'), false)
+  assert.equal(puedeVer(capataz, 'luminarias'), false)
+})
+
+test('las luminarias a futuro las carga solo el encargado (por ahora, hasta que exista el rol Intendente)', () => {
+  assert.equal(puedeCargarLuminariaAFuturo(encargado), true)
+  assert.equal(puedeCargarLuminariaAFuturo(mesa), false)
+  assert.equal(puedeCargarLuminariaAFuturo(capataz), false)
 })
