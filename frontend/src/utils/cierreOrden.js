@@ -4,7 +4,7 @@
 //   1. el comentario con las fotos (si escribió algo o sumó fotos) → como cualquier comentario de la OT
 //   2. el cambio de estado, con la casilla y el gasto → PATCH /api/ordenes-trabajo/{id}/estado
 // Las reglas de los datos son las mismas que controla el backend (CambioEstadoRequestDTO): acá se avisa ANTES de mandar.
-import { MAX_FOTOS, MAX_TEXTO } from './comentarios.js'
+import { MAX_FOTOS, MAX_TEXTO, mensajeDeError } from './comentarios.js'
 
 export const FINALIZAR = 'FINALIZAR'
 export const CANCELAR = 'CANCELAR'
@@ -149,4 +149,41 @@ export function armarCancelacion(estadoNuevo, motivo = '') {
 // ¿Hay algún error? (para habilitar el botón y no mandar nada)
 export function hayErrores(errores) {
   return Object.keys(errores ?? {}).length > 0
+}
+
+// ===================== Después de finalizar =====================
+
+// Lo que se avisa arriba de la lista. Ej: 'La OT #12 pasó a "Finalizada". Se guardó el comentario con 2 fotos.'
+export function mensajeDeCierre(orden, comentario) {
+  const base = `La OT #${orden.id} pasó a "${orden.estadoNombre}".`
+  if (!comentario) return base
+  const fotos = comentario.fotos?.length ?? 0
+  if (fotos === 0) return `${base} Se guardó el comentario.`
+  const conFotos = fotos === 1 ? '1 foto' : `${fotos} fotos`
+  return comentario.texto ? `${base} Se guardó el comentario con ${conFotos}.` : `${base} Se guardaron ${conFotos}.`
+}
+
+// De cada lugar alcanza con saber cómo está (para la casilla): así se puede guardar en el celular sin ocupar lugar
+export function resumenLugares(lugares = []) {
+  return lugares.map(({ id, tipo, estadoOperativo, instalada }) => ({ id, tipo, estadoOperativo, instalada }))
+}
+
+// La lista de lugares como queda después de finalizar (igual que hace el backend):
+// con la casilla marcada el lugar vuelve a "Funciona"; sin la casilla, una luminaria vuelve sola (lo de siempre).
+export function lugaresDespuesDelCierre(lugares = [], lugarId, cambio = {}) {
+  return lugares.map((lugar) => {
+    if (String(lugar.id) !== String(lugarId) || lugar.instalada === false) return lugar
+    const vuelve = 'lugarFunciona' in cambio ? cambio.lugarFunciona === true : lugar.tipo === 'LUMINARIA'
+    return vuelve ? { ...lugar, estadoOperativo: true } : lugar
+  })
+}
+
+// Qué se le dice a la persona si el envío falló (error.etapa la pone api/cierreOrden.js).
+// - Falló el comentario: la OT sigue abierta y lo escrito sigue en el pop-up, para corregir y reintentar.
+// - El comentario llegó pero falló el cambio de estado: se avisa que el comentario ya está (al reintentar no se repite).
+export function mensajeDeErrorCierre(error) {
+  const motivo = mensajeDeError(error)
+  if (error?.etapa === 'comentario') return `No se pudo guardar el comentario: ${motivo} La OT sigue abierta.`
+  if (error?.etapa === 'estado' && error?.conComentario) return `El comentario se guardó, pero no se pudo finalizar la OT: ${motivo}`
+  return `No se pudo finalizar la OT: ${motivo}`
 }

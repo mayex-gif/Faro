@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   CANCELAR, FINALIZAR, MAX_MOTIVO, PREFIJO_MOTIVO, armarCancelacion, armarFinalizacion, avisoOtrasAbiertas,
-  casillaDelLugar, esCancelacion, esFinalizacion, formatearPesos, hayErrores, otrasAbiertasDelLugar, popUpDelCambio,
-  textoMontoDeclarado, validarGasto,
+  casillaDelLugar, esCancelacion, esFinalizacion, formatearPesos, hayErrores, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre,
+  otrasAbiertasDelLugar, popUpDelCambio, resumenLugares, textoMontoDeclarado, validarGasto,
 } from '../src/utils/cierreOrden.js'
 import { MAX_TEXTO } from '../src/utils/comentarios.js'
 
@@ -182,4 +182,53 @@ test('el motivo entra entero en un comentario (con el "Motivo de la cancelación
   const largo = armarCancelacion(CANCELADA, 'x'.repeat(MAX_MOTIVO + 1))
   assert.equal(largo.errores.motivo, `El motivo puede tener hasta ${MAX_MOTIVO} caracteres.`)
   assert.equal(largo.comentario, null)
+})
+
+// ===================== Después de finalizar =====================
+
+test('el aviso después de finalizar dice si se guardó el comentario y cuántas fotos', () => {
+  const orden = { id: 12, estadoNombre: 'Finalizada' }
+  assert.equal(mensajeDeCierre(orden, null), 'La OT #12 pasó a "Finalizada".')
+  assert.equal(mensajeDeCierre(orden, { texto: 'Listo', fotos: [] }), 'La OT #12 pasó a "Finalizada". Se guardó el comentario.')
+  assert.equal(mensajeDeCierre(orden, { texto: 'Listo', fotos: [1] }), 'La OT #12 pasó a "Finalizada". Se guardó el comentario con 1 foto.')
+  assert.equal(mensajeDeCierre(orden, { texto: '', fotos: [1, 2] }), 'La OT #12 pasó a "Finalizada". Se guardaron 2 fotos.')
+})
+
+test('de cada lugar se guarda solo cómo está (sin la geometría)', () => {
+  const lugares = [{ id: 1, nombre: 'Poste', tipo: 'LUMINARIA', estadoOperativo: false, instalada: true, ubicacion: { type: 'Point' } }]
+  assert.deepEqual(resumenLugares(lugares), [{ id: 1, tipo: 'LUMINARIA', estadoOperativo: false, instalada: true }])
+  assert.deepEqual(resumenLugares(), [])
+})
+
+test('después de finalizar, el lugar queda como lo deja el backend', () => {
+  const lugares = [
+    { id: 1, tipo: 'CALLE', estadoOperativo: false },
+    { id: 2, tipo: 'LUMINARIA', estadoOperativo: false, instalada: true },
+    { id: 3, tipo: 'LUMINARIA', estadoOperativo: false, instalada: false },
+  ]
+  // Casilla marcada: vuelve a funcionar (cualquier tipo)
+  assert.equal(lugaresDespuesDelCierre(lugares, 1, { estadoId: 4, lugarFunciona: true })[0].estadoOperativo, true)
+  // Casilla desmarcada: queda como estaba
+  assert.equal(lugaresDespuesDelCierre(lugares, 2, { estadoId: 4, lugarFunciona: false })[1].estadoOperativo, false)
+  // Sin casilla: la luminaria vuelve sola; la calle no
+  assert.equal(lugaresDespuesDelCierre(lugares, 2, { estadoId: 4 })[1].estadoOperativo, true)
+  assert.equal(lugaresDespuesDelCierre(lugares, 1, { estadoId: 4 })[0].estadoOperativo, false)
+  // Una luminaria a futuro nunca se toca
+  assert.equal(lugaresDespuesDelCierre(lugares, 3, { estadoId: 4, lugarFunciona: true })[2].estadoOperativo, false)
+  // Los demás lugares no cambian
+  assert.equal(lugaresDespuesDelCierre(lugares, '1', { lugarFunciona: true })[1], lugares[1])
+})
+
+test('el mensaje de error dice qué parte falló', () => {
+  const sinRed = Object.assign(new TypeError('Failed to fetch'), { etapa: 'comentario' })
+  assert.equal(mensajeDeErrorCierre(sinRed),
+    'No se pudo guardar el comentario: No hay conexión con el servidor. Probá de nuevo en un rato. La OT sigue abierta.')
+  const pesadas = Object.assign(new Error('x'), { etapa: 'comentario', estado: 413 })
+  assert.equal(mensajeDeErrorCierre(pesadas),
+    'No se pudo guardar el comentario: Las fotos pesan demasiado. Probá con menos fotos. La OT sigue abierta.')
+  const conflicto = Object.assign(new Error('No se puede pasar una orden de Pendiente a Finalizada'), { etapa: 'estado', conComentario: true })
+  assert.equal(mensajeDeErrorCierre(conflicto),
+    'El comentario se guardó, pero no se pudo finalizar la OT: No se puede pasar una orden de Pendiente a Finalizada')
+  assert.equal(mensajeDeErrorCierre(Object.assign(new Error('Esta orden no es de tu cuadrilla'), { etapa: 'estado' })),
+    'No se pudo finalizar la OT: Esta orden no es de tu cuadrilla')
 })

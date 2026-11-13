@@ -7,12 +7,17 @@ import TablaOrdenes from '../components/TablaOrdenes'
 import FiltrosOrdenes from '../components/FiltrosOrdenes'
 import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
 import HojaComentarios from '../components/HojaComentarios'
+import PopUpFinalizar from '../components/PopUpFinalizar'
+import { enviarCierre } from '../api/cierreOrden'
 import { FILTROS_ORDENES_VACIOS, filtrarOrdenes, rangoFechasValido } from '../utils/filtrosOrdenes'
 import Icono from '../components/Icono'
 import { useSesion } from '../context/useSesion'
 import { puedeAsignar, puedeGestionarMantenimiento } from '../utils/permisos'
 import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import { REINTENTAR, aplicarPendientes, clasificarError } from '../offline/datosCola'
+import {
+  FINALIZAR, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre, otrasAbiertasDelLugar, popUpDelCambio,
+} from '../utils/cierreOrden'
 
 // Lo último que se cargó con señal, por persona. Vive mientras FARO esté abierto (no se guarda en el celular):
 // si se corta la señal, la lista y el desplegable de lugares siguen a la vista (y se puede cargar una OT sin señal).
@@ -31,6 +36,9 @@ function PaginaOrdenes({ params, onNavegar }) {
   const { usuario } = useSesion()
   const puedeGestionar = puedeAsignar(usuario)
   const [ordenComentarios, setOrdenComentarios] = useState(null) // la OT cuya hoja de comentarios está abierta
+  const [cierre, setCierre] = useState(null) // { orden, estado }: el pop-up de "Finalizar" abierto
+  const [enviandoCierre, setEnviandoCierre] = useState(false)
+  const [errorCierre, setErrorCierre] = useState('')
   const lugarInicial = params?.lugarId
   // Fijo mientras la pantalla está abierta (App la vuelve a armar si entra otra persona)
   const idUsuario = useRef(usuario.id)
@@ -130,7 +138,15 @@ function PaginaOrdenes({ params, onNavegar }) {
   // Botones "Pasar a ..." de la tabla
   function cambiarEstado(orden, estadoNuevo) {
     if (!puedeGestionar) return
-    // Finalizada y Cancelada no tienen vuelta atrás: pedimos confirmación
+    // Finalizar abre el pop-up (lugar funcionando, gasto, comentario y fotos): lo manda confirmarCierre
+    if (popUpDelCambio(estadoNuevo) === FINALIZAR) {
+      setMensaje('')
+      setErrorAccion('')
+      setErrorCierre('')
+      setCierre({ orden, estado: estadoNuevo })
+      return
+    }
+    // Cancelada no tiene vuelta atrás: pedimos confirmación
     if (estadoNuevo.cierre) {
       const confirmado = window.confirm(
         `¿Pasar la OT #${orden.id} a "${estadoNuevo.nombre}"? Después ya no se va a poder modificar.`)
@@ -153,6 +169,31 @@ function PaginaOrdenes({ params, onNavegar }) {
         setErrorAccion(e.message || 'No se pudo cambiar el estado. Intentá nuevamente.')
       })
       .finally(() => setIdCambiandoEstado(null))
+  }
+
+  // "Finalizar la OT" en el pop-up: primero el comentario (si hay), después el cambio de estado (api/cierreOrden.js).
+  // Si algo falla, el pop-up queda abierto con lo escrito y el motivo, para reintentar.
+  function confirmarCierre(datos) {
+    const { orden } = cierre
+    setEnviandoCierre(true)
+    setErrorCierre('')
+    setIdCambiandoEstado(orden.id)
+    enviarCierre(orden.id, datos)
+      .then(({ orden: actualizada }) => {
+        setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
+        setLugares((anteriores) => lugaresDespuesDelCierre(anteriores, actualizada.lugarId, datos.cambio))
+        setMensaje(mensajeDeCierre(actualizada, datos.comentario))
+        if (ordenEditando?.id === orden.id) setOrdenEditando(null) // quedó cerrada: ya no se edita
+        setCierre(null)
+      })
+      .catch((e) => {
+        console.error(e)
+        setErrorCierre(mensajeDeErrorCierre(e))
+      })
+      .finally(() => {
+        setEnviandoCierre(false)
+        setIdCambiandoEstado(null)
+      })
   }
 
   // Cuando el formulario guardó bien. Si quedó guardada sin señal, no se pide la lista (no hay red): ya se ve arriba.
@@ -259,6 +300,14 @@ function PaginaOrdenes({ params, onNavegar }) {
       </section>
 
       {ordenComentarios && <HojaComentarios orden={ordenComentarios} onCerrar={() => setOrdenComentarios(null)} />}
+
+      {cierre && (
+        <PopUpFinalizar key={cierre.orden.id} orden={cierre.orden} estado={cierre.estado}
+          lugar={lugares.find((lugar) => String(lugar.id) === String(cierre.orden.lugarId)) ?? null}
+          otrasAbiertas={otrasAbiertasDelLugar(cierre.orden, ordenesVistas, estados)}
+          enviando={enviandoCierre} error={errorCierre}
+          onConfirmar={confirmarCierre} onCerrar={() => setCierre(null)} />
+      )}
     </>
   )
 }

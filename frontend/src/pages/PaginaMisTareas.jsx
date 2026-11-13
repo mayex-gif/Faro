@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { cambiarEstadoOrden, listarOrdenes } from '../api/ordenesTrabajo'
 import { listarEstados } from '../api/estadosOrden'
 import { listarCuadrillas } from '../api/cuadrillas'
+import { listarPuntos } from '../api/infraestructura'
+import { enviarCierre } from '../api/cierreOrden'
 import TarjetaTarea from '../components/TarjetaTarea'
 import PanelComentarios from '../components/PanelComentarios'
+import PopUpFinalizar from '../components/PopUpFinalizar'
 import AvisoCambiosPendientes from '../components/AvisoCambiosPendientes'
 import Icono from '../components/Icono'
 import { cerradasSinEnviar, tareasDeCuadrilla } from '../utils/tareas'
@@ -14,7 +17,11 @@ import { borrarCopia, guardarCopia, leerCopia } from '../offline/almacen'
 import { crearCopia, fechaDeCopia } from '../offline/datosLocal'
 import { guardarOperacion } from '../offline/cola'
 import { leerCarga, recordarCarga } from '../offline/ultimaCarga'
-import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado } from '../offline/datosCola'
+import { REINTENTAR, aplicarPendientes, clasificarError, crearCambioEstado, crearComentario } from '../offline/datosCola'
+import {
+  FINALIZAR, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre, otrasAbiertasDelLugar, popUpDelCambio,
+  resumenLugares,
+} from '../utils/cierreOrden'
 import { useColaCambios, useCuandoSeEnvian } from '../hooks/useColaCambios'
 import '../estilos-mis-tareas.css'
 import '../offline/estilos-local.css'
@@ -62,6 +69,12 @@ function PaginaMisTareas({ onNavegar }) {
   // La tarea que se acaba de finalizar/cancelar: deja de figurar en la lista, así que se ofrece sumarle fotos acá
   const [recienCerrada, setRecienCerrada] = useState(null)
   const [cuadrillas, setCuadrillas] = useState(() => recordada?.cuadrillas ?? [])
+  // Cómo está cada lugar (Funciona / Fuera de servicio): lo necesita la casilla del pop-up de "Finalizar".
+  // Se guarda solo lo justo (utils/cierreOrden.js → resumenLugares) para que entre en el celular.
+  const [lugares, setLugares] = useState(() => recordada?.lugares ?? [])
+  const [cierre, setCierre] = useState(null) // { orden, estado }: el pop-up de "Finalizar" abierto
+  const [enviandoCierre, setEnviandoCierre] = useState(false)
+  const [errorCierre, setErrorCierre] = useState('')
   const [cargandoCuadrillas, setCargandoCuadrillas] = useState(() => !recordada?.cuadrillas)
   const [errorCuadrillas, setErrorCuadrillas] = useState(null)
   const [cuadrillaElegida, setCuadrillaId] = useState(leerCuadrillaGuardada)
@@ -77,6 +90,10 @@ function PaginaMisTareas({ onNavegar }) {
   const { cola, pendientes, conflictos } = useColaCambios(usuario)
 
   function cargarOrdenes() {
+    // Los lugares no son imprescindibles: sin ellos, el pop-up de "Finalizar" no muestra la casilla del lugar
+    listarPuntos()
+      .then((datos) => setLugares(resumenLugares(datos)))
+      .catch((e) => { if (clasificarError(e) !== REINTENTAR) console.error(e) }) // sin señal: se usan los recordados
     // Sin los estados no se sabe qué se puede hacer con cada tarea: si falla uno de los dos pedidos, es un error de carga.
     return Promise.all([listarOrdenes(), listarEstados()])
       .then(([datosOrdenes, datosEstados]) => {
@@ -133,8 +150,8 @@ function PaginaMisTareas({ onNavegar }) {
   // Se recuerda lo cargado (también después de iniciar o finalizar con señal) para usarlo si se corta la señal
   useEffect(() => {
     if (cargando || cargandoCuadrillas || error || errorCuadrillas) return
-    recordarCarga(usuario.id, { ordenes, estados, cuadrillas, hora: cargadasA })
-  }, [usuario.id, ordenes, estados, cuadrillas, cargadasA, cargando, cargandoCuadrillas, error, errorCuadrillas])
+    recordarCarga(usuario.id, { ordenes, estados, cuadrillas, lugares, hora: cargadasA })
+  }, [usuario.id, ordenes, estados, cuadrillas, lugares, cargadasA, cargando, cargandoCuadrillas, error, errorCuadrillas])
 
   // Cuando un cambio del cuaderno llega al servidor (o queda para revisar), se trae cómo quedaron las tareas
   // y se avisa cuántos llegaron bien (los que quedaron para revisar los muestra el cartel).
@@ -208,15 +225,21 @@ function PaginaMisTareas({ onNavegar }) {
       setErrorAccion('Esta tarea no pertenece a tu cuadrilla.')
       return
     }
-    // Finalizada y Cancelada no tienen vuelta atrás: pedimos confirmación
+    setMensaje('')
+    setErrorAccion('')
+    setRecienCerrada(null)
+    // Finalizar abre el pop-up (lugar funcionando, gasto, comentario y fotos): lo manda confirmarCierre
+    if (popUpDelCambio(estadoNuevo) === FINALIZAR) {
+      setErrorCierre('')
+      setCierre({ orden, estado: estadoNuevo })
+      return
+    }
+    // Cancelada no tiene vuelta atrás: pedimos confirmación
     if (estadoNuevo.cierre) {
       const confirmado = window.confirm(
         `¿Pasar la OT #${orden.id} a "${estadoNuevo.nombre}"? Después ya no se va a poder modificar.`)
       if (!confirmado) return
     }
-    setMensaje('')
-    setErrorAccion('')
-    setRecienCerrada(null)
     if (esCapataz && navigator.onLine === false) {
       guardarSinSenal(orden, estadoNuevo)
       return
@@ -238,6 +261,54 @@ function PaginaMisTareas({ onNavegar }) {
         setErrorAccion(e.message || 'No se pudo guardar el cambio. Intentá nuevamente.')
       })
       .finally(() => setIdGuardando(null))
+  }
+
+  // Sin señal (solo el capataz): el comentario y el cambio de estado van al cuaderno del celular, en ese orden
+  // (el comentario un milisegundo antes: el cartero manda primero lo más viejo). El comentario usa el MISMO número
+  // de comanda que en el pop-up: si con señal ya había llegado, el servidor no lo repite.
+  async function guardarCierreSinSenal(orden, estado, { comentario, numeroComentario }) {
+    const ahora = new Date()
+    try {
+      if (comentario) await guardarOperacion(crearComentario(usuario, orden, comentario, { ahora, numero: numeroComentario }))
+      await guardarOperacion(crearCambioEstado(usuario, orden, estado, { ahora: new Date(ahora.getTime() + 1) }))
+      setMensaje(`No hay señal: la OT #${orden.id} quedó en "${estado.nombre}" en este celular`
+        + `${comentario ? ', con su comentario' : ''}. Se envía sola cuando vuelva la señal.`)
+      setCierre(null)
+    } catch {
+      setErrorCierre('No hay señal y este navegador no permite guardar el cambio. Intentá de nuevo cuando tengas conexión.')
+    }
+  }
+
+  // "Finalizar la OT" en el pop-up: primero el comentario (si hay), después el cambio de estado (api/cierreOrden.js).
+  // Si algo falla, el pop-up queda abierto con lo escrito y el motivo, para reintentar.
+  async function confirmarCierre(datos) {
+    const { orden, estado } = cierre
+    setEnviandoCierre(true)
+    setErrorCierre('')
+    setIdGuardando(orden.id)
+    try {
+      if (esCapataz && navigator.onLine === false) {
+        await guardarCierreSinSenal(orden, estado, datos)
+        return
+      }
+      const { orden: actualizada } = await enviarCierre(orden.id, datos)
+      // reemplazamos solo esa OT: quedó cerrada, así que deja de figurar entre las tareas
+      setOrdenes((anteriores) => anteriores.map((o) => (o.id === actualizada.id ? actualizada : o)))
+      setLugares((anteriores) => lugaresDespuesDelCierre(anteriores, actualizada.lugarId, datos.cambio))
+      setMensaje(mensajeDeCierre(actualizada, datos.comentario))
+      setCierre(null)
+    } catch (e) {
+      // Se cortó la señal en el camino (o el servidor falló): no se pierde, va al cuaderno
+      if (esCapataz && clasificarError(e) === REINTENTAR) {
+        await guardarCierreSinSenal(orden, estado, datos)
+        return
+      }
+      console.error(e)
+      setErrorCierre(mensajeDeErrorCierre(e))
+    } finally {
+      setEnviandoCierre(false)
+      setIdGuardando(null)
+    }
   }
 
   return (
@@ -395,6 +466,14 @@ function PaginaMisTareas({ onNavegar }) {
           )
         )}
       </section>
+
+      {cierre && (
+        <PopUpFinalizar key={cierre.orden.id} orden={cierre.orden} estado={cierre.estado}
+          lugar={lugares.find((lugar) => String(lugar.id) === String(cierre.orden.lugarId)) ?? null}
+          otrasAbiertas={otrasAbiertasDelLugar(cierre.orden, ordenesVistas, estados)}
+          enviando={enviandoCierre} error={errorCierre}
+          onConfirmar={confirmarCierre} onCerrar={() => setCierre(null)} />
+      )}
     </>
   )
 }
