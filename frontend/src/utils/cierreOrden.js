@@ -113,6 +113,27 @@ export function textoDiferencia(textoGasto, montoAproximado) {
   return diferencia < 0 ? `Se gastó ${cuanto} menos de lo declarado` : `Se gastó ${cuanto} más de lo declarado`
 }
 
+// La diferencia con signo, para la tabla de Trabajos: "−$ 5.000", "+$ 3.000" o "$ 0"
+// (el signo menos es el de verdad, "−", que se lee mejor que el guion)
+export function formatearDiferencia(diferencia) {
+  if (diferencia == null || !Number.isFinite(Number(diferencia))) return ''
+  const numero = Number(diferencia)
+  if (numero === 0) return formatearPesos(0)
+  return `${numero < 0 ? '\u2212' : '+'}${formatearPesos(Math.abs(numero))}`
+}
+
+// Lo que se ve en la tabla de Trabajos debajo del estado de una OT finalizada:
+// "Gastado $ 15.000 (−$ 5.000)"; sin monto declarado, "Gastado $ 15.000"; igual a lo declarado, "Gastado $ 20.000 (lo declarado)".
+// Vacío si no se informó cuánto se gastó.
+export function textoGastoDeLaOrden(orden) {
+  if (orden?.gastoReal == null) return ''
+  const gastado = `Gastado ${formatearPesos(orden.gastoReal)}`
+  const diferencia = diferenciaDeGasto(orden.gastoReal, orden.montoAproximado)
+  if (diferencia == null) return gastado
+  if (diferencia === 0) return `${gastado} (lo declarado)`
+  return `${gastado} (${formatearDiferencia(diferencia)})`
+}
+
 // Revisa "¿Cuánto se gastó en total?" como lo escribió la persona. Vacío = no se informó.
 // Devuelve { valor, error }: valor es el número a mandar (o null) y error el mensaje (o null).
 export function validarGasto(texto) {

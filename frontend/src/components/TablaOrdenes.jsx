@@ -1,7 +1,7 @@
 import Icono from './Icono'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '../utils/ordenesTrabajo'
 import { fechaProgramada } from '../utils/recurrencia'
-import { formatearPesos } from '../utils/cierreOrden'
+import { textoGastoDeLaOrden } from '../utils/cierreOrden'
 
 // Props:
 // - ordenes: la lista a mostrar
@@ -95,9 +95,9 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                       {orden.estadoNombre}
                     </span>
                   ) : '—'}
-                  {/* Lo que se gastó de más, declarado al finalizar (pop-up de "Finalizar") */}
-                  {orden.gastoAdicional != null && (
-                    <span className="gasto-orden">Gasto adicional {formatearPesos(orden.gastoAdicional)}</span>
+                  {/* Cuánto se gastó en total (pop-up de "Finalizar") y la diferencia con lo declarado al crearla */}
+                  {orden.gastoReal != null && (
+                    <span className="gasto-orden">{textoGastoDeLaOrden(orden)}</span>
                   )}
                 </td>
                 <td className="fecha-tabla">{formatearFecha(orden.fechaCreacion)}</td>

@@ -4,7 +4,7 @@ import {
   CANCELAR, FINALIZAR, MAX_MOTIVO, detalleDeCierre, PREFIJO_MOTIVO, armarCancelacion, armarFinalizacion, avisoOtrasAbiertas,
   casillaDelLugar, esCancelacion, esFinalizacion, formatearPesos, hayErrores, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre,
   otrasAbiertasDelLugar, popUpDelCambio, resumenLugares, textoMontoDeclarado, validarGasto,
-  gastoInicial, diferenciaDeGasto, textoDiferencia,
+  gastoInicial, diferenciaDeGasto, textoDiferencia, formatearDiferencia, textoGastoDeLaOrden,
 } from '../src/utils/cierreOrden.js'
 import { MAX_TEXTO } from '../src/utils/comentarios.js'
 
@@ -142,6 +142,17 @@ test('debajo del campo se ve la diferencia con lo declarado mientras se escribe'
   assert.equal(textoDiferencia('15000', null), '')
   assert.equal(textoDiferencia('15.000', 20000), '')
   assert.equal(textoDiferencia('-1', 20000), '')
+})
+
+test('la tabla de Trabajos muestra lo gastado y la diferencia con signo', () => {
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 15000, montoAproximado: 20000 }), 'Gastado $\u00a015.000 (\u2212$\u00a05.000)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 23000.5, montoAproximado: 20000 }), 'Gastado $\u00a023.000,50 (+$\u00a03.000,50)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 20000, montoAproximado: 20000 }), 'Gastado $\u00a020.000 (lo declarado)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 4500, montoAproximado: null }), 'Gastado $\u00a04.500')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: null, montoAproximado: 20000 }), '')
+  assert.equal(formatearDiferencia(-5000), '\u2212$\u00a05.000')
+  assert.equal(formatearDiferencia(0), '$\u00a00')
+  assert.equal(formatearDiferencia(null), '')
 })
 
 // ===================== Lo que se manda al finalizar =====================
