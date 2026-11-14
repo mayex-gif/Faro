@@ -64,6 +64,7 @@ class SincronizacionServiceTest {
     private static final EstadoOrden PLANIFICADA = estado(2L, "Planificada", false);
     private static final EstadoOrden EN_CURSO = estado(3L, "En curso", false);
     private static final EstadoOrden FINALIZADA = estado(4L, "Finalizada", true);
+    private static final EstadoOrden CANCELADA = estado(5L, "Cancelada", true);
 
     @Mock
     private OperacionSincronizadaRepository operacionRepository;
@@ -496,12 +497,27 @@ class SincronizacionServiceTest {
     // ===================== Pop-up de "Finalizar" hecho sin señal =====================
 
     @Test
-    void unaFinalizacionSinSenalLlegaConLaCasillaYElGastoAdicional() {
+    void unaFinalizacionSinSenalLlegaConLaCasillaYElGastoReal() {
         CambioEstadoSinSenalDTO aFinalizada = new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
-                new java.math.BigDecimal("2500"));
+                new java.math.BigDecimal("15000"), null);
         when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
         enElServidor(EN_CURSO, 1L);
-        when(ordenService.cambiarEstado(7L, new CambioEstadoRequestDTO(4L, true, new java.math.BigDecimal("2500")), capataz))
+        when(ordenService.cambiarEstado(7L, new CambioEstadoRequestDTO(4L, true, new java.math.BigDecimal("15000")), capataz))
+                .thenReturn(orden(7L, "Finalizada"));
+
+        OrdenTrabajoDTO resultado = service.cambiarEstado(COMANDA, aFinalizada, capataz);
+
+        assertEquals("Finalizada", resultado.estadoNombre());
+    }
+
+    @Test
+    void unaComandaDelPopUpViejoLlegaConElGastoAdicionalAlService() {
+        // Quedó en el cuaderno con el pop-up de #74: el service hace la cuenta (declarado + adicional)
+        CambioEstadoSinSenalDTO aFinalizada = new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
+                null, new java.math.BigDecimal("2500"));
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        enElServidor(EN_CURSO, 1L);
+        when(ordenService.cambiarEstado(7L, new CambioEstadoRequestDTO(4L, true, null, new java.math.BigDecimal("2500")), capataz))
                 .thenReturn(orden(7L, "Finalizada"));
 
         OrdenTrabajoDTO resultado = service.cambiarEstado(COMANDA, aFinalizada, capataz);
@@ -523,29 +539,54 @@ class SincronizacionServiceTest {
 
     @Test
     void siOtraPersonaYaLaFinalizoSeGuardaElGastoQueTodaviaNoTenia() {
-        // El encargado la finalizó con señal (sin gasto); el capataz, sin señal, había declarado $ 2500
+        // El encargado la finalizó con señal (sin gasto); el capataz, sin señal, había informado $ 15.000 en total
         when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
         OrdenTrabajo orden = enElServidor(FINALIZADA, 1L);
         when(ordenService.obtener(7L)).thenReturn(orden(7L, "Finalizada"));
 
         service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
-                new java.math.BigDecimal("2500")), capataz);
+                new java.math.BigDecimal("15000"), null), capataz);
 
-        assertEquals(new java.math.BigDecimal("2500"), orden.getGastoAdicional());
+        assertEquals(new java.math.BigDecimal("15000"), orden.getGastoReal());
         verify(ordenService, never()).cambiarEstado(any(), any(), any()); // no se anota otro evento en la ficha
         verify(operacionRepository, never()).save(any()); // no es un conflicto
+    }
+
+    @Test
+    void siOtraPersonaYaLaFinalizoYLaComandaEsViejaSeGuardaLoDeclaradoMasElAdicional() {
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        OrdenTrabajo orden = enElServidor(FINALIZADA, 1L);
+        orden.setMontoAproximado(new java.math.BigDecimal("20000"));
+        when(ordenService.obtener(7L)).thenReturn(orden(7L, "Finalizada"));
+
+        service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, true,
+                null, new java.math.BigDecimal("2500")), capataz);
+
+        assertEquals(new java.math.BigDecimal("22500"), orden.getGastoReal());
     }
 
     @Test
     void siOtraPersonaYaLaFinalizoConGastoQuedaElPrimero() {
         when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
         OrdenTrabajo orden = enElServidor(FINALIZADA, 1L);
-        orden.setGastoAdicional(new java.math.BigDecimal("900"));
+        orden.setGastoReal(new java.math.BigDecimal("900"));
         when(ordenService.obtener(7L)).thenReturn(orden(7L, "Finalizada"));
 
         service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 4L, 3L, HECHO_EN, null,
-                new java.math.BigDecimal("2500")), capataz);
+                new java.math.BigDecimal("2500"), null), capataz);
 
-        assertEquals(new java.math.BigDecimal("900"), orden.getGastoAdicional()); // gana el primero que llegó
+        assertEquals(new java.math.BigDecimal("900"), orden.getGastoReal()); // gana el primero que llegó
+    }
+
+    @Test
+    void siOtraPersonaLaCanceloNoSeGuardaElGasto() {
+        when(operacionRepository.findById(COMANDA)).thenReturn(Optional.empty());
+        OrdenTrabajo orden = enElServidor(CANCELADA, 1L);
+        when(ordenService.obtener(7L)).thenReturn(orden(7L, "Cancelada"));
+
+        service.cambiarEstado(COMANDA, new CambioEstadoSinSenalDTO(7L, 5L, 3L, HECHO_EN, null,
+                new java.math.BigDecimal("2500"), null), capataz);
+
+        assertNull(orden.getGastoReal());
     }
 }

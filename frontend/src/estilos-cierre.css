@@ -28,6 +28,9 @@
 .popup-cierre .campo label { line-height: 1.4; }
 .popup-cierre .campo .ayuda-campo { font-size: 0.8125rem; }
 .popup-cierre .entrada-con-prefijo { max-width: 260px; }
+/* "Se gastó $ 5.000 menos de lo declarado": la diferencia en vivo, debajo del gasto total (vacía no ocupa lugar) */
+.popup-cierre .popup-diferencia { margin: 6px 0 0; color: var(--texto); font-size: 0.875rem; font-weight: 600; }
+.popup-cierre .popup-diferencia:empty { display: none; }
 .popup-cierre textarea { min-height: 84px; }
 
 /* Fotos elegidas */

@@ -4,6 +4,7 @@ import {
   CANCELAR, FINALIZAR, MAX_MOTIVO, detalleDeCierre, PREFIJO_MOTIVO, armarCancelacion, armarFinalizacion, avisoOtrasAbiertas,
   casillaDelLugar, esCancelacion, esFinalizacion, formatearPesos, hayErrores, lugaresDespuesDelCierre, mensajeDeCierre, mensajeDeErrorCierre,
   otrasAbiertasDelLugar, popUpDelCambio, resumenLugares, textoMontoDeclarado, validarGasto,
+  gastoInicial, diferenciaDeGasto, textoDiferencia, formatearDiferencia, textoGastoDeLaOrden,
 } from '../src/utils/cierreOrden.js'
 import { MAX_TEXTO } from '../src/utils/comentarios.js'
 
@@ -75,7 +76,7 @@ test('si el lugar ya funciona, no se sabe cómo está o es una luminaria a futur
   assert.equal(casillaDelLugar({ ...apagada, instalada: false }, 0).mostrar, false)
 })
 
-// ===================== Monto declarado y gasto adicional =====================
+// ===================== Monto declarado y "¿Cuánto se gastó en total?" =====================
 
 test('el monto declarado se muestra en pesos, o se avisa que no se declaró', () => {
   assert.equal(textoMontoDeclarado(12000), 'Monto aproximado declarado: $\u00a012.000')
@@ -86,13 +87,13 @@ test('el monto declarado se muestra en pesos, o se avisa que no se declaró', ()
   assert.equal(formatearPesos(1234567.891), '$\u00a01.234.567,89')
 })
 
-test('el gasto adicional vacío es válido: no hubo otro gasto', () => {
+test('el gasto total vacío es válido: no se informó', () => {
   assert.deepEqual(validarGasto(''), { valor: null, error: null })
   assert.deepEqual(validarGasto('   '), { valor: null, error: null })
   assert.deepEqual(validarGasto(undefined), { valor: null, error: null })
 })
 
-test('el gasto adicional acepta enteros y hasta 2 decimales, con punto o con coma', () => {
+test('el gasto total acepta enteros y hasta 2 decimales, con punto o con coma', () => {
   assert.deepEqual(validarGasto('8000'), { valor: 8000, error: null })
   assert.deepEqual(validarGasto(' 8000,5 '), { valor: 8000.5, error: null })
   assert.deepEqual(validarGasto('8000.50'), { valor: 8000.5, error: null })
@@ -100,7 +101,7 @@ test('el gasto adicional acepta enteros y hasta 2 decimales, con punto o con com
   assert.deepEqual(validarGasto(1500), { valor: 1500, error: null }) // por si llega como número
 })
 
-test('el gasto adicional rechaza negativos, más de 2 decimales, puntos de miles y letras', () => {
+test('el gasto total rechaza negativos, más de 2 decimales, puntos de miles y letras', () => {
   assert.equal(validarGasto('-1').error, 'El gasto no puede ser negativo.')
   assert.equal(validarGasto('10,555').error, 'Escribí el monto con hasta 2 decimales (ej: 8000 o 8000,50).')
   assert.equal(validarGasto('8.000').error, 'Escribí solo el número, sin puntos de miles (ej: 8000 o 8000,50).')
@@ -108,6 +109,50 @@ test('el gasto adicional rechaza negativos, más de 2 decimales, puntos de miles
   assert.equal(validarGasto('1234567890123').error, 'El monto es demasiado grande.') // 13 enteros
   assert.deepEqual(validarGasto('999999999999,99'), { valor: 999999999999.99, error: null }) // 12 enteros: entra
   assert.equal(validarGasto('-1').valor, null)
+})
+
+test('el gasto total viene cargado con lo declarado (o vacío si no se declaró)', () => {
+  assert.equal(gastoInicial(20000), '20000')
+  assert.equal(gastoInicial(8000.5), '8000,50')       // como lo escribiría la persona
+  assert.equal(gastoInicial('15000.00'), '15000')     // por si llega como texto
+  assert.equal(gastoInicial(0), '0')
+  assert.equal(gastoInicial(null), '')
+  assert.equal(gastoInicial(undefined), '')
+  assert.equal(gastoInicial(''), '')
+  // Lo que viene cargado pasa la validación tal cual
+  assert.deepEqual(validarGasto(gastoInicial(8000.5)), { valor: 8000.5, error: null })
+})
+
+test('la diferencia es gastado − declarado, redondeada a centavos', () => {
+  assert.equal(diferenciaDeGasto(15000, 20000), -5000)
+  assert.equal(diferenciaDeGasto(23000, 20000), 3000)
+  assert.equal(diferenciaDeGasto(20000, 20000), 0)
+  assert.equal(diferenciaDeGasto(0.3, 0.1), 0.2)
+  assert.equal(diferenciaDeGasto(15000, null), null)   // no se declaró: no hay diferencia
+  assert.equal(diferenciaDeGasto(null, 20000), null)   // no se informó el gasto
+})
+
+test('debajo del campo se ve la diferencia con lo declarado mientras se escribe', () => {
+  assert.equal(textoDiferencia('15000', 20000), 'Se gastó $\u00a05.000 menos de lo declarado')
+  assert.equal(textoDiferencia('23000,50', 20000), 'Se gastó $\u00a03.000,50 más de lo declarado')
+  assert.equal(textoDiferencia('20000', 20000), 'Lo mismo que se declaró')
+  assert.equal(textoDiferencia('0', 5000), 'Se gastó $\u00a05.000 menos de lo declarado')
+  // Sin nada que comparar o con lo escrito a medias: no dice nada (el error lo marca la validación al finalizar)
+  assert.equal(textoDiferencia('', 20000), '')
+  assert.equal(textoDiferencia('15000', null), '')
+  assert.equal(textoDiferencia('15.000', 20000), '')
+  assert.equal(textoDiferencia('-1', 20000), '')
+})
+
+test('la tabla de Trabajos muestra lo gastado y la diferencia con signo', () => {
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 15000, montoAproximado: 20000 }), 'Gastado $\u00a015.000 (\u2212$\u00a05.000)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 23000.5, montoAproximado: 20000 }), 'Gastado $\u00a023.000,50 (+$\u00a03.000,50)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 20000, montoAproximado: 20000 }), 'Gastado $\u00a020.000 (lo declarado)')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: 4500, montoAproximado: null }), 'Gastado $\u00a04.500')
+  assert.equal(textoGastoDeLaOrden({ gastoReal: null, montoAproximado: 20000 }), '')
+  assert.equal(formatearDiferencia(-5000), '\u2212$\u00a05.000')
+  assert.equal(formatearDiferencia(0), '$\u00a00')
+  assert.equal(formatearDiferencia(null), '')
 })
 
 // ===================== Lo que se manda al finalizar =====================
@@ -121,14 +166,22 @@ test('finalizar con todo vacío anda: solo viaja el estado nuevo', () => {
   assert.deepEqual(armarFinalizacion(FINALIZADA), { errores: {}, comentario: null, cambio: { estadoId: 4 } })
 })
 
-test('finalizar con la casilla, el gasto, un comentario y fotos', () => {
+test('finalizar con la casilla, el gasto total, un comentario y fotos', () => {
   const foto = { nombre: 'foto.jpg' }
   const armado = armarFinalizacion(FINALIZADA, {
     casilla: marcada, lugarFunciona: true, gasto: '8000,50', comentario: '  Cambiamos la lámpara  ', fotos: [foto],
   })
   assert.deepEqual(armado.errores, {})
-  assert.deepEqual(armado.cambio, { estadoId: 4, lugarFunciona: true, gastoAdicional: 8000.5 })
+  assert.deepEqual(armado.cambio, { estadoId: 4, lugarFunciona: true, gastoReal: 8000.5 })
   assert.deepEqual(armado.comentario, { texto: 'Cambiamos la lámpara', fotos: [foto] })
+})
+
+test('si el gasto quedó como venía cargado, viaja igual (queda confirmado que se gastó lo declarado)', () => {
+  assert.deepEqual(armarFinalizacion(FINALIZADA, { gasto: gastoInicial(20000) }).cambio, { estadoId: 4, gastoReal: 20000 })
+  // Un gasto de 0 también viaja; si lo borran, no viaja (no se informó)
+  assert.deepEqual(armarFinalizacion(FINALIZADA, { gasto: '0' }).cambio, { estadoId: 4, gastoReal: 0 })
+  assert.deepEqual(armarFinalizacion(FINALIZADA, { gasto: '' }).cambio, { estadoId: 4 })
+  assert.equal('gastoAdicional' in armarFinalizacion(FINALIZADA, { gasto: '100' }).cambio, false)
 })
 
 test('si la casilla aparece y la desmarcan, viaja lugarFunciona: false (el lugar queda como está)', () => {
@@ -234,9 +287,11 @@ test('el mensaje de error dice qué parte falló', () => {
 })
 
 test('el cartel del cuaderno dice qué se marcó en el pop-up', () => {
-  assert.equal(detalleDeCierre({ lugarFunciona: true, gastoAdicional: 1500 }), 'El lugar queda funcionando · Gasto adicional $\u00a01.500')
+  assert.equal(detalleDeCierre({ lugarFunciona: true, gastoReal: 15000 }), 'El lugar queda funcionando · Gasto total $\u00a015.000')
   assert.equal(detalleDeCierre({ lugarFunciona: false }), 'El lugar sigue fuera de servicio')
-  assert.equal(detalleDeCierre({ gastoAdicional: 0 }), 'Gasto adicional $\u00a00')
+  assert.equal(detalleDeCierre({ gastoReal: 0 }), 'Gasto total $\u00a00')
+  // Una comanda que quedó en el cuaderno con el pop-up viejo (#74)
+  assert.equal(detalleDeCierre({ gastoAdicional: 1500 }), 'Gasto adicional $\u00a01.500')
   assert.equal(detalleDeCierre({ estadoId: 4 }), '')
 })
 

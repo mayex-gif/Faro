@@ -2,14 +2,17 @@ import { useId, useRef, useState } from 'react'
 import { useDialogo } from '../hooks/useDialogo'
 import { useFotosElegidas } from '../hooks/useFotosElegidas'
 import { nuevoNumero } from '../offline/datosCola'
-import { armarFinalizacion, casillaDelLugar, hayErrores, textoMontoDeclarado } from '../utils/cierreOrden'
+import {
+  armarFinalizacion, casillaDelLugar, gastoInicial, hayErrores, textoDiferencia, textoMontoDeclarado,
+} from '../utils/cierreOrden'
 import { MAX_TEXTO, contadorTexto, fotosQueQuedan } from '../utils/comentarios'
 import Icono from './Icono'
 import '../estilos-cierre.css'
 
 // El pop-up que sale al tocar "Finalizar" en Trabajos o en Mis tareas (encargado y capataz). Todo es opcional:
 // - la casilla "El lugar quedó funcionando" (solo si el lugar está Fuera de servicio),
-// - el gasto adicional (debajo del monto que se declaró al crear la OT),
+// - "¿Cuánto se gastó en total?": viene cargado con el monto que se declaró al crear la OT y se corrige
+//   hacia arriba o hacia abajo; debajo, la diferencia con lo declarado mientras se escribe,
 // - un comentario y fotos de evidencia (se guardan como un comentario de la OT).
 // Las reglas están en utils/cierreOrden.js. Lo que se arma se le pasa a la página (onConfirmar), que lo manda.
 // En la compu es una ventana en el medio; en el celular ocupa toda la pantalla.
@@ -21,7 +24,8 @@ function PopUpFinalizar({ orden, estado, lugar, otrasAbiertas = 0, enviando = fa
   const ventana = useRef(null)
   const [casilla] = useState(() => casillaDelLugar(lugar, otrasAbiertas)) // se decide al abrir
   const [lugarFunciona, setLugarFunciona] = useState(casilla.marcada)
-  const [gasto, setGasto] = useState('')
+  const [gasto, setGasto] = useState(() => gastoInicial(orden.montoAproximado))
+  const diferencia = textoDiferencia(gasto, orden.montoAproximado)
   const [comentario, setComentario] = useState('')
   const [errores, setErrores] = useState({})
   // Número de comanda del comentario: el mismo en cada reintento (si el primero había llegado, no se duplica)
@@ -94,15 +98,17 @@ function PopUpFinalizar({ orden, estado, lugar, otrasAbiertas = 0, enviando = fa
             <h3 id={`${id}-titulo-gasto`}>Gastos</h3>
             <p className="popup-monto">{textoMontoDeclarado(orden.montoAproximado)}</p>
             <div className="campo">
-              <label htmlFor={`${id}-gasto`}>¿Hubo algún otro gasto a tener en cuenta? <span className="opcional">(opcional)</span></label>
+              <label htmlFor={`${id}-gasto`}>¿Cuánto se gastó en total? <span className="opcional">(opcional)</span></label>
               <div className="entrada-con-prefijo">
                 <span aria-hidden="true">$</span>
                 <input id={`${id}-gasto`} type="text" inputMode="decimal" autoComplete="off" placeholder="0"
                   value={gasto} disabled={enviando} aria-invalid={Boolean(errores.gasto)}
-                  aria-describedby={`${id}-ayuda-gasto${errores.gasto ? ` ${id}-error-gasto` : ''}`}
+                  aria-describedby={`${id}-ayuda-gasto ${id}-diferencia${errores.gasto ? ` ${id}-error-gasto` : ''}`}
                   onChange={(evento) => { setGasto(evento.target.value); sinError('gasto') }} />
               </div>
-              <p id={`${id}-ayuda-gasto`} className="ayuda-campo">Por ejemplo: nafta, materiales o repuestos que no estaban previstos.</p>
+              <p id={`${id}-ayuda-gasto`} className="ayuda-campo">Contá también nafta, materiales o repuestos.</p>
+              {/* La diferencia con lo declarado, en vivo (el lector de pantalla la lee cuando cambia) */}
+              <p id={`${id}-diferencia`} className="popup-diferencia" aria-live="polite">{diferencia}</p>
               {errores.gasto && <p id={`${id}-error-gasto`} className="error-campo">{errores.gasto}</p>}
             </div>
           </section>

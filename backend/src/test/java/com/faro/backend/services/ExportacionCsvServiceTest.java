@@ -28,7 +28,7 @@ class ExportacionCsvServiceTest {
         OrdenTrabajo completa = orden(1L, "Sector; norte", TipoTrabajo.PODA, estado, lugar);
         completa.setCuadrilla(cuadrilla);
         completa.setMontoAproximado(new java.math.BigDecimal("12000"));
-        completa.setGastoAdicional(new java.math.BigDecimal("8000.50"));
+        completa.setGastoReal(new java.math.BigDecimal("8000.50"));
         completa.setFechaCreacion(LocalDateTime.of(2026, 10, 2, 8, 5));
         completa.setFechaFinalizacion(LocalDateTime.of(2026, 10, 3, 14, 30));
 
@@ -42,11 +42,29 @@ class ExportacionCsvServiceTest {
         assertThat(csv).contains("\"Equipo\nVerde\"");
         assertThat(csv).contains("\"Plaza\rCentral\"");
         assertThat(csv).contains("02/10/2026 08:05;03/10/2026 14:30");
-        // Monto aproximado (declarado al crear) y gasto adicional (declarado al finalizar), en columnas seguidas
-        assertThat(csv).contains("Monto Aproximado Gastado;Gasto Adicional;Ubicacion de Calle");
-        assertThat(csv).contains("ORDEN_DIRECTA;MEDIA;12000;8000.50;;02/10/2026");
-        // OT sin opcionales: lugar, monto, gasto, ubicación de calle y fechas vacíos (monto y ubicación vienen del #67)
-        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;;;;\r\n");
+        // Lo declarado (al crear), lo gastado en total (al finalizar) y la diferencia, en columnas seguidas:
+        // se declararon $ 12.000 y se gastaron $ 8.000,50 → diferencia −3.999,50
+        assertThat(csv).contains("Monto Aproximado Declarado;Gasto Real;Diferencia;Ubicacion de Calle");
+        assertThat(csv).contains("ORDEN_DIRECTA;MEDIA;12000;8000.50;-3999.50;;02/10/2026");
+        // OT sin opcionales: lugar, monto, gasto, diferencia, ubicación de calle y fechas vacíos
+        assertThat(csv).contains("2;;Sin estado;BACHEO;Sin asignar;;ORDEN_DIRECTA;MEDIA;;;;;;\r\n");
+    }
+
+    @Test
+    void laDiferenciaSeCalculaSoloSiSeInformoElGasto() {
+        OrdenTrabajo masDeLoDeclarado = orden(3L, "Bacheo", TipoTrabajo.BACHEO, null, null);
+        masDeLoDeclarado.setMontoAproximado(new java.math.BigDecimal("20000"));
+        masDeLoDeclarado.setGastoReal(new java.math.BigDecimal("23000"));
+        OrdenTrabajo sinDeclarar = orden(4L, "Poda", TipoTrabajo.PODA, null, null);
+        sinDeclarar.setGastoReal(new java.math.BigDecimal("5000"));
+        OrdenTrabajo sinGastoInformado = orden(5L, "Riego", TipoTrabajo.PODA, null, null);
+        sinGastoInformado.setMontoAproximado(new java.math.BigDecimal("7000"));
+
+        String csv = texto(service.generarCsvOts(List.of(masDeLoDeclarado, sinDeclarar, sinGastoInformado)));
+
+        assertThat(csv).contains("MEDIA;20000;23000;3000;");  // se gastó $ 3.000 más
+        assertThat(csv).contains("MEDIA;;5000;5000;");        // sin monto declarado: cuenta como 0
+        assertThat(csv).contains("MEDIA;7000;;;");            // no se informó el gasto: sin diferencia
     }
 
     @Test

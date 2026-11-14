@@ -27,10 +27,24 @@ public record DashboardGerencialDTO(
 
         // ── Desvíos (solo PLAN_MANTENIMIENTO) ──
         ResumenDesviosGlobalDTO resumenDesvios,
-        BigDecimal montoAproximadoTotal,  // lo declarado al crear las OTs finalizadas del período
-        BigDecimal gastoAdicionalTotal    // lo que se gastó de más (declarado al finalizarlas)
+        // ── Montos de las OTs finalizadas del período ──
+        BigDecimal montoAproximadoTotal,  // lo declarado al crear las OT
+        BigDecimal gastoRealTotal,        // lo que se gastó en total (si una OT no lo tiene, cuenta lo declarado)
+        BigDecimal diferenciaGastoTotal   // gastoRealTotal − montoAproximadoTotal (negativa = se gastó menos)
 ) {
-    /** Compatibilidad con el tablero anterior al gasto adicional. */
+    /** Arma el tablero con lo declarado y lo gastado: la diferencia la calcula FARO. */
+    public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
+                                 long totalOts, long otsCerradas, long otsPendientes,
+                                 List<OtsPorEstadoDTO> otsPorEstado, List<OtsPorTipoTrabajoDTO> otsPorTipoTrabajo,
+                                 List<OtsPorCuadrillaDTO> otsPorCuadrilla, List<OtsPorPeriodoDTO> otsPorPeriodo,
+                                 List<MontoPorPeriodoDTO> montoPorPeriodo, ResumenDesviosGlobalDTO resumenDesvios,
+                                 BigDecimal montoAproximadoTotal, BigDecimal gastoRealTotal) {
+        this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado, otsPorTipoTrabajo,
+                otsPorCuadrilla, otsPorPeriodo, montoPorPeriodo, resumenDesvios, montoAproximadoTotal, gastoRealTotal,
+                gastoRealTotal.subtract(montoAproximadoTotal));
+    }
+
+    /** Compatibilidad con el tablero anterior al gasto real: sin el dato, se gastó lo declarado. */
     public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
                                  long totalOts, long otsCerradas, long otsPendientes,
                                  List<OtsPorEstadoDTO> otsPorEstado, List<OtsPorTipoTrabajoDTO> otsPorTipoTrabajo,
@@ -38,7 +52,8 @@ public record DashboardGerencialDTO(
                                  List<MontoPorPeriodoDTO> montoPorPeriodo, ResumenDesviosGlobalDTO resumenDesvios,
                                  BigDecimal montoAproximadoTotal) {
         this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado, otsPorTipoTrabajo,
-                otsPorCuadrilla, otsPorPeriodo, montoPorPeriodo, resumenDesvios, montoAproximadoTotal, BigDecimal.ZERO);
+                otsPorCuadrilla, otsPorPeriodo, montoPorPeriodo, resumenDesvios, montoAproximadoTotal, montoAproximadoTotal,
+                BigDecimal.ZERO);
     }
 
     public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
@@ -47,6 +62,7 @@ public record DashboardGerencialDTO(
                                  List<OtsPorCuadrillaDTO> otsPorCuadrilla, List<OtsPorPeriodoDTO> otsPorPeriodo,
                                  ResumenDesviosGlobalDTO resumenDesvios) {
         this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado,
-                otsPorTipoTrabajo, otsPorCuadrilla, otsPorPeriodo, List.of(), resumenDesvios, BigDecimal.ZERO, BigDecimal.ZERO);
+                otsPorTipoTrabajo, otsPorCuadrilla, otsPorPeriodo, List.of(), resumenDesvios, BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.ZERO);
     }
 }

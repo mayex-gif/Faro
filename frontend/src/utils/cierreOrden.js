@@ -1,6 +1,6 @@
 // Reglas del pop-up de "Finalizar" y del de "Cancelar" una OT (sin React), para poder probarlas con "npm test".
-// El pop-up de Finalizar junta, todo opcional: la casilla "El lugar quedó funcionando", el gasto adicional,
-// un comentario y fotos de evidencia. Al terminar se mandan DOS pedidos, en este orden:
+// El pop-up de Finalizar junta, todo opcional: la casilla "El lugar quedó funcionando", "¿Cuánto se gastó en total?"
+// (viene cargado con el monto declarado al crear la OT), un comentario y fotos de evidencia. Al terminar se mandan DOS pedidos, en este orden:
 //   1. el comentario con las fotos (si escribió algo o sumó fotos) → como cualquier comentario de la OT
 //   2. el cambio de estado, con la casilla y el gasto → PATCH /api/ordenes-trabajo/{id}/estado
 // Las reglas de los datos son las mismas que controla el backend (CambioEstadoRequestDTO): acá se avisa ANTES de mandar.
@@ -81,7 +81,60 @@ export function textoMontoDeclarado(montoAproximado) {
   return `Monto aproximado declarado: ${formatearPesos(montoAproximado)}`
 }
 
-// Revisa el gasto adicional que escribió la persona. Vacío = no hubo otro gasto.
+// Con qué viene cargado "¿Cuánto se gastó en total?": el monto aproximado que se declaró al crear la OT,
+// escrito como lo escribiría la persona ("20000" o "20000,50"). Sin monto declarado, viene vacío.
+export function gastoInicial(montoAproximado) {
+  if (montoAproximado == null || montoAproximado === '') return ''
+  const numero = Number(montoAproximado)
+  if (!Number.isFinite(numero) || numero < 0) return ''
+  return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
+}
+
+// Cuánto se gastó de más (positivo) o de menos (negativo) respecto de lo declarado. null si falta alguno de los dos.
+// Se redondea a centavos para que 0,1 + 0,2 no dé 0,30000000000000004.
+export function diferenciaDeGasto(gastado, declarado) {
+  if (gastado == null || gastado === '' || declarado == null || declarado === '') return null
+  const g = Number(gastado)
+  const d = Number(declarado)
+  if (!Number.isFinite(g) || !Number.isFinite(d)) return null
+  return Math.round((g - d) * 100) / 100
+}
+
+// Lo que se ve debajo del campo mientras se escribe: "Se gastó $ 5.000 menos de lo declarado",
+// "Se gastó $ 3.000 más de lo declarado" o "Lo mismo que se declaró".
+// Vacío si no se declaró un monto, si el campo está vacío o si lo escrito todavía no es un número válido.
+export function textoDiferencia(textoGasto, montoAproximado) {
+  const { valor, error } = validarGasto(textoGasto)
+  if (error || valor == null) return ''
+  const diferencia = diferenciaDeGasto(valor, montoAproximado)
+  if (diferencia == null) return ''
+  if (diferencia === 0) return 'Lo mismo que se declaró'
+  const cuanto = formatearPesos(Math.abs(diferencia))
+  return diferencia < 0 ? `Se gastó ${cuanto} menos de lo declarado` : `Se gastó ${cuanto} más de lo declarado`
+}
+
+// La diferencia con signo, para la tabla de Trabajos: "−$ 5.000", "+$ 3.000" o "$ 0"
+// (el signo menos es el de verdad, "−", que se lee mejor que el guion)
+export function formatearDiferencia(diferencia) {
+  if (diferencia == null || !Number.isFinite(Number(diferencia))) return ''
+  const numero = Number(diferencia)
+  if (numero === 0) return formatearPesos(0)
+  return `${numero < 0 ? '\u2212' : '+'}${formatearPesos(Math.abs(numero))}`
+}
+
+// Lo que se ve en la tabla de Trabajos debajo del estado de una OT finalizada:
+// "Gastado $ 15.000 (−$ 5.000)"; sin monto declarado, "Gastado $ 15.000"; igual a lo declarado, "Gastado $ 20.000 (lo declarado)".
+// Vacío si no se informó cuánto se gastó.
+export function textoGastoDeLaOrden(orden) {
+  if (orden?.gastoReal == null) return ''
+  const gastado = `Gastado ${formatearPesos(orden.gastoReal)}`
+  const diferencia = diferenciaDeGasto(orden.gastoReal, orden.montoAproximado)
+  if (diferencia == null) return gastado
+  if (diferencia === 0) return `${gastado} (lo declarado)`
+  return `${gastado} (${formatearDiferencia(diferencia)})`
+}
+
+// Revisa "¿Cuánto se gastó en total?" como lo escribió la persona. Vacío = no se informó.
 // Devuelve { valor, error }: valor es el número a mandar (o null) y error el mensaje (o null).
 export function validarGasto(texto) {
   const limpio = String(texto ?? '').trim()
@@ -112,12 +165,12 @@ function comentarioDeEvidencia(comentario = '', fotos = []) {
 
 /**
  * Arma lo que se manda al tocar "Finalizar" en el pop-up. Nada es obligatorio.
- * datos = { casilla (lo de casillaDelLugar), lugarFunciona (si la casilla quedó marcada), gasto (texto),
+ * datos = { casilla (lo de casillaDelLugar), lugarFunciona (si la casilla quedó marcada), gasto (texto: el total),
  *           comentario (texto), fotos (ya achicadas) }
  * Devuelve { errores, comentario, cambio }:
  * - errores: { gasto?, comentario? } (vacío si está todo bien; si hay alguno, no se manda nada)
  * - comentario: { texto, fotos } o null
- * - cambio: { estadoId, lugarFunciona?, gastoAdicional? } (lo que no se completó no viaja: el backend hace lo de siempre)
+ * - cambio: { estadoId, lugarFunciona?, gastoReal? } (lo que no se completó no viaja: el backend hace lo de siempre)
  */
 export function armarFinalizacion(estadoNuevo, { casilla, lugarFunciona = false, gasto = '', comentario = '', fotos = [] } = {}) {
   const errores = {}
@@ -128,7 +181,7 @@ export function armarFinalizacion(estadoNuevo, { casilla, lugarFunciona = false,
 
   const cambio = { estadoId: estadoNuevo.id }
   if (casilla?.mostrar) cambio.lugarFunciona = Boolean(lugarFunciona)
-  if (gastoRevisado.valor != null) cambio.gastoAdicional = gastoRevisado.valor
+  if (gastoRevisado.valor != null) cambio.gastoReal = gastoRevisado.valor
   return { errores, comentario: evidencia.comentario, cambio }
 }
 
@@ -196,11 +249,13 @@ export function mensajeDeErrorCierre(error, { cancelar = false } = {}) {
 }
 
 // Lo que se ve en el cartel del cuaderno debajo de "OT #4: pasar a Finalizada", para saber qué se va a mandar.
-// Ej: "El lugar queda funcionando · Gasto adicional $ 1.500". Vacío si no hay nada de eso.
+// Ej: "El lugar queda funcionando · Gasto total $ 15.000". Vacío si no hay nada de eso.
+// Las comandas que quedaron en el cuaderno con el pop-up viejo traen "gastoAdicional": se muestran como antes.
 export function detalleDeCierre(operacion) {
   const partes = []
   if (operacion?.lugarFunciona === true) partes.push('El lugar queda funcionando')
   if (operacion?.lugarFunciona === false) partes.push('El lugar sigue fuera de servicio')
-  if (typeof operacion?.gastoAdicional === 'number') partes.push(`Gasto adicional ${formatearPesos(operacion.gastoAdicional)}`)
+  if (typeof operacion?.gastoReal === 'number') partes.push(`Gasto total ${formatearPesos(operacion.gastoReal)}`)
+  else if (typeof operacion?.gastoAdicional === 'number') partes.push(`Gasto adicional ${formatearPesos(operacion.gastoAdicional)}`)
   return partes.join(' · ')
 }

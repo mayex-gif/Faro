@@ -17,7 +17,7 @@ function queSeHizo(operacion) {
     const conFotos = fotos === 0 ? '' : fotos === 1 ? ' con 1 foto' : ` con ${fotos} fotos`
     return `OT #${operacion.ordenId}: comentario${conFotos}`
   }
-  // Si es un cierre hecho con el pop-up de "Finalizar", también lo que se marcó (lugar funcionando, gasto adicional)
+  // Si es un cierre hecho con el pop-up de "Finalizar", también lo que se marcó (lugar funcionando, gasto total)
   const detalle = detalleDeCierre(operacion)
   return `OT #${operacion.ordenId}: pasar a ${operacion.estadoNombre}${detalle ? ` (${detalle})` : ''}`
 }

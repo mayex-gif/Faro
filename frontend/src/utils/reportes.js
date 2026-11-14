@@ -155,32 +155,43 @@ export function tableroVacio(tablero) {
 
 // ===================== Montos gastados =====================
 
-// Colores de la serie de montos (validados juntos: se distinguen también con daltonismo)
-export const COLORES_MONTOS = { declarado: '#1F8A6A', adicional: '#C2571A' }
+// Colores de la serie de montos (validados juntos con el validador de la skill dataviz: se distinguen también
+// con daltonismo). Verde = lo declarado al crear la OT; naranja = lo que se gastó en total al finalizarla.
+export const COLORES_MONTOS = { declarado: '#1F8A6A', gastado: '#C2571A' }
 
 // Pesos sin centavos para el tablero: "$ 37.000"
 export function pesos(valor) {
   return Number(valor ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 }
 
-// Lo gastado en las OT finalizadas del período: lo declarado al crearlas (monto aproximado)
-// más lo que se gastó de más (gasto adicional, declarado al finalizarlas).
-export function resumenGastos(tablero) {
-  const declarado = Number(tablero?.montoAproximadoTotal ?? 0) || 0
-  const adicional = Number(tablero?.gastoAdicionalTotal ?? 0) || 0
-  return { declarado, adicional, total: declarado + adicional }
+// La diferencia con signo para el tablero: "−$ 5.000", "+$ 3.000" o "$ 0" (el signo menos de verdad: "−")
+export function pesosConSigno(valor) {
+  const numero = Number(valor ?? 0) || 0
+  if (Math.round(numero) === 0) return pesos(0)
+  return `${numero < 0 ? '\u2212' : '+'}${pesos(Math.abs(numero))}`
 }
 
-// La serie del gráfico de montos, con las etiquetas de cada período y el total de cada uno
+// Lo gastado en las OT finalizadas del período (lo calcula el backend):
+// - declarado: lo que se declaró al crearlas (monto aproximado)
+// - gastado: lo que se gastó en total al finalizarlas (si una OT no lo informó, cuenta lo declarado)
+// - diferencia: gastado − declarado (negativa = se gastó menos)
+export function resumenGastos(tablero) {
+  const declarado = Number(tablero?.montoAproximadoTotal ?? 0) || 0
+  const gastado = Number(tablero?.gastoRealTotal ?? declarado) || 0
+  const diferencia = Number(tablero?.diferenciaGastoTotal ?? gastado - declarado) || 0
+  return { declarado, gastado, diferencia }
+}
+
+// La serie del gráfico de montos: lo declarado, lo gastado y la diferencia de cada período, con sus etiquetas
 export function serieMontos(serie = []) {
   return serie.map((punto) => {
     const declarado = Number(punto.montoAproximado ?? 0) || 0
-    const adicional = Number(punto.gastoAdicional ?? 0) || 0
+    const gastado = Number(punto.gastoReal ?? declarado) || 0
     return {
       periodo: punto.periodo,
       declarado,
-      adicional,
-      total: declarado + adicional,
+      gastado,
+      diferencia: Number(punto.diferencia ?? gastado - declarado) || 0,
       etiqueta: etiquetaPeriodo(punto.periodo),
       etiquetaLarga: etiquetaPeriodo(punto.periodo, { larga: true }),
     }

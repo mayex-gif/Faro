@@ -142,4 +142,4 @@ Cada orden de trabajo tiene un muro de comentarios con fotos (evidencia del trab
 
 ## Finalizar y cancelar una OT
 
-Al finalizar una OT sale un pop-up (todo opcional, también sin señal): si el lugar quedó funcionando, si hubo algún otro gasto (gasto adicional), un comentario y fotos de evidencia. Al cancelar, un motivo opcional. El gasto adicional se ve en Trabajos, en la ficha del lugar, en Reportes y en el CSV. Ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md).
+Al finalizar una OT sale un pop-up (todo opcional, también sin señal): si el lugar quedó funcionando, cuánto se gastó en total (viene cargado con el monto declarado y se corrige hacia arriba o hacia abajo), un comentario y fotos de evidencia. Al cancelar, un motivo opcional. Lo gastado y la diferencia con lo declarado se ven en Trabajos, en la ficha del lugar, en Reportes y en el CSV. Ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md).

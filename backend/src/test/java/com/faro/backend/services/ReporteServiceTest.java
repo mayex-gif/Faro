@@ -377,44 +377,62 @@ class ReporteServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Montos: lo declarado al crear y el gasto adicional declarado al finalizar
+    // Montos: lo declarado al crear, lo gastado en total al finalizar y la diferencia
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void elTableroTraeElMontoDeclaradoYElGastoAdicionalTotal() {
+    void elTableroTraeLoDeclaradoLoGastadoYLaDiferencia() {
         stubearRepositorioVacio();
-        when(reporteRepository.sumarMontosAproximados(any(), any())).thenReturn(new BigDecimal("37000"));
-        when(reporteRepository.sumarGastosAdicionales(any(), any())).thenReturn(new BigDecimal("9500.50"));
+        when(reporteRepository.sumarMontosAproximados(any(), any())).thenReturn(new BigDecimal("20000"));
+        when(reporteRepository.sumarGastosReales(any(), any())).thenReturn(new BigDecimal("15000"));
 
         DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
 
-        assertThat(dto.montoAproximadoTotal()).isEqualByComparingTo("37000");
-        assertThat(dto.gastoAdicionalTotal()).isEqualByComparingTo("9500.50");
+        // "Declarado $ 20.000 · Gastado $ 15.000 · Diferencia −$ 5.000"
+        assertThat(dto.montoAproximadoTotal()).isEqualByComparingTo("20000");
+        assertThat(dto.gastoRealTotal()).isEqualByComparingTo("15000");
+        assertThat(dto.diferenciaGastoTotal()).isEqualByComparingTo("-5000");
     }
 
     @Test
-    void sinGastosAdicionalesElTotalEsCero() {
+    void siSeGastoMasLaDiferenciaEsPositiva() {
+        stubearRepositorioVacio();
+        when(reporteRepository.sumarMontosAproximados(any(), any())).thenReturn(new BigDecimal("20000"));
+        when(reporteRepository.sumarGastosReales(any(), any())).thenReturn(new BigDecimal("23000.50"));
+
+        DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
+
+        assertThat(dto.diferenciaGastoTotal()).isEqualByComparingTo("3000.50");
+    }
+
+    @Test
+    void sinOtsFinalizadasTodoEsCero() {
         stubearRepositorioVacio();
 
         DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
 
-        assertThat(dto.gastoAdicionalTotal()).isEqualByComparingTo("0");
+        assertThat(dto.montoAproximadoTotal()).isEqualByComparingTo("0");
+        assertThat(dto.gastoRealTotal()).isEqualByComparingTo("0");
+        assertThat(dto.diferenciaGastoTotal()).isEqualByComparingTo("0");
     }
 
     @Test
-    void laSerieDeMontosTraeElGastoAdicionalDeCadaPeriodo() {
+    void laSerieDeMontosTraeLoDeclaradoLoGastadoYLaDiferenciaDeCadaPeriodo() {
         stubearRepositorioVacio();
         List<Object[]> filas = new ArrayList<>();
-        filas.add(new Object[]{"2026-10", new BigDecimal("25000"), new BigDecimal("8000.50")});
-        filas.add(new Object[]{"2026-11", 12000L, null}); // otro tipo de número; sin gasto adicional
+        filas.add(new Object[]{"2026-10", new BigDecimal("25000"), new BigDecimal("20000.50")});
+        filas.add(new Object[]{"2026-11", 12000L, 15000L}); // otro tipo de número (según la base)
+        filas.add(new Object[]{"2026-12", null, null});      // sin montos: cero
         when(reporteRepository.sumarMontosPorMes(any(), any())).thenReturn(filas);
 
         DashboardGerencialDTO dto = service.construirDashboard(null, null, GranularidadPeriodo.MES);
 
-        assertThat(dto.montoPorPeriodo()).hasSize(2);
+        assertThat(dto.montoPorPeriodo()).hasSize(3);
         assertThat(dto.montoPorPeriodo().get(0).montoAproximado()).isEqualByComparingTo("25000");
-        assertThat(dto.montoPorPeriodo().get(0).gastoAdicional()).isEqualByComparingTo("8000.50");
-        assertThat(dto.montoPorPeriodo().get(1).montoAproximado()).isEqualByComparingTo("12000");
-        assertThat(dto.montoPorPeriodo().get(1).gastoAdicional()).isEqualByComparingTo("0");
+        assertThat(dto.montoPorPeriodo().get(0).gastoReal()).isEqualByComparingTo("20000.50");
+        assertThat(dto.montoPorPeriodo().get(0).diferencia()).isEqualByComparingTo("-4999.50");
+        assertThat(dto.montoPorPeriodo().get(1).gastoReal()).isEqualByComparingTo("15000");
+        assertThat(dto.montoPorPeriodo().get(1).diferencia()).isEqualByComparingTo("3000");
+        assertThat(dto.montoPorPeriodo().get(2).diferencia()).isEqualByComparingTo("0");
     }
 }

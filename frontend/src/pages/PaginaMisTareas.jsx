@@ -256,7 +256,7 @@ function PaginaMisTareas({ onNavegar }) {
   // Sin señal (solo el capataz): el comentario y el cambio de estado van al cuaderno del celular, en ese orden
   // (el comentario un milisegundo antes: el cartero manda primero lo más viejo). El comentario usa el MISMO número
   // de comanda que en el pop-up: si con señal ya había llegado, el servidor no lo repite.
-  // Al finalizar, el cambio lleva la casilla "El lugar quedó funcionando" y el gasto adicional (datos.cambio).
+  // Al finalizar, el cambio lleva la casilla "El lugar quedó funcionando" y el gasto total (datos.cambio).
   // Al cancelar, el comentario es el motivo.
   async function guardarCierreSinSenal(orden, estado, { cambio, comentario, numeroComentario }) {
     const ahora = new Date()

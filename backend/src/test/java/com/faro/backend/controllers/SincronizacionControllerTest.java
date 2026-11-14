@@ -29,6 +29,7 @@ import static com.faro.backend.config.security.UsuariosDePrueba.capataz;
 import static com.faro.backend.config.security.UsuariosDePrueba.encargado;
 import static com.faro.backend.config.security.UsuariosDePrueba.mesaDeEntradas;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -221,21 +222,36 @@ class SincronizacionControllerTest {
 
         mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"ordenId\": 7, \"estadoId\": 4, \"estadoAnteriorId\": 3, "
-                                + "\"lugarFunciona\": false, \"gastoAdicional\": 1500 }"))
+                                + "\"lugarFunciona\": false, \"gastoReal\": 1500 }"))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<CambioEstadoSinSenalDTO> pedido = ArgumentCaptor.forClass(CambioEstadoSinSenalDTO.class);
         verify(service).cambiarEstado(eq(UUID.fromString(COMANDA)), pedido.capture(), any(Usuario.class));
         assertEquals(Boolean.FALSE, pedido.getValue().lugarFunciona());
+        assertEquals(new java.math.BigDecimal("1500"), pedido.getValue().gastoReal());
+    }
+
+    @Test
+    void unaComandaDelPopUpViejoSigueTrayendoElGastoAdicional() throws Exception {
+        // Quedó en el cuaderno de un celular con el pop-up de #74
+        when(service.cambiarEstado(eq(UUID.fromString(COMANDA)), any(), any(Usuario.class))).thenReturn(orden(7L, "Finalizada"));
+
+        mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"ordenId\": 7, \"estadoId\": 4, \"gastoAdicional\": 1500 }"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<CambioEstadoSinSenalDTO> pedido = ArgumentCaptor.forClass(CambioEstadoSinSenalDTO.class);
+        verify(service).cambiarEstado(eq(UUID.fromString(COMANDA)), pedido.capture(), any(Usuario.class));
+        assertNull(pedido.getValue().gastoReal());
         assertEquals(new java.math.BigDecimal("1500"), pedido.getValue().gastoAdicional());
     }
 
     @Test
     void unCambioSinSenalConGastoNegativoResponde400() throws Exception {
         mockMvc.perform(put(URL_ESTADO).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"ordenId\": 7, \"estadoId\": 4, \"gastoAdicional\": -5 }"))
+                        .content("{ \"ordenId\": 7, \"estadoId\": 4, \"gastoReal\": -5 }"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errores.gastoAdicional").value("El gasto adicional no puede ser negativo"));
+                .andExpect(jsonPath("$.errores.gastoReal").value("El gasto total no puede ser negativo"));
 
         verifyNoInteractions(service);
     }

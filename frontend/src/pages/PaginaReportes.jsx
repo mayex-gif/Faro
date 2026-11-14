@@ -8,7 +8,7 @@ import GraficoDona from '../components/GraficoDona'
 import Icono from '../components/Icono'
 import {
   PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
-  resumenGastos, tableroVacio,
+  pesosConSigno, resumenGastos, tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
 
@@ -162,10 +162,10 @@ function PaginaReportes() {
                   <span className="indicador-detalle">pendientes, asignadas o en curso</span>
                 </li>
                 <li>
-                  {/* Lo declarado al crear las OT finalizadas + lo que se gastó de más (declarado al finalizarlas) */}
+                  {/* Lo que se gastó en total al finalizar las OT; debajo, lo declarado al crearlas y la diferencia */}
                   <span className="indicador-nombre">Total gastado en OTs finalizadas</span>
-                  <strong className="indicador-valor">{pesos(gastos.total)}</strong>
-                  <span className="indicador-detalle">{pesos(gastos.declarado)} declarados + {pesos(gastos.adicional)} adicionales</span>
+                  <strong className="indicador-valor">{pesos(gastos.gastado)}</strong>
+                  <span className="indicador-detalle">Declarado {pesos(gastos.declarado)} · Diferencia {pesosConSigno(gastos.diferencia)}</span>
                 </li>
                 <li>
                   <span className="indicador-nombre">Plan cumplido a tiempo</span>
