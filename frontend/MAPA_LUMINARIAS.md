@@ -86,7 +86,25 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 5. Más → Luminarias e Infraestructura: cada una muestra lo suyo.
 6. Probar "¿Dónde falta luz?", las casillas de "Mostrar en el mapa" y "Modo noche" (también en el celular, con F12 → modo dispositivo).
 
-## 7. Pendiente / para charlar
+## 7. Nuevas y viejas (rama `feature/luminarias-nuevas-viejas`, 14/11/2026)
+
+- **Backend:** campo `nueva` (Boolean) en el lugar: `true` = Nueva, `false` = Vieja, `null` = "Sin marcar". Solo en
+  luminarias instaladas (en calles, lugares o luminarias a futuro → 400 con el campo `nueva`). Si el pedido no lo trae,
+  no se toca. Una a futuro que se marca como instalada queda **Nueva** sola. Es Boolean y no enum (trampa del `CHECK`).
+- **Al agregar** (mapa y Más → Luminarias): "¿Es nueva o vieja?" es obligatoria y no viene ninguna elegida
+  (`components/ElegirAntiguedad.jsx`). Las a futuro no la preguntan.
+- **Cambiarla:** en la ficha (encargado) "Marcar como vieja/nueva" (o "Es nueva"/"Es vieja" si está sin marcar), y al editar en
+  Más → Luminarias. Siempre con pop-up de confirmación (`components/PopUpConfirmarAntiguedad.jsx`). Queda en la Auditoría.
+- **En el mapa:** cambia solo la lámpara: blanca-azulada = nueva (LED), naranja = vieja (sodio), amarilla = sin marcar.
+  En apagadas y en arreglo, la lámpara apagada con tinte (gris azulado / marrón). Modo noche: halo del mismo color.
+  Clases `poste-nueva` / `poste-vieja` (`utils/poste.js` → `htmlPoste(estado, antiguedad)`), degradés en `DefinicionesPoste.jsx`.
+- **Filtro:** segunda fila de "Mostrar en el mapa": Nuevas / Viejas (+ Sin marcar si hay). Se combina con la de estados
+  (`utils/luminarias.js` → `filtrarPorAntiguedad`; las a futuro nunca se sacan con esta fila).
+- **Reportes:** sección "Luminarias: nuevas y viejas" (ver `REPORTES_INDICADORES.md`, punto 8).
+- Reglas del front: `utils/luminarias.js` (`ANTIGUEDADES`, `antiguedadLuminaria`, `faltaAntiguedad`, `pedidoParaAntiguedad`…).
+  Tests: `tests/antiguedadLuminarias.test.js`, `tests/poste.test.js`, `tests/reportesLuminarias.test.js`.
+
+## 8. Pendiente / para charlar
 
 - **Rol Intendente**: hoy no existe. Agregarlo implica destrabar la regla `usuarios_rol_check` de Postgres (Hibernate creó
   un `CHECK` con los 3 roles actuales y `ddl-auto=update` no lo actualiza) en cada base: local, Neon y la de la demo.

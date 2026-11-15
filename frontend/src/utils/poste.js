@@ -1,10 +1,13 @@
 // El dibujo del poste de luz de la pestaña Luminarias (poste de metal, brazo, lámpara y base en el piso).
-// Es HTML FIJO: no lleva ningún dato escrito por usuarios (nombres, descripciones), solo la clase del estado.
+// Es HTML FIJO: no lleva ningún dato escrito por usuarios (nombres, descripciones), solo las clases del estado
+// y de si es nueva o vieja (que cambia el color de la lámpara: blanca tipo LED o naranja de sodio).
 // Por eso se puede usar en el ícono de Leaflet (L.divIcon) y en la leyenda sin riesgo.
 // Los degradés (metal, carcasa, luz y cono) se definen una sola vez en la página: components/DefinicionesPoste.jsx.
 import { ESTADOS_LUMINARIA } from './luminarias.js'
 
 const CLAVES = new Set(ESTADOS_LUMINARIA.map((estado) => estado.clave))
+// Solo estas dos cambian el dibujo; "Sin marcar" (o nada) queda con la lámpara amarilla de siempre.
+const LAMPARAS = new Set(['nueva', 'vieja'])
 
 // Tamaño del dibujo en el mapa y punto que "apoya" en la ubicación (el medio de la base, abajo).
 export const TAMANO_POSTE = [26, 45]
@@ -31,8 +34,10 @@ const INSIGNIAS = {
     + '</svg></span>',
 }
 
-// El HTML del poste para un estado ('funciona', 'apagada', 'arreglo', 'falta'). Un estado desconocido se dibuja como 'funciona'.
-export function htmlPoste(estado) {
+// El HTML del poste para un estado ('funciona', 'apagada', 'arreglo', 'falta') y, si se sabe, si es 'nueva' o 'vieja'.
+// Un estado desconocido se dibuja como 'funciona'; cualquier otra antigüedad, con la lámpara de siempre.
+export function htmlPoste(estado, antiguedad = null) {
   const clave = CLAVES.has(estado) ? estado : 'funciona'
-  return `<span class="poste poste-${clave}">${SVG_POSTE}${INSIGNIAS[clave] ?? ''}</span>`
+  const lampara = LAMPARAS.has(antiguedad) ? ` poste-${antiguedad}` : ''
+  return `<span class="poste poste-${clave}${lampara}">${SVG_POSTE}${INSIGNIAS[clave] ?? ''}</span>`
 }

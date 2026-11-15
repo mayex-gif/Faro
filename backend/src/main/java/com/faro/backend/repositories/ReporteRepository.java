@@ -57,6 +57,68 @@ public interface ReporteRepository extends JpaRepository<OrdenTrabajo, Long> {
     @Query(value = "SELECT TO_CHAR(DATE_TRUNC('month', ot.fecha_finalizacion), 'YYYY-MM'), COALESCE(SUM(ot.monto_aproximado), 0), COALESCE(SUM(COALESCE(ot.gasto_real, ot.monto_aproximado)), 0) FROM ordenes_trabajo ot JOIN estados_orden e ON e.id = ot.estado_id WHERE ot.fecha_finalizacion BETWEEN :desde AND :hasta AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada' GROUP BY 1 ORDER BY 1", nativeQuery = true)
     List<Object[]> sumarMontosPorMes(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Luminarias: nuevas vs viejas (sección "Luminarias" de Reportes)
+    // La primera columna de cada fila es el campo "nueva" del lugar: true (nueva), false (vieja) o null (sin marcar).
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Cómo están HOY las luminarias instaladas de cada grupo (no depende del período).
+     * Retorna Object[] con: [nueva (Boolean o null), cantidad, funcionan, apagadas, enArreglo].
+     * Igual que el mapa: no funciona + alguna OT abierta (estado sin cierre) = en arreglo; sin OT abierta = apagada.
+     * Un lugar sin el dato "funciona" (null) cuenta como que funciona.
+     */
+    @Query(value = """
+        SELECT p.nueva,
+               COUNT(*),
+               COUNT(*) FILTER (WHERE COALESCE(p.estado_operativo, true)),
+               COUNT(*) FILTER (WHERE p.estado_operativo = false AND NOT EXISTS (
+                   SELECT 1 FROM ordenes_trabajo o LEFT JOIN estados_orden e ON e.id = o.estado_id
+                   WHERE o.punto_infraestructura_id = p.id AND COALESCE(e.cierre, false) = false)),
+               COUNT(*) FILTER (WHERE p.estado_operativo = false AND EXISTS (
+                   SELECT 1 FROM ordenes_trabajo o LEFT JOIN estados_orden e ON e.id = o.estado_id
+                   WHERE o.punto_infraestructura_id = p.id AND COALESCE(e.cierre, false) = false))
+        FROM puntos_infraestructura p
+        WHERE p.tipo = 'LUMINARIA' AND COALESCE(p.instalada, true)
+        GROUP BY p.nueva
+    """, nativeQuery = true)
+    List<Object[]> contarLuminariasPorGrupo();
+
+    /** Luminarias a futuro (planificadas, todavía no se pusieron): no son ni nuevas ni viejas. */
+    @Query("SELECT COUNT(p) FROM PuntoInfraestructura p WHERE p.tipo = 'LUMINARIA' AND p.instalada = false")
+    long contarLuminariasAFuturo();
+
+    /**
+     * OT creadas en el período sobre luminarias, por grupo ("fallas": cuántas veces hubo que ir).
+     * Retorna Object[] con: [nueva (Boolean o null), cantidad].
+     */
+    @Query(value = """
+        SELECT p.nueva, COUNT(*)
+        FROM ordenes_trabajo o
+        JOIN puntos_infraestructura p ON p.id = o.punto_infraestructura_id
+        WHERE p.tipo = 'LUMINARIA' AND o.fecha_creacion BETWEEN :desde AND :hasta
+        GROUP BY p.nueva
+    """, nativeQuery = true)
+    List<Object[]> contarOtsDeLuminariasPorGrupo(@Param("desde") LocalDateTime desde,
+                                                 @Param("hasta") LocalDateTime hasta);
+
+    /**
+     * Lo gastado en las OT de luminarias finalizadas en el período, por grupo
+     * (misma regla que sumarGastosReales: sin gasto real cuenta lo declarado; las canceladas no cuentan).
+     * Retorna Object[] con: [nueva (Boolean o null), gasto].
+     */
+    @Query(value = """
+        SELECT p.nueva, COALESCE(SUM(COALESCE(o.gasto_real, o.monto_aproximado)), 0)
+        FROM ordenes_trabajo o
+        JOIN estados_orden e ON e.id = o.estado_id
+        JOIN puntos_infraestructura p ON p.id = o.punto_infraestructura_id
+        WHERE p.tipo = 'LUMINARIA' AND o.fecha_finalizacion BETWEEN :desde AND :hasta
+          AND e.cierre = true AND LOWER(e.nombre) <> 'cancelada'
+        GROUP BY p.nueva
+    """, nativeQuery = true)
+    List<Object[]> sumarGastosDeLuminariasPorGrupo(@Param("desde") LocalDateTime desde,
+                                                   @Param("hasta") LocalDateTime hasta);
+
     /** OTs en estados de cierre (finalizadas, canceladas) creadas en el período. */
     @Query("""
         SELECT COUNT(o)

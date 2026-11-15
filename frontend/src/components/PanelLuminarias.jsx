@@ -5,8 +5,9 @@ import { subtituloLugar } from '../utils/listaLugares'
 import Icono from './Icono'
 
 // El poste chiquito de la leyenda y de los conteos. htmlPoste es HTML fijo (no lleva datos de usuarios).
-export function MuestraPoste({ estado }) {
-  return <span className="muestra-poste" aria-hidden="true" dangerouslySetInnerHTML={{ __html: htmlPoste(estado) }} />
+// antiguedad ('nueva' | 'vieja'), si viene, cambia el color de la lámpara como en el mapa.
+export function MuestraPoste({ estado, antiguedad = null }) {
+  return <span className="muestra-poste" aria-hidden="true" dangerouslySetInnerHTML={{ __html: htmlPoste(estado, antiguedad) }} />
 }
 
 // "OT #12 · En curso · Cuadrilla Alumbrado": la OT abierta más urgente de una luminaria en arreglo
@@ -32,14 +33,14 @@ function ListaDelEstado({ id, titulo, ayuda, items, vacio, lugarActivoId, onEleg
         <p className="luminarias-vacio">{vacio}</p>
       ) : (
         <ul className="filas-lugares">
-          {items.map(({ resumen, estado }) => {
+          {items.map(({ resumen, estado, antiguedad }) => {
             const { lugar } = resumen
             const activo = lugar.id === lugarActivoId
             return (
               <li key={lugar.id}>
                 <button type="button" id={`fila-luminaria-${lugar.id}`} aria-pressed={activo}
                   className={activo ? 'fila-lugar fila-lugar-activa' : 'fila-lugar'} onClick={() => onElegir(lugar.id)}>
-                  <MuestraPoste estado={estado} />
+                  <MuestraPoste estado={estado} antiguedad={antiguedad} />
                   <span className="fila-lugar-texto">
                     <strong>{lugar.nombre}</strong>
                     <span>{subtituloLugar(resumen)}</span>

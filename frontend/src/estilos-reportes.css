@@ -103,3 +103,31 @@
   .segmentos-opciones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .segmento span { justify-content: center; width: 100%; padding: 0 6px; text-align: center; }
 }
+
+/* ---- Luminarias: nuevas y viejas (components/SeccionLuminarias.jsx) ---- */
+.luminarias-reporte-cuerpo { padding: 22px 28px 24px; }
+.indicadores.indicadores-luminarias { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 22px; }
+.indicadores-luminarias .indicador-nombre { display: inline-flex; align-items: center; gap: 7px; }
+.luminarias-reporte-columnas { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px 36px; align-items: start; }
+.luminarias-reporte-columnas h3 { margin: 0 0 12px; font-size: 0.9375rem; }
+.seccion-luminarias .grafico-ranking { padding: 0; }
+.seccion-luminarias .tabla-contenedor { border: 1px solid var(--borde); border-radius: 8px; }
+.tabla.tabla-luminarias-periodo { min-width: 0; }
+.tabla-luminarias-periodo th[scope="row"] { white-space: nowrap; }
+.tabla-luminarias-periodo th[scope="row"] .muestra-serie { margin-right: 7px; vertical-align: -1px; }
+.tabla-luminarias-periodo td { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-luminarias-periodo thead th:not(:first-child) { text-align: right; }
+.tabla-detalle { color: var(--texto-secundario); font-weight: 400; }
+.nota-luminarias { margin: 12px 0 0; color: var(--texto-secundario); font-size: 0.75rem; line-height: 1.45; }
+@media (max-width: 1050px) {
+  .luminarias-reporte-columnas { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .luminarias-reporte-cuerpo { padding: 18px 20px 20px; }
+}
+/* Celular: la tabla del período entra entera (encabezados en dos renglones, menos relleno, sin "(5)") */
+@media (max-width: 540px) {
+  .tabla.tabla-luminarias-periodo th, .tabla.tabla-luminarias-periodo td { padding: 10px 8px; font-size: 0.8125rem; }
+  .tabla-luminarias-periodo thead th { white-space: normal; line-height: 1.25; }
+  .tabla-luminarias-periodo .tabla-detalle { display: none; }
+}

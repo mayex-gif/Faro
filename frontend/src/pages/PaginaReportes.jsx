@@ -5,10 +5,11 @@ import GraficoEvolucion from '../components/GraficoEvolucion'
 import GraficoMontos from '../components/GraficoMontos'
 import GraficoBarras from '../components/GraficoBarras'
 import GraficoDona from '../components/GraficoDona'
+import SeccionLuminarias from '../components/SeccionLuminarias'
 import Icono from '../components/Icono'
 import {
   PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
-  pesosConSigno, resumenGastos, tableroVacio,
+  pesosConSigno, resumenGastos, resumenLuminarias, tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
 
@@ -243,6 +244,11 @@ function PaginaReportes() {
             </div>
           </>
         ))}
+
+        {/* Luminarias nuevas y viejas: se muestra aunque no haya órdenes en el período (cuántas hay y cómo están es de hoy) */}
+        {!cargando && !error && !problemaPeriodo && resumenLuminarias(tablero) && (
+          <SeccionLuminarias resumen={resumenLuminarias(tablero)} />
+        )}
       </div>
     </>
   )

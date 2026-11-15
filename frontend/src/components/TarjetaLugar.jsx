@@ -1,6 +1,7 @@
 import Icono from './Icono'
 import { textoTrabajos } from '../utils/listaLugares'
 import { etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { antiguedadLuminaria, datosDeAntiguedad } from '../utils/luminarias'
 import { useSesion } from '../context/useSesion'
 import { puedeCrearOrden } from '../utils/permisos'
 
@@ -14,13 +15,16 @@ import { puedeCrearOrden } from '../utils/permisos'
 function TarjetaLugar({ resumen, onCerrar, onVerFicha, onNuevaOrden }) {
   const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
+  const antiguedad = datosDeAntiguedad(antiguedadLuminaria(lugar)) // solo luminarias puestas: "Nueva", "Vieja" o "Sin marcar"
 
   return (
     <section className="tarjeta-lugar" aria-labelledby="titulo-tarjeta-lugar">
       <span className="tarjeta-lugar-agarre" aria-hidden="true" />
       <div className="tarjeta-lugar-cabecera">
         <div className="panel-lugar-datos">
-          <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)} · {textoEstadoOperativo(lugar.estadoOperativo)}</p>
+          <p className="panel-lugar-tipo">
+            {etiquetaTipoLugar(lugar.tipo)} · {textoEstadoOperativo(lugar.estadoOperativo)}{antiguedad && ` · ${antiguedad.nombre}`}
+          </p>
           <h2 id="titulo-tarjeta-lugar">{lugar.nombre}</h2>
           <p className="tarjeta-lugar-trabajos">{textoTrabajos(ordenes)}</p>
           {/* En una calle: dónde es el trabajo más urgente (el tramo, "entre calles" o la altura) */}

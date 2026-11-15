@@ -30,8 +30,22 @@ public record DashboardGerencialDTO(
         // ── Montos de las OTs finalizadas del período ──
         BigDecimal montoAproximadoTotal,  // lo declarado al crear las OT
         BigDecimal gastoRealTotal,        // lo que se gastó en total (si una OT no lo tiene, cuenta lo declarado)
-        BigDecimal diferenciaGastoTotal   // gastoRealTotal − montoAproximadoTotal (negativa = se gastó menos)
+        BigDecimal diferenciaGastoTotal,  // gastoRealTotal − montoAproximadoTotal (negativa = se gastó menos)
+        // ── Luminarias: nuevas vs viejas (cuántas, cómo están, OT y gasto del período) ──
+        ResumenLuminariasDTO luminarias
 ) {
+    /** Compatibilidad con el tablero anterior a la sección de luminarias: va vacía. */
+    public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
+                                 long totalOts, long otsCerradas, long otsPendientes,
+                                 List<OtsPorEstadoDTO> otsPorEstado, List<OtsPorTipoTrabajoDTO> otsPorTipoTrabajo,
+                                 List<OtsPorCuadrillaDTO> otsPorCuadrilla, List<OtsPorPeriodoDTO> otsPorPeriodo,
+                                 List<MontoPorPeriodoDTO> montoPorPeriodo, ResumenDesviosGlobalDTO resumenDesvios,
+                                 BigDecimal montoAproximadoTotal, BigDecimal gastoRealTotal, BigDecimal diferenciaGastoTotal) {
+        this(desde, hasta, granularidad, totalOts, otsCerradas, otsPendientes, otsPorEstado, otsPorTipoTrabajo,
+                otsPorCuadrilla, otsPorPeriodo, montoPorPeriodo, resumenDesvios, montoAproximadoTotal, gastoRealTotal,
+                diferenciaGastoTotal, ResumenLuminariasDTO.vacio());
+    }
+
     /** Arma el tablero con lo declarado y lo gastado: la diferencia la calcula FARO. */
     public DashboardGerencialDTO(LocalDate desde, LocalDate hasta, GranularidadPeriodo granularidad,
                                  long totalOts, long otsCerradas, long otsPendientes,

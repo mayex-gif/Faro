@@ -3,7 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { COLOR_SIN_TRABAJOS, colorDelResumen, radioDelResumen } from '../utils/mapa'
 import { contarTrabajos } from '../utils/listaLugares'
-import { datosDelEstado, puntoDe } from '../utils/luminarias'
+import { datosDeAntiguedad, datosDelEstado, puntoDe } from '../utils/luminarias'
 import { ANCLA_POSTE, TAMANO_POSTE, htmlPoste } from '../utils/poste'
 import { CENTRO_PUEBLO, ZONA_PUEBLO } from '../utils/zona'
 import DefinicionesPoste from './DefinicionesPoste'
@@ -28,9 +28,11 @@ function crearEtiqueta(resumen) {
 }
 
 // Pestaña Luminarias: "Luminaria San Martín · Apagada"
-function crearEtiquetaLuminaria(resumen, estado) {
+// "Luminaria Colón y Mitre · Funciona · Vieja" (las a futuro no llevan nueva/vieja)
+function crearEtiquetaLuminaria(resumen, estado, antiguedad) {
   const texto = document.createElement('span')
-  texto.textContent = `${resumen.lugar.nombre} · ${datosDelEstado(estado)?.nombre ?? ''}`
+  texto.textContent = [resumen.lugar.nombre, datosDelEstado(estado)?.nombre, datosDeAntiguedad(antiguedad)?.nombre]
+    .filter(Boolean).join(' · ')
   return texto
 }
 
@@ -151,7 +153,8 @@ const ETIQUETAS_MAPA = {
 // Pestaña Luminarias:
 // - pestana: 'todo' (todos los lugares, como siempre), 'luminarias' (solo las luminarias, dibujadas como postes)
 //   o 'calles' (la página pasa en "resumenes" solo las calles; se dibujan igual que en "Todo el pueblo")
-// - luminarias: [{ resumen, estado }] (utils/luminarias.js → luminariasConEstado), ya sin los estados ocultos
+// - luminarias: [{ resumen, estado, antiguedad }] (utils/luminarias.js → luminariasConEstado), ya sin las ocultas
+//   (estados y nuevas/viejas destildados en la leyenda)
 // - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
 // Marcar el tramo de una OT en una calle (ver components/ElegirTramo.jsx):
@@ -246,13 +249,13 @@ function MapaLugares({
     // Pestaña Luminarias: un poste por luminaria. El dibujo dice el estado (base de color, lámpara prendida
     // o apagada, insignia); el nombre va en la etiqueta, que se arma con textContent.
     if (pestana === 'luminarias') {
-      for (const { resumen, estado } of luminarias) {
+      for (const { resumen, estado, antiguedad } of luminarias) {
         const punto = puntoDe(resumen.lugar.ubicacion)
         if (!punto) continue
-        const icono = L.divIcon({ className: 'marca-poste', html: htmlPoste(estado), iconSize: TAMANO_POSTE, iconAnchor: ANCLA_POSTE })
+        const icono = L.divIcon({ className: 'marca-poste', html: htmlPoste(estado, antiguedad), iconSize: TAMANO_POSTE, iconAnchor: ANCLA_POSTE })
         // keyboard: false, como el resto de las marcas: la lista de la izquierda tiene los mismos datos
         const capa = L.marker([punto[1], punto[0]], { icon: icono, keyboard: false, riseOnHover: true })
-        capa.bindTooltip(crearEtiquetaLuminaria(resumen, estado), { direction: 'top', offset: [0, -40], className: 'etiqueta-lugar' })
+        capa.bindTooltip(crearEtiquetaLuminaria(resumen, estado, antiguedad), { direction: 'top', offset: [0, -40], className: 'etiqueta-lugar' })
         capa.on('click', () => {
           if (!avisos.current.ocupado) avisos.current.onSeleccionar?.(resumen.lugar.id)
         })
