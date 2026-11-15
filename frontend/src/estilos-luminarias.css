@@ -27,6 +27,16 @@
 .poste-falta .poste-base { fill: #FFFFFF; stroke: #4F5D65; stroke-dasharray: 2 1.6; }
 .poste-falta .poste-cuerpo { opacity: 0.4; }
 .poste-falta .poste-foco { fill: #C9D1D5; }
+/* Nueva o vieja: cambia solo la lámpara (y su cono de luz). La base sigue siendo el color del estado.
+   Apagadas y en arreglo: la lámpara apagada, pero con un tinte (gris azulado = nueva, marrón = vieja).
+   La lámpara se agranda un poco (rx/ry) para que la diferencia se vea en el tamaño real del mapa. */
+.poste-nueva .poste-foco, .poste-vieja .poste-foco { rx: 5.2px; ry: 2.5px; stroke-width: 0.7; }
+.poste-nueva .poste-foco { fill: url(#faro-poste-luz-nueva); stroke: #3E6FB0; }
+.poste-nueva .poste-cono { fill: url(#faro-poste-cono-nueva); }
+.poste-vieja .poste-foco { fill: url(#faro-poste-luz-vieja); stroke: #9A4A0C; }
+.poste-vieja .poste-cono { fill: url(#faro-poste-cono-vieja); }
+.poste-apagada.poste-nueva .poste-foco, .poste-arreglo.poste-nueva .poste-foco { fill: #6F8296; }
+.poste-apagada.poste-vieja .poste-foco, .poste-arreglo.poste-vieja .poste-foco { fill: #7A4A20; }
 .poste-insignia { position: absolute; top: -4px; left: -6px; display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1.5px solid #FFFFFF; border-radius: 50%; box-shadow: 0 1px 2px rgb(0 0 0 / 35%); }
 .poste-insignia svg { width: 70%; height: 70%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .poste-insignia-apagada { background: #B3261E; }
@@ -130,6 +140,8 @@
 .mapa-noche .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(0.95) saturate(0.5); }
 /* Las que funcionan tiran luz: un halo cálido alrededor de la base del poste, y el cono más fuerte */
 .mapa-noche .poste-funciona::before { content: ""; position: absolute; top: 72%; left: 50%; z-index: -1; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 206 110 / 55%) 0%, rgb(255 190 80 / 22%) 38%, rgb(255 180 60 / 0%) 70%); transform: translate(-50%, -50%); pointer-events: none; }
+.mapa-noche .poste-funciona.poste-nueva::before { background: radial-gradient(circle, rgb(225 238 255 / 60%) 0%, rgb(205 225 255 / 24%) 38%, rgb(205 225 255 / 0%) 70%); }
+.mapa-noche .poste-funciona.poste-vieja::before { background: radial-gradient(circle, rgb(255 160 70 / 58%) 0%, rgb(250 140 50 / 24%) 38%, rgb(250 140 50 / 0%) 70%); }
 .mapa-noche .poste-funciona .poste-cono { opacity: 1; }
 .mapa-noche .poste-apagada .poste-base { stroke: #FF8A80; }
 /* El marco de "¿Dónde falta luz?" se tiene que ver sobre el fondo oscuro */
@@ -174,3 +186,6 @@
 @media (max-width: 360px) {
   .opciones-antiguedad, .botones-antiguedad { grid-template-columns: 1fr; }
 }
+
+/* Segundo grupo de casillas de la leyenda: Nuevas / Viejas (/ Sin marcar) */
+.leyenda-luminarias .leyenda-filtro + .leyenda-filtro { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--borde); }

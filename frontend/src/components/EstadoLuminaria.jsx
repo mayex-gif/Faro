@@ -81,7 +81,7 @@ function EstadoLuminaria({ resumen, puedeCambiar, puedeCrearOT, onCambiado, onNu
     <section className="panel-lugar-seccion estado-luminaria" aria-labelledby="titulo-estado-luminaria">
       <h3 id="titulo-estado-luminaria">Estado de la luminaria</h3>
       <p className="estado-luminaria-actual">
-        <MuestraPoste estado={estado} />
+        <MuestraPoste estado={estado} antiguedad={antiguedad} />
         <span><strong>{datos.nombre}</strong> · {datos.descripcion}</span>
       </p>
 

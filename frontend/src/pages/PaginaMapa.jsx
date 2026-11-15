@@ -23,7 +23,10 @@ import {
 } from '../utils/mapa'
 import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
-import { ESTADOS_LUMINARIA, esLuminaria, filtrarPorEstado, luminariasConEstado, resumirLuminarias } from '../utils/luminarias'
+import {
+  ESTADOS_LUMINARIA, antiguedadesParaFiltro, contarPorAntiguedad, esLuminaria, filtrarPorAntiguedad, filtrarPorEstado,
+  luminariasConEstado, resumirLuminarias,
+} from '../utils/luminarias'
 import { tiposParaAgregar } from '../utils/lugares'
 import { callesDe, conTramos, esCalle, resumirCalles, sinCallesVacias } from '../utils/calles'
 import { crucesDe, cortar, puntoEn, tocarTramo } from '../utils/tramos'
@@ -69,6 +72,7 @@ function PaginaMapa({ params, onNavegar }) {
   // o 'calles' (solo las calles y sus trabajos)
   const [pestana, setPestana] = useState(PESTANAS.includes(params?.pestana) ? params.pestana : 'todo')
   const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
+  const [ocultasPorAntiguedad, setOcultasPorAntiguedad] = useState({}) // nuevas/viejas destildadas: { vieja: true }
   const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
   const [noche, setNoche] = useState(leerModoNoche) // modo noche (pestaña Luminarias)
   const [soloVisibles, setSoloVisibles] = useState(false)
@@ -254,7 +258,10 @@ function PaginaMapa({ params, onNavegar }) {
   // Pestaña Luminarias: el estado sale de TODAS las OT abiertas (los filtros de la otra pestaña no cuentan).
   const luminarias = useMemo(() => luminariasConEstado(resumenesCompletos), [resumenesCompletos])
   const totalesLuminarias = useMemo(() => resumirLuminarias(luminarias), [luminarias])
-  const luminariasEnMapa = useMemo(() => filtrarPorEstado(luminarias, ocultos), [luminarias, ocultos])
+  const cuentaPorAntiguedad = useMemo(() => contarPorAntiguedad(luminarias), [luminarias])
+  // Las dos filas de casillas se combinan: ej. solo las apagadas que son viejas
+  const luminariasEnMapa = useMemo(() => filtrarPorAntiguedad(filtrarPorEstado(luminarias, ocultos), ocultasPorAntiguedad),
+    [luminarias, ocultos, ocultasPorAntiguedad])
   // Pestaña Calles: igual que Luminarias, con todas las OT abiertas (los filtros de "Todo el pueblo" no cuentan).
   const calles = useMemo(() => callesDe(resumenesCompletos), [resumenesCompletos])
   const totalesCalles = useMemo(() => resumirCalles(calles), [calles])
@@ -525,6 +532,22 @@ function PaginaMapa({ params, onNavegar }) {
                         onChange={(evento) => setOcultos((anteriores) => ({ ...anteriores, [estado.clave]: !evento.target.checked }))} />
                       <MuestraPoste estado={estado.clave} />
                       {estado.nombre} <span className="leyenda-cantidad">({totalesLuminarias.cuenta[estado.clave]})</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+            {/* Segunda fila: nuevas (lámpara blanca) y viejas (lámpara naranja). "Sin marcar" solo si hay alguna. */}
+            <fieldset className="leyenda-filtro">
+              <legend className="solo-lectores">Nuevas o viejas</legend>
+              <ul className="leyenda">
+                {antiguedadesParaFiltro(cuentaPorAntiguedad).map((antiguedad) => (
+                  <li key={antiguedad.clave}>
+                    <label className="leyenda-casilla" title={antiguedad.descripcion}>
+                      <input type="checkbox" checked={!ocultasPorAntiguedad[antiguedad.clave]}
+                        onChange={(evento) => setOcultasPorAntiguedad((anteriores) => ({ ...anteriores, [antiguedad.clave]: !evento.target.checked }))} />
+                      <MuestraPoste estado="funciona" antiguedad={antiguedad.clave} />
+                      {antiguedad.plural} <span className="leyenda-cantidad">({cuentaPorAntiguedad[antiguedad.clave]})</span>
                     </label>
                   </li>
                 ))}

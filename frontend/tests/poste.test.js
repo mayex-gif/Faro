@@ -24,3 +24,12 @@ test('el dibujo usa los degradés de la página y el ancla cae dentro del dibujo
   assert.match(htmlPoste('funciona'), /url\(#faro-poste-metal\)/)
   assert.ok(ANCLA_POSTE[0] <= TAMANO_POSTE[0] && ANCLA_POSTE[1] <= TAMANO_POSTE[1])
 })
+
+test('nueva y vieja cambian solo la lámpara (clase extra); "Sin marcar" o nada queda como siempre', () => {
+  assert.match(htmlPoste('funciona', 'nueva'), /class="poste poste-funciona poste-nueva"/)
+  assert.match(htmlPoste('apagada', 'vieja'), /class="poste poste-apagada poste-vieja"/)
+  assert.match(htmlPoste('apagada', 'vieja'), /poste-insignia-apagada/) // la insignia del estado sigue
+  assert.equal(htmlPoste('funciona', 'sinMarcar'), htmlPoste('funciona'))
+  assert.equal(htmlPoste('funciona', null), htmlPoste('funciona'))
+  assert.equal(htmlPoste('funciona', '"><script>'), htmlPoste('funciona')) // nunca se mete texto ajeno
+})

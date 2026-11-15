@@ -38,11 +38,12 @@ export function estadoLuminaria(resumen) {
   return 'funciona'
 }
 
-// Solo las luminarias, cada una con su estado: [{ resumen, estado }]
+// Solo las luminarias, cada una con su estado y si es nueva o vieja: [{ resumen, estado, antiguedad }]
+// (antiguedad: 'nueva' | 'vieja' | 'sinMarcar', o null en las a futuro; ver "Nueva o vieja" más abajo)
 export function luminariasConEstado(resumenes) {
   return resumenes
     .filter((resumen) => esLuminaria(resumen.lugar))
-    .map((resumen) => ({ resumen, estado: estadoLuminaria(resumen) }))
+    .map((resumen) => ({ resumen, estado: estadoLuminaria(resumen), antiguedad: antiguedadLuminaria(resumen.lugar) }))
 }
 
 function contarPorEstado(items) {
@@ -236,4 +237,25 @@ export function preguntaCambioAntiguedad(lugar, nueva) {
 // mensaje; si no llegó (sin señal, el navegador dice "Failed to fetch" en inglés) se muestra uno propio en castellano.
 export function textoDelError(error, porDefecto = 'No se pudo guardar el cambio: revisá la conexión e intentá de nuevo.') {
   return error?.estado && error.message ? error.message : porDefecto
+}
+
+// ---------- Mostrar / ocultar nuevas y viejas en el mapa ----------
+// Segundo grupo de casillas de "Mostrar en el mapa". Se combina con el de los estados (filtrarPorEstado).
+// Las luminarias a futuro no son ni nuevas ni viejas: este filtro nunca las saca (las saca la casilla "A futuro").
+
+// Cuántas instaladas hay de cada una: { nueva, vieja, sinMarcar }
+export function contarPorAntiguedad(items) {
+  const cuenta = { nueva: 0, vieja: 0, sinMarcar: 0 }
+  for (const item of items) if (item.antiguedad) cuenta[item.antiguedad] += 1
+  return cuenta
+}
+
+// Las casillas que se muestran: Nuevas y Viejas siempre; "Sin marcar" solo si hay alguna.
+export function antiguedadesParaFiltro(cuenta) {
+  return ANTIGUEDADES.filter((antiguedad) => antiguedad.clave !== 'sinMarcar' || cuenta.sinMarcar > 0)
+}
+
+// ocultos: { vieja: true, ... } = las que se destildaron. Los conteos no cambian.
+export function filtrarPorAntiguedad(items, ocultos = {}) {
+  return items.filter((item) => !item.antiguedad || !ocultos[item.antiguedad])
 }
