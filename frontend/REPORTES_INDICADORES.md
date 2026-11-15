@@ -32,6 +32,18 @@ El backend valida lo mismo y responde 403 para cualquier otro rol.
    (`/reportes/desvios/csv`) para el mismo período. Se piden con el token (un enlace común no lo manda)
    y se guardan con el nombre que propone el backend.
 
+8. **Luminarias: nuevas y viejas** (`components/SeccionLuminarias.jsx`, reglas en `utils/reportes.js` →
+   `resumenLuminarias`, `otsPorLuminaria`): sale de `luminarias` del tablero (`total`, `aFuturo` y `grupos` siempre en orden
+   `nueva`, `vieja`, `sinMarcar`, cada uno con `cantidad`, `funcionan`, `apagadas`, `enArreglo` —de hoy— y `otsDelPeriodo`,
+   `gastoDelPeriodo` —del período—).
+   - Números de arriba: nuevas, viejas (y "Sin marcar" si hay) y a futuro, con su % del total.
+   - "Cómo están hoy": barras agrupadas Funcionan / Apagadas / En arreglo, **nuevas en azul `#2A78D6` y viejas en naranja
+     `#EB6834`** (validados con el validador de la skill `dataviz` sobre blanco: pasan las 6 pruebas), con leyenda, globo
+     y "Ver los datos en una tabla". "Sin marcar" no va en el gráfico (va en la tabla).
+   - "En el período": tabla con órdenes creadas, **órdenes por luminaria** (para comparar grupos de distinto tamaño) y gastado.
+   - Se muestra aunque no haya órdenes en el período (cuántas hay y cómo están es de hoy); si no hay luminarias, no aparece.
+   - Una orden cuenta en el grupo que la luminaria tiene **hoy** (si se cambia de vieja a nueva, sus órdenes pasan con ella).
+
 Estados: cargando, error con "Volver a cargar", período sin datos y fechas inválidas (desde > hasta).
 
 ## Archivos

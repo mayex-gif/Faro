@@ -69,13 +69,16 @@ export const AYUDA = {
         items: [
           'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: cada luminaria es un poste y se ve cómo está. "Todo el pueblo" vuelve al mapa de siempre.',
           'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
+          'La lámpara dice si es nueva o vieja: blanca (tipo LED) = nueva, naranja = vieja. Amarilla = todavía no se marcó. El color de abajo sigue siendo el del estado.',
           'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
           '"¿Dónde falta luz?" ordena las zonas del pueblo de la que tiene menos luminarias andando a la que tiene más. Tocá una para marcarla en el mapa y ver solo sus luminarias.',
-          'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Los números no cambian.',
+          'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Abajo, "Nuevas" y "Viejas" hacen lo mismo con la antigüedad, y se combinan: por ejemplo, solo las apagadas que son viejas. Los números no cambian.',
           '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
           { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Al finalizar esa OT, dejá marcado "El lugar quedó funcionando" y la luminaria vuelve a "Funciona".', roles: [ENCARGADO] },
-          { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando.', roles: [ENCARGADO] },
-          { texto: '"Agregar luminaria": tocá el mapa donde está y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
+          { texto: 'En la ficha, "Nueva o vieja" dice cuál es. "Marcar como vieja" (o "como nueva") la cambia: te pide confirmación por si te equivocaste, y se puede volver a cambiar.', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando (y marcada como nueva).', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está, completá el nombre, elegí si es nueva o vieja (es obligatorio) y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está, completá el nombre, elegí si es nueva o vieja (es obligatorio) y registrala.', roles: [ENCARGADO] },
         ],
       },
       {
@@ -164,7 +167,8 @@ export const AYUDA = {
         items: [
           'Completá el nombre (por ejemplo "Luminaria San Martín y Belgrano") y los datos técnicos (potencia, altura del poste, tipo de lámpara…).',
           'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448). También podés agregarla tocando el mapa: Mapa → pestaña Luminarias → "Agregar luminaria".',
-          'Si está apagada, desmarcá "Funciona correctamente". Después tocá "Registrar luminaria".',
+          'Elegí si es nueva (por ejemplo, LED) o vieja: es obligatorio. Si está apagada, desmarcá "Funciona correctamente". Después tocá "Registrar luminaria".',
+          'Para cambiar una luminaria de nueva a vieja (o al revés), tocá "Editar", elegí la otra opción y "Guardar cambios": te pide confirmación. También se puede desde su ficha en el mapa.',
           'Si es una luminaria que el intendente planificó y todavía no se puso, marcá "Luminaria a futuro". No se le pueden asignar órdenes de trabajo hasta que se instale: ahí, en el Mapa → pestaña Luminarias, tocala y elegí "Marcar como instalada".',
         ],
       },
@@ -353,6 +357,7 @@ export const AYUDA = {
           '"Monto gastado": en cada día, semana o mes, dos barras una al lado de la otra: lo declarado al crear las órdenes finalizadas (verde) y lo que se gastó en total al finalizarlas (naranja). Si una orden se finalizó sin decir cuánto se gastó, cuenta lo declarado.',
           '"Por estado", "Por tipo de trabajo" y "Por cuadrilla": cómo se reparten las órdenes del período.',
           '"Mantenimiento programado": cómo vienen las órdenes del plan con fecha en el período.',
+          '"Luminarias: nuevas y viejas": cuántas hay de cada una (y a futuro), cómo están hoy (funcionan, apagadas, en arreglo; nuevas en azul y viejas en naranja) y, en el período, cuántas órdenes tuvo cada grupo, cuántas por luminaria y cuánto se gastó.',
         ],
       },
       {
