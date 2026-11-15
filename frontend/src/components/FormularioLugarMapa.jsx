@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react'
 import { crearPunto } from '../api/infraestructura'
+import ElegirAntiguedad from './ElegirAntiguedad'
 import Icono from './Icono'
 import { TIPOS_LUGAR, estadoParaGuardar } from '../utils/lugares'
+import { FALTA_ANTIGUEDAD, antiguedadParaGuardar, faltaAntiguedad, preguntaAntiguedad } from '../utils/luminarias'
 import { puntoEnLaZona, redondearCoordenada } from '../utils/zona'
 
 // Los textos del formulario según el tipo elegido desde cualquier pestaña.
@@ -18,12 +20,15 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
   tipos, permitirAFuturo = false, aFuturo = false }) {
   // El tipo lo maneja la página (prop "tipo"), porque también cambia cómo se dibuja en el mapa.
   const [datos, setDatos] = useState(() => ({
-    nombre: '', datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo,
+    // nueva: null = todavía no se eligió (la pregunta "¿Es nueva o vieja?" es obligatoria para las luminarias puestas)
+    nombre: '', datosTecnicos: '', estadoOperativo: !aFuturo, instalada: !aFuturo, nueva: null,
   }))
   const textos = TEXTOS[tipo] ?? TEXTOS.general
   const sinInstalar = tipo === 'LUMINARIA' && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const [errorAntiguedad, setErrorAntiguedad] = useState('')
+  const conAntiguedad = preguntaAntiguedad({ tipo, instalada: datos.instalada })
   const campoNombre = useRef(null)
   const dentro = puntos.length > 0 && puntos.every((punto) => puntoEnLaZona(punto.latitud, punto.longitud))
   const geometriaLista = Boolean(geometria) && dentro
@@ -50,14 +55,22 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
       campoNombre.current?.focus()
       return
     }
+    if (faltaAntiguedad({ ...datos, tipo })) {
+      setError('')
+      setErrorAntiguedad(FALTA_ANTIGUEDAD)
+      document.getElementById('lugar-nuevo-nueva')?.focus()
+      return
+    }
     setGuardando(true)
     setError('')
+    setErrorAntiguedad('')
     try {
       const creado = await crearPunto({
         nombre: datos.nombre.trim(),
         tipo,
         datosTecnicos: datos.datosTecnicos.trim(),
         ...estadoParaGuardar({ ...datos, tipo }),
+        ...antiguedadParaGuardar({ ...datos, tipo }),
         ubicacion: geometria,
       })
       onGuardado(creado)
@@ -126,6 +139,8 @@ function FormularioLugarMapa({ tipo, puntos, geometria, onCambiarTipo, onDeshace
               onChange={(evento) => setDatos((anterior) => ({ ...anterior, instalada: !evento.target.checked, estadoOperativo: evento.target.checked }))} />
             <span><strong>Luminaria a futuro</strong><span>Planificada por el intendente, todavía no se puso. No lleva OT hasta marcarla como instalada.</span></span>
           </label>}
+          {conAntiguedad && <ElegirAntiguedad id="lugar-nuevo" valor={datos.nueva} error={errorAntiguedad}
+            onCambiar={(nueva) => { setDatos((anterior) => ({ ...anterior, nueva })); setErrorAntiguedad('') }} />}
           <label className="campo-check" htmlFor="lugar-nuevo-funciona">
             <input id="lugar-nuevo-funciona" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
               checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} />

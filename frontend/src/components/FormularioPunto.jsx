@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { actualizarPunto, crearPunto } from '../api/infraestructura'
+import ElegirAntiguedad from './ElegirAntiguedad'
 import Icono from './Icono'
+import PopUpConfirmarAntiguedad from './PopUpConfirmarAntiguedad'
 import { TIPOS_LUGAR, estadoParaGuardar, tiposDeCategoria } from '../utils/lugares'
+import { FALTA_ANTIGUEDAD, antiguedadParaGuardar, faltaAntiguedad, preguntaAntiguedad } from '../utils/luminarias'
 
 const COORDENADA_VACIA = { latitud: '', longitud: '' }
 const FORMULARIO_VACIO = {
-  nombre: '', tipo: 'LUMINARIA', datosTecnicos: '', estadoOperativo: true, instalada: true,
+  nombre: '', tipo: 'LUMINARIA', datosTecnicos: '', estadoOperativo: true, instalada: true, nueva: null,
   coordenadas: [COORDENADA_VACIA],
 }
 
@@ -43,6 +46,7 @@ function puntoAFormulario(punto) {
     datosTecnicos: punto.datosTecnicos ?? '',
     estadoOperativo: punto.estadoOperativo ?? true,
     instalada: punto.instalada !== false,
+    nueva: typeof punto.nueva === 'boolean' ? punto.nueva : null, // null = "Sin marcar"
     coordenadas: coordenadasIniciales(punto.tipo, punto.ubicacion),
   }
 }
@@ -68,6 +72,14 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
   const sinInstalar = esLuminaria && !datos.instalada
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
+  const [errorAntiguedad, setErrorAntiguedad] = useState('')
+  // El pedido listo para mandar mientras se confirma el cambio de nueva ↔ vieja (pop-up); null = no hay pop-up
+  const [porConfirmar, setPorConfirmar] = useState(null)
+  const conAntiguedad = preguntaAntiguedad(datos)
+  const marcaAntes = editando && typeof puntoEditando.nueva === 'boolean' ? puntoEditando.nueva : null
+  // Al agregar es obligatoria. Al editar una que ya estaba marcada no se puede "desmarcar", así que tampoco falta nunca;
+  // si estaba "Sin marcar" (o era a futuro) se puede dejar así (al instalarla, el backend la deja como nueva).
+  const antiguedadObligatoria = !editando
 
   useEffect(() => {
     if (editando) document.getElementById('nombre').focus({ preventScroll: true })
@@ -117,15 +129,33 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
       setError(problema)
       return
     }
+    if (antiguedadObligatoria && faltaAntiguedad(datos)) {
+      setError(null)
+      setErrorAntiguedad(FALTA_ANTIGUEDAD)
+      document.getElementById('punto-nueva')?.focus()
+      return
+    }
+    setErrorAntiguedad('')
 
     const punto = {
       nombre: datos.nombre.trim(),
       tipo: datos.tipo,
       datosTecnicos: datos.datosTecnicos.trim(),
       ...estadoParaGuardar(datos),
+      ...antiguedadParaGuardar(datos),
       ubicacion: geometriaDesde(datos),
     }
 
+    // Pasar de nueva a vieja (o al revés) pide confirmación, por si se equivocaron
+    if (conAntiguedad && marcaAntes !== null && datos.nueva !== marcaAntes) {
+      setPorConfirmar(punto)
+      return
+    }
+    await guardar(punto)
+  }
+
+  async function guardar(punto) {
+    setPorConfirmar(null)
     setGuardando(true)
     setError(null)
     try {
@@ -209,6 +239,11 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
                 <span><strong>Luminaria a futuro</strong><span id="ayuda-instalada">Planificada por el intendente, todavía no se puso. No se le pueden asignar OT hasta marcarla como instalada.</span></span>
               </label>
             )}
+            {conAntiguedad && <ElegirAntiguedad id="punto" valor={datos.nueva} error={errorAntiguedad} obligatorio={antiguedadObligatoria}
+              ayuda={editando && marcaAntes === null ? (puntoEditando.instalada === false
+                ? 'Si no elegís, al guardarla como instalada queda como nueva.'
+                : 'Está sin marcar: elegí una opción si sabés cuál es.') : ''}
+              onCambiar={(nueva) => { setDatos((anterior) => ({ ...anterior, nueva })); setErrorAntiguedad('') }} />}
             <label className="campo-check" htmlFor="estado-operativo">
               <input id="estado-operativo" name="estadoOperativo" type="checkbox" disabled={sinInstalar}
                 checked={datos.estadoOperativo && !sinInstalar} onChange={cambiar} aria-describedby="ayuda-estado" />
@@ -228,6 +263,11 @@ function FormularioPunto({ puntoEditando, onGuardado, onCancelar, tipos = tiposD
           </button>
         </div>
       </div>
+      {/* El pop-up se dibuja en <body> (createPortal), así que no queda un formulario adentro de otro */}
+      {porConfirmar && (
+        <PopUpConfirmarAntiguedad lugar={puntoEditando} nueva={porConfirmar.nueva}
+          onConfirmar={() => guardar(porConfirmar)} onCerrar={() => setPorConfirmar(null)} />
+      )}
     </form>
   )
 }

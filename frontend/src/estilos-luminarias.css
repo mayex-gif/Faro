@@ -143,3 +143,34 @@
   .pantalla-mapa-angosta .boton-modo-noche { top: 122px; right: 12px; }
   .pantalla-mapa-angosta .boton-modo-noche-arriba { top: 68px; }
 }
+
+/* ---------- Nueva o vieja (utils/luminarias.js → ANTIGUEDADES) ----------
+   El cabezal (la lámpara) cambia de color: blanco frío = nueva (tipo LED), naranja de sodio = vieja.
+   Lo usan los formularios ("¿Es nueva o vieja?", components/ElegirAntiguedad.jsx) y la ficha (EstadoLuminaria.jsx). */
+.muestra-cabezal { display: inline-block; flex-shrink: 0; width: 22px; height: 11px; border: 1.5px solid #4F5D65; border-radius: 11px 11px 3px 3px; background: #E4E8EB; } /* forma de cabezal (no de botón de radio) */
+.muestra-cabezal-nueva { background: #F4F8FF; box-shadow: 0 0 0 3px rgb(150 190 255 / 45%); }
+.muestra-cabezal-vieja { background: #F28C28; box-shadow: 0 0 0 3px rgb(242 140 40 / 30%); }
+.muestra-cabezal-sinMarcar { border-style: dashed; background: var(--blanco); }
+
+.elegir-antiguedad { display: grid; gap: 8px; min-width: 0; margin: 20px 0 0; padding: 0; border: 0; }
+.elegir-antiguedad legend { margin-bottom: 8px; padding: 0; font-size: 0.875rem; font-weight: 600; }
+.elegir-antiguedad .ayuda-campo, .elegir-antiguedad .error-campo { margin: 0; }
+.opciones-antiguedad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.opcion-antiguedad { position: relative; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; border: 1px solid var(--borde-campo); border-radius: 10px; background: var(--blanco); cursor: pointer; }
+.opcion-antiguedad:hover { border-color: var(--lateral); }
+.opcion-antiguedad input { position: absolute; opacity: 0; pointer-events: none; }
+.opcion-antiguedad:has(input:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+.opcion-antiguedad strong { display: block; font-size: 0.875rem; }
+.opcion-antiguedad span span { display: block; color: var(--texto-secundario); font-size: 0.75rem; line-height: 1.3; }
+.opcion-antiguedad-marcada { padding: 9px 11px; border: 2px solid var(--lateral); background: var(--fondo); }
+.opcion-antiguedad-marcada::after { content: '✓'; position: absolute; top: 6px; right: 10px; color: var(--lateral); font-weight: 700; }
+.opcion-antiguedad:has(input[aria-invalid="true"]) { border-color: var(--error); }
+.elegir-antiguedad:disabled .opcion-antiguedad { cursor: wait; opacity: 0.7; }
+
+.antiguedad-luminaria { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--borde); }
+.antiguedad-luminaria h4 { margin: 0; color: var(--texto-secundario); font-size: 0.8125rem; font-weight: 650; }
+.antiguedad-luminaria > .boton { justify-self: start; }
+.botones-antiguedad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 360px) {
+  .opciones-antiguedad, .botones-antiguedad { grid-template-columns: 1fr; }
+}

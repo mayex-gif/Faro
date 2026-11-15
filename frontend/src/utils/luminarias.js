@@ -171,3 +171,69 @@ export function pedidoParaEstado(lugar, clave) {
 export function filtrarPorEstado(items, ocultos = {}) {
   return items.filter((item) => !ocultos[item.estado])
 }
+
+// ---------- Nueva o vieja ("antigüedad") ----------
+// Cada luminaria instalada se marca como Nueva (ej. las LED que se están poniendo) o Vieja (las de antes).
+// Se elige al agregarla (obligatorio) y se puede cambiar después desde la ficha, en los dos sentidos, con un pop-up
+// de confirmación por si se equivocan. En el backend es el campo "nueva": true = Nueva, false = Vieja,
+// null = "Sin marcar" (cargada antes de este cambio). Las a futuro no se marcan: al instalarlas quedan Nuevas solas.
+export const ANTIGUEDADES = [
+// "luz" es el color del cabezal (la lámpara): blanco frío para las nuevas (tipo LED) y naranja de sodio para las viejas.
+// El color del estado (la base del poste: verde, rojo, ámbar, gris) no cambia.
+  { clave: 'nueva', nombre: 'Nueva', plural: 'Nuevas', descripcion: 'Luminaria nueva (por ejemplo, LED)', luz: '#F4F8FF' },
+  { clave: 'vieja', nombre: 'Vieja', plural: 'Viejas', descripcion: 'Luminaria de las de antes', luz: '#F28C28' },
+  { clave: 'sinMarcar', nombre: 'Sin marcar', plural: 'Sin marcar', descripcion: 'Todavía no se dijo si es nueva o vieja', luz: null },
+]
+
+export function datosDeAntiguedad(clave) {
+  return ANTIGUEDADES.find((antiguedad) => antiguedad.clave === clave) ?? null
+}
+
+// 'nueva' | 'vieja' | 'sinMarcar'. null si no corresponde (no es luminaria, o es a futuro).
+export function antiguedadLuminaria(lugar) {
+  if (!esLuminaria(lugar) || lugar.instalada === false) return null
+  if (lugar.nueva === true) return 'nueva'
+  if (lugar.nueva === false) return 'vieja'
+  return 'sinMarcar'
+}
+
+// ¿Se tiene que preguntar "¿Es nueva o vieja?" en el formulario? Solo para una luminaria que ya está puesta.
+export function preguntaAntiguedad({ tipo, instalada }) {
+  return tipo === TIPO_LUMINARIA && instalada !== false
+}
+
+// Al agregar una luminaria la respuesta es obligatoria (no viene ninguna elegida, para que no se cargue mal por apuro).
+export function faltaAntiguedad(datos) {
+  return preguntaAntiguedad(datos) && typeof datos.nueva !== 'boolean'
+}
+
+export const FALTA_ANTIGUEDAD = 'Elegí si la luminaria es nueva o vieja.'
+
+// Lo que se suma al pedido del formulario: { nueva } solo si es una luminaria puesta y se eligió algo.
+// Si no, no se manda nada (al modificar, el backend deja la marca como estaba).
+export function antiguedadParaGuardar(datos) {
+  return preguntaAntiguedad(datos) && typeof datos.nueva === 'boolean' ? { nueva: datos.nueva } : {}
+}
+
+// Lo que se manda al backend (PUT /api/infraestructura/{id}) para marcarla como nueva (true) o vieja (false).
+// Va el lugar entero (el backend pide todos los datos), sin tocar si funciona o no.
+export function pedidoParaAntiguedad(lugar, nueva) {
+  const { nombre, tipo, datosTecnicos, ubicacion, estadoOperativo } = lugar
+  return { nombre, tipo, datosTecnicos, ubicacion, estadoOperativo, instalada: true, nueva }
+}
+
+// "la Luminaria San Martín y Belgrano" o, si el nombre no empieza con "Luminaria", "la luminaria “Poste 12”".
+export function nombreConArticulo(lugar) {
+  return /^luminaria\b/i.test(lugar.nombre ?? '') ? `la ${lugar.nombre}` : `la luminaria “${lugar.nombre}”`
+}
+
+// Pregunta del pop-up: "¿Marcar la Luminaria San Martín y Belgrano como vieja?"
+export function preguntaCambioAntiguedad(lugar, nueva) {
+  return `¿Marcar ${nombreConArticulo(lugar)} como ${nueva ? 'nueva' : 'vieja'}?`
+}
+
+// El texto que se muestra si falla un cambio desde la ficha. Si respondió el backend (ej. 400 o 403) se muestra su
+// mensaje; si no llegó (sin señal, el navegador dice "Failed to fetch" en inglés) se muestra uno propio en castellano.
+export function textoDelError(error, porDefecto = 'No se pudo guardar el cambio: revisá la conexión e intentá de nuevo.') {
+  return error?.estado && error.message ? error.message : porDefecto
+}
