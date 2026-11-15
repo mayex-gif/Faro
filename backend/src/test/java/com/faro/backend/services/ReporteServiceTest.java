@@ -435,4 +435,84 @@ class ReporteServiceTest {
         assertThat(dto.montoPorPeriodo().get(1).diferencia()).isEqualByComparingTo("3000");
         assertThat(dto.montoPorPeriodo().get(2).diferencia()).isEqualByComparingTo("0");
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Luminarias: nuevas vs viejas
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Filas como las devuelve la base: [nueva (Boolean o null), ...números]. */
+    private static List<Object[]> filas(Object[]... filas) {
+        return new ArrayList<>(List.of(filas));
+    }
+
+    @Test
+    void luminarias_armaLosTresGruposConCantidadesOtsYGasto() {
+        stubearRepositorioVacio();
+        // hoy: 5 nuevas (4 funcionan, 1 en arreglo), 7 viejas (3 funcionan, 3 apagadas, 1 en arreglo), 1 sin marcar
+        when(reporteRepository.contarLuminariasPorGrupo()).thenReturn(filas(
+                new Object[]{true, 5L, 4L, 0L, 1L},
+                new Object[]{false, 7L, 3L, 3L, 1L},
+                new Object[]{null, 1L, 1L, 0L, 0L}));
+        when(reporteRepository.contarLuminariasAFuturo()).thenReturn(2L);
+        // en el período: 1 OT en nuevas, 6 en viejas; se gastaron 8.000 y 45.500,50
+        when(reporteRepository.contarOtsDeLuminariasPorGrupo(any(), any())).thenReturn(filas(
+                new Object[]{true, 1L}, new Object[]{false, 6L}));
+        when(reporteRepository.sumarGastosDeLuminariasPorGrupo(any(), any())).thenReturn(filas(
+                new Object[]{true, new BigDecimal("8000")}, new Object[]{false, new BigDecimal("45500.50")}));
+
+        ResumenLuminariasDTO luminarias = service.construirDashboard(null, null, null).luminarias();
+
+        assertThat(luminarias.total()).isEqualTo(15);   // 5 + 7 + 1 + 2 a futuro
+        assertThat(luminarias.aFuturo()).isEqualTo(2);
+        assertThat(luminarias.grupos()).extracting(GrupoLuminariasDTO::clave).containsExactly("nueva", "vieja", "sinMarcar");
+        GrupoLuminariasDTO viejas = luminarias.grupos().get(1);
+        assertThat(viejas.cantidad()).isEqualTo(7);
+        assertThat(viejas.funcionan()).isEqualTo(3);
+        assertThat(viejas.apagadas()).isEqualTo(3);
+        assertThat(viejas.enArreglo()).isEqualTo(1);
+        assertThat(viejas.otsDelPeriodo()).isEqualTo(6);
+        assertThat(viejas.gastoDelPeriodo()).isEqualByComparingTo("45500.50");
+        assertThat(luminarias.grupos().get(0).gastoDelPeriodo()).isEqualByComparingTo("8000");
+        assertThat(luminarias.grupos().get(2).otsDelPeriodo()).isZero(); // sin marcar: sin OT en el período
+    }
+
+    @Test
+    void luminarias_sinLuminariasCargadasVieneTodoEnCero() {
+        stubearRepositorioVacio();
+
+        ResumenLuminariasDTO luminarias = service.construirDashboard(null, null, null).luminarias();
+
+        assertThat(luminarias.total()).isZero();
+        assertThat(luminarias.grupos()).hasSize(3)
+                .allSatisfy(grupo -> {
+                    assertThat(grupo.cantidad()).isZero();
+                    assertThat(grupo.gastoDelPeriodo()).isEqualByComparingTo("0");
+                });
+    }
+
+    @Test
+    void luminarias_aceptaLosNumerosComoLosDevuelvaLaBase() {
+        // los COUNT pueden venir como Long o BigInteger; las sumas como BigDecimal u otro número
+        stubearRepositorioVacio();
+        when(reporteRepository.contarLuminariasPorGrupo()).thenReturn(filas(
+                new Object[]{true, java.math.BigInteger.valueOf(3), 3, 0L, 0L}));
+        when(reporteRepository.sumarGastosDeLuminariasPorGrupo(any(), any())).thenReturn(filas(
+                new Object[]{true, 1200L}));
+
+        GrupoLuminariasDTO nuevas = service.construirDashboard(null, null, null).luminarias().grupos().get(0);
+
+        assertThat(nuevas.cantidad()).isEqualTo(3);
+        assertThat(nuevas.funcionan()).isEqualTo(3);
+        assertThat(nuevas.gastoDelPeriodo()).isEqualByComparingTo("1200");
+    }
+
+    @Test
+    void elTableroSiguePasandoLaDiferenciaDeGasto() {
+        // al sumar la sección de luminarias, la diferencia (gastado − declarado) se sigue calculando igual
+        stubearRepositorioVacio();
+        when(reporteRepository.sumarMontosAproximados(any(), any())).thenReturn(new BigDecimal("10000"));
+        when(reporteRepository.sumarGastosReales(any(), any())).thenReturn(new BigDecimal("8500"));
+
+        assertThat(service.construirDashboard(null, null, null).diferenciaGastoTotal()).isEqualByComparingTo("-1500");
+    }
 }

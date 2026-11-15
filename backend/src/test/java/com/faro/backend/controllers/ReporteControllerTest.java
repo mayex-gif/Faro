@@ -112,7 +112,12 @@ class ReporteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalOts").value(0))
                 .andExpect(jsonPath("$.otsCerradas").value(0))
-                .andExpect(jsonPath("$.otsPendientes").value(0));
+                .andExpect(jsonPath("$.otsPendientes").value(0))
+                // sección "Luminarias" (nuevas vs viejas): siempre los tres grupos, en orden
+                .andExpect(jsonPath("$.luminarias.total").value(0))
+                .andExpect(jsonPath("$.luminarias.grupos.length()").value(3))
+                .andExpect(jsonPath("$.luminarias.grupos[0].clave").value("nueva"))
+                .andExpect(jsonPath("$.luminarias.grupos[2].clave").value("sinMarcar"));
     }
 
     @Test
