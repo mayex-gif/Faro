@@ -74,7 +74,9 @@ class PuntoInfraestructuraControllerTest {
                 .andExpect(jsonPath("$[0].ubicacion.type").value("Point"))
                 .andExpect(jsonPath("$[0].ubicacion.coordinates[0]").value(-64.18))
                 .andExpect(jsonPath("$[0].ubicacion.coordinates[1]").value(-31.42))
-                .andExpect(jsonPath("$[0].instalada").value(true));
+                .andExpect(jsonPath("$[0].instalada").value(true))
+                // un lugar que no es luminaria no tiene marca nueva/vieja: llega null
+                .andExpect(jsonPath("$[0].nueva").isEmpty());
     }
 
     @Test
@@ -116,6 +118,41 @@ class PuntoInfraestructuraControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.estado").value(400))
                 .andExpect(jsonPath("$.errores.instalada").exists());
+    }
+
+    @Test
+    void crearUnaLuminariaNuevaLeLlegaLaMarcaAlServiceYLaDevuelve() throws Exception {
+        String jsonLuminaria = """
+                {
+                  "nombre": "Luminaria San Martín y Belgrano",
+                  "tipo": "LUMINARIA",
+                  "estadoOperativo": true,
+                  "instalada": true,
+                  "nueva": false,
+                  "ubicacion": { "type": "Point", "coordinates": [-64.14, -31.13] }
+                }
+                """;
+        Point punto = FABRICA.createPoint(new Coordinate(-64.14, -31.13));
+        when(service.crearLugar(any(PuntoInfraestructuraRequestDTO.class))).thenReturn(new PuntoInfraestructuraDTO(
+                2L, "Luminaria San Martín y Belgrano", "LUMINARIA", null, true, punto, true, false));
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(jsonLuminaria))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nueva").value(false));
+
+        ArgumentCaptor<PuntoInfraestructuraRequestDTO> captor = ArgumentCaptor.forClass(PuntoInfraestructuraRequestDTO.class);
+        verify(service).crearLugar(captor.capture());
+        assertEquals(Boolean.FALSE, captor.getValue().nueva());
+    }
+
+    @Test
+    void crearUnaCalleNuevaResponde400ConElCampo() throws Exception {
+        when(service.crearLugar(any(PuntoInfraestructuraRequestDTO.class)))
+                .thenThrow(new DatoInvalidoException("nueva", "Solo una luminaria puede marcarse como nueva o vieja."));
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(JSON_LUGAR))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.nueva").exists());
     }
 
     @Test

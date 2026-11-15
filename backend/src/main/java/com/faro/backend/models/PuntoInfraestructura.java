@@ -28,6 +28,12 @@ public class PuntoInfraestructura {
     @Column(name = "instalada")
     private Boolean instalada;
 
+    // Solo luminarias: true = Nueva (ej. LED), false = Vieja. Se puede cambiar después en los dos sentidos.
+    // null = "Sin marcar" (cargada antes de este campo), y siempre null en calles, lugares y luminarias a futuro.
+    // Es Boolean y no un enum a propósito: Hibernate crea un CHECK con los valores de un enum y ddl-auto=update no lo actualiza.
+    @Column(name = "nueva")
+    private Boolean nueva;
+
     // Mapeo espacial para PostGIS
     // El SRID 4326 es el estándar GPS (WGS84) que usa Google Maps
     @Column(columnDefinition = "geometry(Geometry, 4326)", nullable = false)
@@ -54,6 +60,9 @@ public class PuntoInfraestructura {
 
     public Boolean getInstalada() { return instalada; }
     public void setInstalada(Boolean instalada) { this.instalada = instalada; }
+
+    public Boolean getNueva() { return nueva; }
+    public void setNueva(Boolean nueva) { this.nueva = nueva; }
 
     public Geometry getUbicacion() { return ubicacion; }
     public void setUbicacion(Geometry ubicacion) { this.ubicacion = ubicacion; }

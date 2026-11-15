@@ -280,6 +280,144 @@ class PuntoInfraestructuraServiceTest {
         assertTrue(resultado.get(0).instalada());
     }
 
+    // ===================== NUEVA / VIEJA (solo luminarias) =====================
+
+    /** Un pedido de luminaria instalada con la marca nueva/vieja que se pasa. */
+    private PuntoInfraestructuraRequestDTO pedidoLuminaria(Boolean nueva) {
+        return new PuntoInfraestructuraRequestDTO(
+                "Luminaria San Martín y Belgrano", "LUMINARIA", "", true, punto(-64.14, -31.13), true, nueva);
+    }
+
+    @Test
+    void crearLugar_luminariaNueva_seGuardaComoNueva() {
+        saveDevuelveLoRecibido();
+
+        PuntoInfraestructuraDTO resultado = service.crearLugar(pedidoLuminaria(true));
+
+        assertTrue(resultado.nueva());
+    }
+
+    @Test
+    void crearLugar_luminariaVieja_seGuardaComoVieja() {
+        saveDevuelveLoRecibido();
+
+        PuntoInfraestructuraDTO resultado = service.crearLugar(pedidoLuminaria(false));
+
+        assertFalse(resultado.nueva());
+    }
+
+    @Test
+    void crearLugar_luminariaSinMarca_quedaSinMarcar() {
+        // un pedido "viejo" (ej: una pantalla que todavía no conoce el campo): queda "Sin marcar"
+        saveDevuelveLoRecibido();
+
+        PuntoInfraestructuraDTO resultado = service.crearLugar(pedidoLuminaria(null));
+
+        assertNull(resultado.nueva());
+    }
+
+    @Test
+    void crearLugar_calleMarcadaComoNueva_lanzaDatoInvalidoYNoGuarda() {
+        PuntoInfraestructuraRequestDTO pedido = new PuntoInfraestructuraRequestDTO(
+                "Calle Belgrano", "CALLE", "", true, punto(-64.14, -31.13), true, true);
+
+        DatoInvalidoException error = assertThrows(DatoInvalidoException.class, () -> service.crearLugar(pedido));
+
+        assertEquals("nueva", error.getCampo());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void crearLugar_luminariaAFuturoMarcadaComoVieja_lanzaDatoInvalidoYNoGuarda() {
+        PuntoInfraestructuraRequestDTO pedido = new PuntoInfraestructuraRequestDTO(
+                "Luminaria del plan", "LUMINARIA", "", false, punto(-64.14, -31.13), false, false);
+
+        DatoInvalidoException error = assertThrows(DatoInvalidoException.class, () -> service.crearLugar(pedido));
+
+        assertEquals("nueva", error.getCampo());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modificarLugar_marcarComoVieja_laCambia() {
+        PuntoInfraestructura existente = lugar(7L, "Luminaria San Martín y Belgrano", "LUMINARIA", true);
+        existente.setNueva(true);
+        when(repository.findById(7L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+
+        assertFalse(service.modificarLugar(7L, pedidoLuminaria(false)).nueva());
+    }
+
+    @Test
+    void modificarLugar_marcarComoNueva_laCambia() {
+        // el otro sentido: se habían equivocado y era nueva
+        PuntoInfraestructura existente = lugar(7L, "Luminaria San Martín y Belgrano", "LUMINARIA", true);
+        existente.setNueva(false);
+        when(repository.findById(7L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+
+        assertTrue(service.modificarLugar(7L, pedidoLuminaria(true)).nueva());
+    }
+
+    @Test
+    void modificarLugar_sinMarca_dejaComoEstaba() {
+        // otra pantalla que edita el nombre o los datos técnicos y no manda "nueva": no se toca
+        PuntoInfraestructura existente = lugar(7L, "Luminaria San Martín y Belgrano", "LUMINARIA", true);
+        existente.setNueva(false);
+        when(repository.findById(7L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+
+        assertFalse(service.modificarLugar(7L, pedidoLuminaria(null)).nueva());
+    }
+
+    @Test
+    void modificarLugar_instalarUnaLuminariaAFuturo_quedaNuevaSola() {
+        PuntoInfraestructura existente = lugar(8L, "Luminaria del plan", "LUMINARIA", false);
+        existente.setInstalada(false);
+        when(repository.findById(8L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+
+        PuntoInfraestructuraDTO resultado = service.modificarLugar(8L, pedidoLuminaria(null));
+
+        assertTrue(resultado.instalada());
+        assertTrue(resultado.nueva());
+    }
+
+    @Test
+    void modificarLugar_volverAFuturo_borraLaMarca() {
+        PuntoInfraestructura existente = lugar(7L, "Luminaria San Martín y Belgrano", "LUMINARIA", true);
+        existente.setNueva(true);
+        when(repository.findById(7L)).thenReturn(Optional.of(existente));
+        when(ordenRepository.existsByLugarId(7L)).thenReturn(false);
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Luminaria San Martín y Belgrano", "LUMINARIA", "", false, punto(-64.14, -31.13), false);
+
+        PuntoInfraestructuraDTO resultado = service.modificarLugar(7L, cambios);
+
+        assertFalse(resultado.instalada());
+        assertNull(resultado.nueva());
+    }
+
+    @Test
+    void modificarLugar_pasarAOtroTipo_borraLaMarca() {
+        PuntoInfraestructura existente = lugar(7L, "Era una luminaria", "LUMINARIA", true);
+        existente.setNueva(true);
+        when(repository.findById(7L)).thenReturn(Optional.of(existente));
+        saveDevuelveLoRecibido();
+        PuntoInfraestructuraRequestDTO cambios = new PuntoInfraestructuraRequestDTO(
+                "Plaza San Martín", "ESPACIO_VERDE", "", true, punto(-64.14, -31.13));
+
+        assertNull(service.modificarLugar(7L, cambios).nueva());
+    }
+
+    @Test
+    void obtenerTodos_luminariaViejaSinMarca_llegaSinMarcar() {
+        when(repository.findAll()).thenReturn(List.of(lugar(1L, "Luminaria #102", "LUMINARIA", true)));
+
+        assertNull(service.obtenerTodos().get(0).nueva());
+    }
+
     // ===================== BAJA =====================
 
         @Test

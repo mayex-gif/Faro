@@ -65,7 +65,8 @@ public class PuntoInfraestructuraService {
                 entidad.getDatosTecnicos(),
                 entidad.getEstadoOperativo(),
                 entidad.getUbicacion(),
-                !Boolean.FALSE.equals(entidad.getInstalada()) // null (lugares viejos) = instalada
+                !Boolean.FALSE.equals(entidad.getInstalada()), // null (lugares viejos) = instalada
+                entidad.getNueva() // null = "Sin marcar"
         );
     }
     // Método para ALTA (Crear)
@@ -78,7 +79,9 @@ public class PuntoInfraestructuraService {
         nuevoLugar.setEstadoOperativo(request.estadoOperativo());
         nuevoLugar.setUbicacion(request.ubicacion());
         nuevoLugar.setInstalada(request.instalada() == null || request.instalada());
+        nuevoLugar.setNueva(request.nueva());
         validarInstalada(nuevoLugar);
+        validarNueva(nuevoLugar);
 
         PuntoInfraestructura guardado = repository.save(nuevoLugar);
         return convertirADto(guardado);
@@ -90,6 +93,7 @@ public class PuntoInfraestructuraService {
         PuntoInfraestructura existente = repository.findById(id)
                                 .orElseThrow(() -> new RecursoNoEncontradoException("Lugar no encontrado"));
 
+        boolean estabaAFuturo = Boolean.FALSE.equals(existente.getInstalada());
         existente.setNombre(request.nombre());
         existente.setTipo(request.tipo());
         existente.setDatosTecnicos(request.datosTecnicos());
@@ -103,7 +107,9 @@ public class PuntoInfraestructuraService {
             }
             existente.setInstalada(request.instalada());
         }
+        actualizarNueva(existente, request.nueva(), estabaAFuturo);
         validarInstalada(existente);
+        validarNueva(existente);
 
         PuntoInfraestructura actualizado = repository.save(existente);
         return convertirADto(actualizado);
@@ -114,6 +120,43 @@ public class PuntoInfraestructuraService {
         if (Boolean.FALSE.equals(lugar.getInstalada()) && !TIPO_LUMINARIA.equals(lugar.getTipo())) {
             throw new DatoInvalidoException("instalada", "Solo una luminaria puede quedar como \"a futuro\".");
         }
+    }
+
+    /**
+     * Nueva / Vieja al modificar:
+     * - si viene en el pedido, se pone lo que vino (se puede cambiar en los dos sentidos; la pantalla pide confirmación);
+     * - si no viene, no se toca, salvo dos casos:
+     *   · una luminaria a futuro que se acaba de marcar como instalada queda Nueva sola (se acaba de poner);
+     *   · si deja de ser una luminaria instalada (pasó a otro tipo o volvió a "a futuro"), se borra la marca.
+     */
+    private void actualizarNueva(PuntoInfraestructura lugar, Boolean pedida, boolean estabaAFuturo) {
+        if (pedida != null) {
+            lugar.setNueva(pedida);
+            return;
+        }
+        if (!esLuminariaInstalada(lugar)) {
+            lugar.setNueva(null);
+        } else if (estabaAFuturo && lugar.getNueva() == null) {
+            lugar.setNueva(true);
+        }
+    }
+
+    // Nueva / Vieja solo tiene sentido para una luminaria que ya está puesta.
+    private void validarNueva(PuntoInfraestructura lugar) {
+        if (lugar.getNueva() == null) {
+            return;
+        }
+        if (!TIPO_LUMINARIA.equals(lugar.getTipo())) {
+            throw new DatoInvalidoException("nueva", "Solo una luminaria puede marcarse como nueva o vieja.");
+        }
+        if (Boolean.FALSE.equals(lugar.getInstalada())) {
+            throw new DatoInvalidoException("nueva",
+                    "Una luminaria a futuro todavía no se puso: queda nueva sola cuando la marcás como instalada.");
+        }
+    }
+
+    private static boolean esLuminariaInstalada(PuntoInfraestructura lugar) {
+        return TIPO_LUMINARIA.equals(lugar.getTipo()) && !Boolean.FALSE.equals(lugar.getInstalada());
     }
 
         // Método para BAJA (Eliminar)
