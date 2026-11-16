@@ -3,6 +3,7 @@ import { buscarAuditoria } from '../api/auditoria'
 import { listarEstados } from '../api/estadosOrden'
 import { listarPuntos } from '../api/infraestructura'
 import { listarReglas } from '../api/mantenimiento'
+import { listarCuadrillas } from '../api/cuadrillas'
 import FiltrosAuditoria from '../components/FiltrosAuditoria'
 import TablaAuditoria from '../components/TablaAuditoria'
 import Icono from '../components/Icono'
@@ -28,15 +29,17 @@ function PaginaAuditoria() {
   const [paginaDestino, setPaginaDestino] = useState('')
 
   useEffect(() => {
-    Promise.allSettled([listarEstados(), listarPuntos(), listarReglas()]).then(([estados, lugares, reglas]) => {
+    Promise.allSettled([listarEstados(), listarPuntos(), listarReglas(), listarCuadrillas()]).then(([estados, lugares, reglas, cuadrillas]) => {
       const mapa = (resultado, nombre) => resultado.status === 'fulfilled'
-        ? new Map(resultado.value.map((registro) => [String(registro.id), registro.nombre ?? registro.titulo ?? `ID ${registro.id}`]))
+        ? new Map(resultado.value.map((registro) => [String(registro.id), registro.nombre ?? registro.titulo ?? registro.nombreCompleto ?? `ID ${registro.id}`]))
         : new Map()
       const estadosMap = mapa(estados, 'estado')
       const lugaresMap = mapa(lugares, 'lugar')
       const reglasMap = mapa(reglas, 'regla')
+      const cuadrillasMap = mapa(cuadrillas, 'cuadrilla')
       setRelaciones({ estado: estadosMap, estadoAnterior: estadosMap, estadoNuevo: estadosMap,
-        lugar: lugaresMap, puntoInfraestructura: lugaresMap, reglaMantenimiento: reglasMap })
+        lugar: lugaresMap, puntoInfraestructura: lugaresMap, reglaMantenimiento: reglasMap,
+        cuadrilla: cuadrillasMap, cuadrillaAnterior: cuadrillasMap, cuadrillaNueva: cuadrillasMap })
     })
   }, [])
 
@@ -144,18 +147,18 @@ function PaginaAuditoria() {
                   <Icono nombre="volver" />Anterior
                 </button>
                 <span aria-live="polite">Página {resultado.pagina + 1} de {resultado.totalPaginas}</span>
+                <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
+                  onClick={() => irAPagina(pagina + 1)}>
+                  Siguiente<Icono nombre="siguiente" />
+                </button>
+                <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
+                  onClick={() => irAPagina(resultado.totalPaginas - 1)} aria-label="Última página">»</button>
                 <form className="salto-pagina" onSubmit={saltarAPagina}>
                   <label htmlFor="pagina-destino">Ir a</label>
                   <input id="pagina-destino" type="number" min="1" max={resultado.totalPaginas}
                     value={paginaDestino} onChange={(e) => setPaginaDestino(e.target.value)} aria-label="Número de página" />
                   <button className="boton boton-secundario" type="submit">Ir</button>
                 </form>
-                <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
-                  onClick={() => irAPagina(pagina + 1)}>
-                  Siguiente<Icono nombre="abajo" className="icono-siguiente" />
-                </button>
-                <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
-                  onClick={() => irAPagina(resultado.totalPaginas - 1)} aria-label="Última página">»</button>
               </nav>
             )}
           </>
