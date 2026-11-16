@@ -8,7 +8,7 @@ para cargarlas (Más → Luminarias). Infraestructura queda para espacios verdes
 
 | | Encargado | Mesa de entradas | Capataz |
 |---|---|---|---|
-| Pestaña Luminarias del mapa (postes, %, zonas, modo noche) | Sí | Sí | Sí |
+| Pestaña Luminarias del mapa (puntitos y postes, %, modo noche) | Sí | Sí | Sí |
 | Cambiar una luminaria entre Funciona y Apagada (ficha) | Sí | No | No |
 | "Crear OT de arreglo" desde la ficha | Sí | Sí | No |
 | Cargar una luminaria a futuro y "Marcar como instalada" | Sí | No | No |
@@ -30,10 +30,10 @@ El estado **no se guarda**: el front lo calcula con los datos del lugar y sus OT
 | **Funciona** | el resto (aunque tenga una OT abierta, por ejemplo un mantenimiento) | base verde, lámpara prendida |
 
 - El **porcentaje** es sobre las **instaladas**: las luminarias a futuro no cuentan.
-- **"¿Dónde falta luz?"**: el pueblo se parte en 4 cuadrantes desde el centro de todas las luminarias
-  (`zonasDeLuminarias`). Primero la zona con menos luminarias andando. Si algún día hay barrios reales, se cambia esa función
-  y la pantalla no se toca (devuelve `{ clave, nombre, limites, cuenta, porcentaje }`).
 - El estado sale de **todas** las OT abiertas: los filtros de la pestaña "Todo el pueblo" no lo cambian.
+- En **"Todo el pueblo"** una luminaria se ve **solo si tiene alguna OT abierta** (o si es la elegida, por ejemplo desde el
+  buscador), igual que las calles: `utils/luminarias.js → sinLuminariasVacias` (gemela de `sinCallesVacias`). Todas se ven
+  en la pestaña Luminarias.
 
 ## 3. Reglas del backend
 
@@ -50,7 +50,7 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 
 ## 4. Qué se puede hacer en pantalla
 
-- **Pestaña Luminarias** (`pages/PaginaMapa.jsx`): pestañas arriba del mapa, postes (`utils/poste.js`), leyenda que filtra
+- **Pestaña Luminarias** (`pages/PaginaMapa.jsx`): pestañas arriba del mapa, puntitos y postes (`utils/poste.js`, ver punto 8), leyenda que filtra
   ("Mostrar en el mapa"), panel de la izquierda (`components/PanelLuminarias.jsx`), botón "Modo noche"
   (se recuerda en el navegador: `localStorage` `faro-mapa-noche`).
 - **Ficha de la luminaria** (`components/EstadoLuminaria.jsx`, dentro de `PanelLugar`): Funciona / Apagada (guarda en el momento
@@ -69,7 +69,7 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 | Backend · modelo / DTO | `models/PuntoInfraestructura.java`, `dto/PuntoInfraestructuraDTO.java`, `dto/PuntoInfraestructuraRequestDTO.java` |
 | Backend · service | `PuntoInfraestructuraService.java`, `OrdenTrabajoService.java`, `ReglaMantenimientoService.java` |
 | Backend · controller | `PuntoInfraestructuraController.java` |
-| Front · reglas | `utils/luminarias.js` (estados, conteos, zonas, filtros), `utils/poste.js` (dibujo), `utils/lugares.js` (categorías, "A futuro"), `utils/filtros.js`, `utils/permisos.js`, `utils/navegacion.js`, `utils/ayuda.js` |
+| Front · reglas | `utils/luminarias.js` (estados, conteos, filtros, Todo el pueblo), `utils/poste.js` (dibujo del poste y del puntito), `utils/lugares.js` (categorías, "A futuro"), `utils/filtros.js`, `utils/permisos.js`, `utils/navegacion.js`, `utils/ayuda.js` |
 | Front · componentes | `PanelLuminarias.jsx`, `EstadoLuminaria.jsx`, `DefinicionesPoste.jsx` (degradés del poste), `MapaLugares.jsx`, `PanelLugar.jsx`, `TarjetaLugar.jsx`, `FormularioLugarMapa.jsx`, `FormularioPunto.jsx`, `FiltrosPuntos.jsx`, `TablaPuntos.jsx`, `FormularioOrden.jsx`, `FormularioRegla.jsx`, `Icono.jsx` |
 | Front · páginas | `PaginaMapa.jsx`, `PaginaLuminarias.jsx`, `PaginaInfraestructura.jsx`, `PaginaOrdenes.jsx` |
 | Estilos | `estilos-luminarias.css` |
@@ -84,7 +84,8 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 4. "Agregar luminaria a futuro" → tocar el mapa → registrar → aparece en "A futuro" sin "Nueva OT acá" →
    "Marcar como instalada" → queda "Funciona".
 5. Más → Luminarias e Infraestructura: cada una muestra lo suyo.
-6. Probar "¿Dónde falta luz?", las casillas de "Mostrar en el mapa" y "Modo noche" (también en el celular, con F12 → modo dispositivo).
+6. Probar las casillas de "Mostrar en el mapa", "Modo noche" y acercar/alejar (puntitos ↔ postes), también en el celular (F12 → modo dispositivo).
+7. "Todo el pueblo": solo aparecen las luminarias con OT abierta; buscar una sin OT arriba → aparece y se abre su ficha.
 
 ## 7. Nuevas y viejas (rama `feature/luminarias-nuevas-viejas`, 14/11/2026)
 
@@ -104,11 +105,24 @@ La columna `instalada` la crea sola `ddl-auto=update` (no es un enum, así que n
 - Reglas del front: `utils/luminarias.js` (`ANTIGUEDADES`, `antiguedadLuminaria`, `faltaAntiguedad`, `pedidoParaAntiguedad`…).
   Tests: `tests/antiguedadLuminarias.test.js`, `tests/poste.test.js`, `tests/reportesLuminarias.test.js`.
 
-## 8. Pendiente / para charlar
+## 8. Ajustes del 16/11/2026 (rama `fix/ajustes-mapa-luminarias`, con 92 luminarias cargadas en Render)
+
+- **Puntitos de lejos, postes de cerca.** Con todo el pueblo en pantalla los postes (26×45) se tapaban. Ahora, con zoom
+  menor a 17, cada luminaria es un **puntito de 14×14** del color de su estado (verde, rojo, amarillo, o blanco punteado
+  si es a futuro) con **borde blanco = nueva** (o sin marcar) y **borde naranja = vieja**; desde el **zoom 17** vuelve el poste 3D.
+  Las apagadas y en arreglo quedan arriba. En modo noche las que funcionan tienen halo.
+  - Reglas: `utils/poste.js` → `ZOOM_POSTES`, `seVenPostes(zoom)`, `htmlPunto(estado, antiguedad)` (HTML fijo, solo clases).
+  - Mapa: `components/MapaLugares.jsx` → `iconoLuminaria`; al terminar un zoom (`zoomend`), si se cruzó el 17 cambian
+    los íconos y la altura de la etiqueta. Elegir una luminaria en la lista o el buscador acerca a zoom 17 (se ve el poste).
+  - Se descartaron (con capturas): achicar el poste (se seguía encimando) y agrupar en números (`leaflet.markercluster`).
+- **"Todo el pueblo" sin las luminarias que no tienen trabajos** (punto 2).
+- **Se sacó "¿Dónde falta luz?"** (las 4 zonas del panel, el marco punteado del mapa, sus funciones y tests): era demasiado.
+- Arreglo: en el celular, el botón "Modo noche" del capataz quedaba tapado por "Ver resumen"; ahora va debajo, como el del encargado.
+
+## 9. Pendiente / para charlar
 
 - **Rol Intendente**: hoy no existe. Agregarlo implica destrabar la regla `usuarios_rol_check` de Postgres (Hibernate creó
   un `CHECK` con los 3 roles actuales y `ddl-auto=update` no lo actualiza) en cada base: local, Neon y la de la demo.
-- **Zonas reales** (barrios) en lugar de cuadrantes.
 - **Días que lleva apagada**: hoy no se guarda desde cuándo está fuera de servicio (se podría sacar de la Auditoría).
 - Choques con los PR de Alejo: **#67** (→ develop) comparte `OrdenTrabajoService.java` y `FormularioOrden.jsx`
   (se probó juntarlos: sin conflictos); **#68** (→ demo) comparte 7 archivos del mapa y de los formularios de lugares.

@@ -49,7 +49,7 @@ export const AYUDA = {
           'En el celular el mapa ocupa toda la pantalla. Con "Ver como lista" ves los lugares en una lista y con "Ver mapa" volvés.',
           'Cada marca es un lugar. Su color indica la prioridad del trabajo más urgente: cuanto más urgente, más grande es la marca. La leyenda dice qué significa cada color.',
           'En "Colorear por" podés cambiar a "Estado" para que el color muestre en qué estado está cada trabajo.',
-          'En "Todo el pueblo" una calle aparece solo si tiene trabajos abiertos, y se pinta solo el tramo donde se trabaja (o toda la calle si el trabajo es de toda la calle). Todas las calles están en la pestaña Calles.',
+          'En "Todo el pueblo" una calle aparece solo si tiene trabajos abiertos, y se pinta solo el tramo donde se trabaja (o toda la calle si el trabajo es de toda la calle). Todas las calles están en la pestaña Calles. Lo mismo con las luminarias: en "Todo el pueblo" se ven solo las que tienen trabajos abiertos; todas están en la pestaña Luminarias.',
         ],
       },
       {
@@ -67,7 +67,7 @@ export const AYUDA = {
       {
         titulo: 'Pestaña Luminarias',
         items: [
-          'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: cada luminaria es un poste y se ve cómo está. "Todo el pueblo" vuelve al mapa de siempre.',
+          'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: se ve cómo está cada luminaria. De lejos cada una es un puntito del color de su estado (borde naranja = vieja); acercate (con + o los dedos) y se ven los postes. "Todo el pueblo" vuelve al mapa de siempre.',
           'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
           'La lámpara dice si es nueva o vieja: blanca (tipo LED) = nueva, naranja = vieja. Amarilla = todavía no se marcó. El color de abajo sigue siendo el del estado.',
           'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
