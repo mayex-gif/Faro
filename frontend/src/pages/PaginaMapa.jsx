@@ -555,7 +555,7 @@ function PaginaMapa({ params, onNavegar }) {
                 ))}
               </ul>
             </fieldset>
-            <p className="leyenda-ayuda">Se actualiza solo con las OT de cada luminaria.</p>
+            <p className="leyenda-ayuda">De lejos cada luminaria es un puntito de su color: acercate para ver los postes. Se actualiza solo con las OT.</p>
           </div>
         ) : (
           <div className="leyenda-flotante">

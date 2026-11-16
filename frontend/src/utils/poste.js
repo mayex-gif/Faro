@@ -1,4 +1,5 @@
-// El dibujo del poste de luz de la pestaña Luminarias (poste de metal, brazo, lámpara y base en el piso).
+// El dibujo del poste de luz de la pestaña Luminarias (poste de metal, brazo, lámpara y base en el piso)
+// y, de lejos, el puntito que lo reemplaza (htmlPunto, más abajo).
 // Es HTML FIJO: no lleva ningún dato escrito por usuarios (nombres, descripciones), solo las clases del estado
 // y de si es nueva o vieja (que cambia el color de la lámpara: blanca tipo LED o naranja de sodio).
 // Por eso se puede usar en el ícono de Leaflet (L.divIcon) y en la leyenda sin riesgo.
@@ -40,4 +41,24 @@ export function htmlPoste(estado, antiguedad = null) {
   const clave = CLAVES.has(estado) ? estado : 'funciona'
   const lampara = LAMPARAS.has(antiguedad) ? ` poste-${antiguedad}` : ''
   return `<span class="poste poste-${clave}${lampara}">${SVG_POSTE}${INSIGNIAS[clave] ?? ''}</span>`
+}
+
+// ---------- De lejos: un puntito por luminaria ----------
+// Con todo el pueblo en pantalla (90 luminarias o más) los postes se tapan unos con otros. Entonces, de lejos
+// cada luminaria es un puntito del color de su estado, y desde ZOOM_POSTES (más cerca) vuelve el poste 3D.
+// Borde del puntito: blanco = nueva (o sin marcar), naranja = vieja (como la lámpara del poste).
+// También es HTML FIJO (solo clases), igual que el poste.
+export const ZOOM_POSTES = 17
+export const TAMANO_PUNTO = [14, 14]
+export const ANCLA_PUNTO = [7, 7]
+
+// ¿Con este zoom se dibujan los postes (true) o los puntitos (false)?
+export function seVenPostes(zoom) {
+  return zoom >= ZOOM_POSTES
+}
+
+export function htmlPunto(estado, antiguedad = null) {
+  const clave = CLAVES.has(estado) ? estado : 'funciona'
+  const lampara = LAMPARAS.has(antiguedad) ? ` punto-${antiguedad}` : ''
+  return `<span class="punto-luminaria punto-${clave}${lampara}"></span>`
 }
