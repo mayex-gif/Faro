@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import { buscarAuditoria } from '../api/auditoria'
+import { listarEstados } from '../api/estadosOrden'
+import { listarPuntos } from '../api/infraestructura'
+import { listarReglas } from '../api/mantenimiento'
+import { listarCuadrillas } from '../api/cuadrillas'
 import FiltrosAuditoria from '../components/FiltrosAuditoria'
 import TablaAuditoria from '../components/TablaAuditoria'
 import Icono from '../components/Icono'
@@ -21,6 +25,23 @@ function PaginaAuditoria() {
   const [resultado, setResultado] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  const [relaciones, setRelaciones] = useState({})
+  const [paginaDestino, setPaginaDestino] = useState('')
+
+  useEffect(() => {
+    Promise.allSettled([listarEstados(), listarPuntos(), listarReglas(), listarCuadrillas()]).then(([estados, lugares, reglas, cuadrillas]) => {
+      const mapa = (resultado, nombre) => resultado.status === 'fulfilled'
+        ? new Map(resultado.value.map((registro) => [String(registro.id), registro.nombre ?? registro.titulo ?? registro.nombreCompleto ?? `ID ${registro.id}`]))
+        : new Map()
+      const estadosMap = mapa(estados, 'estado')
+      const lugaresMap = mapa(lugares, 'lugar')
+      const reglasMap = mapa(reglas, 'regla')
+      const cuadrillasMap = mapa(cuadrillas, 'cuadrilla')
+      setRelaciones({ estado: estadosMap, estadoAnterior: estadosMap, estadoNuevo: estadosMap,
+        lugar: lugaresMap, puntoInfraestructura: lugaresMap, reglaMantenimiento: reglasMap,
+        cuadrilla: cuadrillasMap, cuadrillaAnterior: cuadrillasMap, cuadrillaNueva: cuadrillasMap })
+    })
+  }, [])
 
   useEffect(() => {
     if (!rangoValido(filtrosAplicados)) return
@@ -59,6 +80,12 @@ function PaginaAuditoria() {
   function irAPagina(nueva) {
     setCargando(true)
     setPagina(nueva)
+  }
+
+  function saltarAPagina(evento) {
+    evento.preventDefault()
+    const destino = Number(paginaDestino)
+    if (Number.isInteger(destino) && destino >= 1 && destino <= resultado.totalPaginas) irAPagina(destino - 1)
   }
 
   function reintentar() {
@@ -110,9 +137,11 @@ function PaginaAuditoria() {
           </div>
         ) : !error && (
           <>
-            <TablaAuditoria registros={registros} mensajeVacio={mensajeVacio} />
+            <TablaAuditoria registros={registros} mensajeVacio={mensajeVacio} relaciones={relaciones} />
             {resultado && resultado.totalPaginas > 1 && (
               <nav className="paginacion" aria-label="Páginas de resultados">
+                <button type="button" className="boton boton-secundario" disabled={resultado.primera}
+                  onClick={() => irAPagina(0)} aria-label="Primera página">«</button>
                 <button type="button" className="boton boton-secundario" disabled={resultado.primera}
                   onClick={() => irAPagina(pagina - 1)}>
                   <Icono nombre="volver" />Anterior
@@ -120,8 +149,16 @@ function PaginaAuditoria() {
                 <span aria-live="polite">Página {resultado.pagina + 1} de {resultado.totalPaginas}</span>
                 <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
                   onClick={() => irAPagina(pagina + 1)}>
-                  Siguiente<Icono nombre="abajo" className="icono-siguiente" />
+                  Siguiente<Icono nombre="siguiente" />
                 </button>
+                <button type="button" className="boton boton-secundario" disabled={resultado.ultima}
+                  onClick={() => irAPagina(resultado.totalPaginas - 1)} aria-label="Última página">»</button>
+                <form className="salto-pagina" onSubmit={saltarAPagina}>
+                  <label htmlFor="pagina-destino">Ir a</label>
+                  <input id="pagina-destino" type="number" min="1" max={resultado.totalPaginas}
+                    value={paginaDestino} onChange={(e) => setPaginaDestino(e.target.value)} aria-label="Número de página" />
+                  <button className="boton boton-secundario" type="submit">Ir</button>
+                </form>
               </nav>
             )}
           </>

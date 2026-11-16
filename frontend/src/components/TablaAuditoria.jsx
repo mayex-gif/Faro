@@ -4,7 +4,7 @@ import { ACCIONES, diferenciasCampos, etiqueta, formatearFecha, formatearValorCa
 
 // Listado de registros de auditoría. Cada fila se puede desplegar para ver, campo por campo,
 // qué tenía el registro antes y qué quedó después (en una modificación se resaltan los campos que cambiaron).
-function TablaAuditoria({ registros, mensajeVacio }) {
+function TablaAuditoria({ registros, mensajeVacio, relaciones = {} }) {
   const [abierto, setAbierto] = useState(null)
 
   if (registros.length === 0) {
@@ -37,7 +37,7 @@ function TablaAuditoria({ registros, mensajeVacio }) {
               const desplegado = abierto === registro.id
               return (
                 <FilaAuditoria key={registro.id} registro={registro} desplegado={desplegado}
-                  onAlternar={() => setAbierto(desplegado ? null : registro.id)} />
+                  relaciones={relaciones} onAlternar={() => setAbierto(desplegado ? null : registro.id)} />
               )
             })}
           </tbody>
@@ -47,7 +47,7 @@ function TablaAuditoria({ registros, mensajeVacio }) {
   )
 }
 
-function FilaAuditoria({ registro, desplegado, onAlternar }) {
+function FilaAuditoria({ registro, desplegado, relaciones, onAlternar }) {
   const diferencias = diferenciasCampos(registro.valoresAnteriores, registro.valoresNuevos)
   const idDetalle = `detalle-auditoria-${registro.id}`
   return (
@@ -86,8 +86,8 @@ function FilaAuditoria({ registro, desplegado, onAlternar }) {
                   {diferencias.map((dif) => (
                     <tr key={dif.campo} className={dif.cambio ? 'fila-campo-cambiado' : ''}>
                       <th scope="row">{dif.campo}</th>
-                      <td>{formatearValorCampo(dif.antes)}</td>
-                      <td>{formatearValorCampo(dif.despues)}</td>
+                      <td>{formatearValorCampo(dif.antes, dif.campo, relaciones)}</td>
+                      <td>{formatearValorCampo(dif.despues, dif.campo, relaciones)}</td>
                     </tr>
                   ))}
                 </tbody>
