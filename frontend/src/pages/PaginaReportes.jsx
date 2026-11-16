@@ -8,7 +8,7 @@ import GraficoDona from '../components/GraficoDona'
 import SeccionLuminarias from '../components/SeccionLuminarias'
 import Icono from '../components/Icono'
 import {
-  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
+  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, formatearDia, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
   pesosConSigno, resumenGastos, resumenLuminarias, tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
@@ -98,7 +98,7 @@ function PaginaReportes() {
         <div className="panel-encabezado">
           <div>
             <h2 id="titulo-periodo">Qué período mirar</h2>
-            <p>{tablero && !cargando && !error ? `Mostrando del ${describirRango(tablero.desde, tablero.hasta)}.` : 'Elegí un período para ver sus números.'}</p>
+            <p>{tablero && !cargando && !error ? `Mostrando ${periodo.atajo === 'SEMANA' ? `desde ${formatearDia(tablero.desde)} hasta ${formatearDia(tablero.hasta)}` : `del ${describirRango(tablero.desde, tablero.hasta)}`}.` : 'Elegí un período para ver sus números.'}</p>
           </div>
           <div className="botones botones-descarga">
             <button type="button" className="boton boton-secundario" disabled={descargando !== null || problemaPeriodo !== null}
