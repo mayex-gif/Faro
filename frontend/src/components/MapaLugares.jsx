@@ -155,7 +155,6 @@ const ETIQUETAS_MAPA = {
 //   o 'calles' (la página pasa en "resumenes" solo las calles; se dibujan igual que en "Todo el pueblo")
 // - luminarias: [{ resumen, estado, antiguedad }] (utils/luminarias.js → luminariasConEstado), ya sin las ocultas
 //   (estados y nuevas/viejas destildados en la leyenda)
-// - zonaResaltada: { limites: { sur, norte, oeste, este } } de "¿Dónde falta luz?" (o null): se marca y se encuadra
 // - noche: modo noche (solo en la pestaña Luminarias): mapa oscuro y halo de luz en las que funcionan
 // Marcar el tramo de una OT en una calle (ver components/ElegirTramo.jsx):
 // - tramo: null o { calle, cruces, modo, toques: [{ distancia, punto }], vistaPrevia } (vistaPrevia = LineString o null).
@@ -165,7 +164,7 @@ const ETIQUETAS_MAPA = {
 // Las marcas del mapa no se pueden recorrer con el teclado: la lista que acompaña al mapa tiene los mismos datos.
 function MapaLugares({
   resumenes, modoColor, limites, seleccion, onSeleccionar, onLimites, agregando = false, tipoNuevo = 'LUMINARIA', puntosNuevo = [], onElegirPunto, hojaAbajo = null,
-  pestana = 'todo', luminarias = [], zonaResaltada = null, noche = false, tramo = null, onTocarTramo,
+  pestana = 'todo', luminarias = [], noche = false, tramo = null, onTocarTramo,
 }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
@@ -173,7 +172,6 @@ function MapaLugares({
   const capasPorLugar = useRef(new Map())
   const avisos = useRef({})
   const pinNuevo = useRef(null)
-  const marcoZona = useRef(null)
   const dibujoNuevo = useRef(null)
   const grupoTramo = useRef(null)
   const calleDelTramo = tramo?.calle ?? null
@@ -234,7 +232,6 @@ function MapaLugares({
       grupo.current = null
       grupoTramo.current = null
       pinNuevo.current = null
-      marcoZona.current = null
       dibujoNuevo.current = null
       capas.clear()
     }
@@ -314,21 +311,6 @@ function MapaLugares({
     }
     encuadrar()
   }, [calleDelTramo, modoDelTramo, hojaAbajo])
-
-  // "¿Dónde falta luz?": un rectángulo punteado sobre la zona elegida, y el mapa la encuadra.
-  useEffect(() => {
-    if (!mapa.current) return
-    marcoZona.current?.remove()
-    marcoZona.current = null
-    if (pestana !== 'luminarias' || !zonaResaltada) return
-    const { sur, oeste, norte, este } = zonaResaltada.limites
-    const caja = [[sur, oeste], [norte, este]]
-    marcoZona.current = L.rectangle(caja, {
-      color: '#086C80', weight: 2, dashArray: '6 6', fillColor: '#1B9FB5', fillOpacity: 0.08, interactive: false,
-    }).addTo(mapa.current)
-    const animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    mapa.current.fitBounds(caja, { padding: [48, 48], maxZoom: 17, animate: animar })
-  }, [zonaResaltada, pestana])
 
   // Encuadrar todos los lugares cuando llegan (o cambian).
   useEffect(() => {

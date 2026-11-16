@@ -71,7 +71,6 @@ export const AYUDA = {
           'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
           'La lámpara dice si es nueva o vieja: blanca (tipo LED) = nueva, naranja = vieja. Amarilla = todavía no se marcó. El color de abajo sigue siendo el del estado.',
           'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
-          '"¿Dónde falta luz?" ordena las zonas del pueblo de la que tiene menos luminarias andando a la que tiene más. Tocá una para marcarla en el mapa y ver solo sus luminarias.',
           'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Abajo, "Nuevas" y "Viejas" hacen lo mismo con la antigüedad, y se combinan: por ejemplo, solo las apagadas que son viejas. Los números no cambian.',
           '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
           { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Al finalizar esa OT, dejá marcado "El lugar quedó funcionando" y la luminaria vuelve a "Funciona".', roles: [ENCARGADO] },

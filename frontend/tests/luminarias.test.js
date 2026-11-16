@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, filtrarPorEstado, luminariaEnZona, luminariasConEstado,
-  luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, sinLuminariasVacias, textoDeZona, zonasDeLuminarias,
+  ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, filtrarPorEstado, luminariasConEstado,
+  luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, sinLuminariasVacias,
 } from '../src/utils/luminarias.js'
 
 // Solo datos en memoria: no se modifica la base.
@@ -94,44 +94,6 @@ test('el punto de un lugar: el del Point, o el centro de su caja si es otra form
   assert.deepEqual(puntoDe({ type: 'Point', coordinates: [-64.1, -31.1] }), [-64.1, -31.1])
   assert.deepEqual(puntoDe({ type: 'LineString', coordinates: [[-64.2, -31.2], [-64.0, -31.0]] }), [-64.1, -31.1])
   assert.equal(puntoDe(null), null)
-})
-
-// Cuatro luminarias en las esquinas de un cuadrado y una más: el centro queda en (-64.14, -31.13)
-const esquinas = () => luminariasConEstado([
-  resumen(1, { lng: -64.16, lat: -31.11 }), // noroeste, funciona
-  resumen(2, { lng: -64.12, lat: -31.11, estadoOperativo: false }), // noreste, apagada
-  resumen(3, { lng: -64.16, lat: -31.15 }), // suroeste, funciona
-  resumen(4, { lng: -64.12, lat: -31.15, estadoOperativo: false, ordenes: [otAbierta] }), // sureste, en arreglo
-  resumen(5, { lng: -64.13, lat: -31.12 }), // noreste, funciona
-])
-
-test('las zonas parten el pueblo en 4 y salen primero las que tienen menos luz', () => {
-  const zonas = zonasDeLuminarias(esquinas())
-  assert.deepEqual(zonas.map((z) => [z.nombre, z.porcentaje]), [
-    ['Sureste', 0], ['Noreste', 50], ['Noroeste', 100], ['Suroeste', 100],
-  ])
-  const noreste = zonas.find((z) => z.clave === 'noreste')
-  assert.deepEqual(noreste.cuenta, { funciona: 1, apagada: 1, arreglo: 0, falta: 0 })
-  assert.deepEqual(noreste.limites, { sur: -31.13, norte: -31.11, oeste: -64.14, este: -64.12 })
-})
-
-test('una zona donde solo hay luminarias a futuro no aparece', () => {
-  const items = esquinas().filter((i) => i.resumen.lugar.id !== 2 && i.resumen.lugar.id !== 5)
-  items.push(...luminariasConEstado([resumen(9, { lng: -64.12, lat: -31.11, instalada: false })]))
-  assert.equal(zonasDeLuminarias(items).some((z) => z.clave === 'noreste'), false)
-  assert.deepEqual(zonasDeLuminarias([]), [])
-})
-
-test('se puede saber si una luminaria cae en una zona', () => {
-  const items = esquinas()
-  const noreste = zonasDeLuminarias(items).find((z) => z.clave === 'noreste')
-  assert.deepEqual(items.filter((i) => luminariaEnZona(i, noreste)).map((i) => i.resumen.lugar.id), [2, 5])
-  assert.equal(luminariaEnZona(items[0], null), false)
-})
-
-test('el texto de la zona dice cuántas apagadas y, si hay, cuántas en arreglo', () => {
-  assert.equal(textoDeZona({ cuenta: { apagada: 1, arreglo: 0 } }), '1 apagada')
-  assert.equal(textoDeZona({ cuenta: { apagada: 0, arreglo: 2 } }), '0 apagadas · 2 en arreglo')
 })
 
 test('a mano se elige Funciona o Apagada; "en arreglo" sale de las OT y "a futuro" se carga así', () => {

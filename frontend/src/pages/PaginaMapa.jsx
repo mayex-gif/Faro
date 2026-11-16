@@ -73,7 +73,6 @@ function PaginaMapa({ params, onNavegar }) {
   const [pestana, setPestana] = useState(PESTANAS.includes(params?.pestana) ? params.pestana : 'todo')
   const [ocultos, setOcultos] = useState({}) // estados de luminaria destildados en la leyenda: { apagada: true }
   const [ocultasPorAntiguedad, setOcultasPorAntiguedad] = useState({}) // nuevas/viejas destildadas: { vieja: true }
-  const [zonaElegida, setZonaElegida] = useState(null) // "¿Dónde falta luz?": la zona marcada en el mapa
   const [noche, setNoche] = useState(leerModoNoche) // modo noche (pestaña Luminarias)
   const [soloVisibles, setSoloVisibles] = useState(false)
   const [zonaVisible, setZonaVisible] = useState(null) // lo que se ve en el mapa en este momento
@@ -441,9 +440,7 @@ function PaginaMapa({ params, onNavegar }) {
         </section>
       ) : pestana === 'luminarias' ? (
         <PanelLuminarias items={luminarias} totales={totalesLuminarias} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista}
-          zonaElegida={zonaElegida?.clave ?? null}
-          onAgregarAFuturo={puedeCargarLuminariaAFuturo(usuario) ? () => empezarAgregar(true) : undefined}
-          onElegirZona={(zona) => { setZonaElegida(zona); if (angosta && zona) setVistaAngosta('mapa') }} />
+          onAgregarAFuturo={puedeCargarLuminariaAFuturo(usuario) ? () => empezarAgregar(true) : undefined} />
       ) : pestana === 'calles' ? (
         <PanelCalles calles={calles} totales={totalesCalles} modoColor={modoColor} lugarActivoId={lugarActivoId} onElegir={elegirDesdeLista} />
       ) : (
@@ -473,7 +470,7 @@ function PaginaMapa({ params, onNavegar }) {
         <MapaLugares resumenes={pestana === 'calles' ? calles : enMapa} modoColor={modoColor} limites={limites} seleccion={seleccion}
           onSeleccionar={elegirEnMapa} onLimites={setZonaVisible}
           agregando={agregando} tipoNuevo={tipoNuevo} puntosNuevo={puntosNuevo} onElegirPunto={agregarVerticeNuevo}
-          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} zonaResaltada={zonaElegida} noche={noche}
+          hojaAbajo={angosta ? hojaLugarNuevo : null} pestana={pestana} luminarias={luminariasEnMapa} noche={noche}
           tramo={tramoEnMapa} onTocarTramo={tocarEnTramo} />
 
         {/* Pestañas arriba del mapa: todos los lugares, solo las luminarias o solo las calles */}
