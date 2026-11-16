@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   ESTADOS_A_MANO, ESTADOS_LUMINARIA, datosDelEstado, esLuminaria, estadoAMano, estadoLuminaria, filtrarPorEstado, luminariaEnZona, luminariasConEstado,
-  luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, textoDeZona, zonasDeLuminarias,
+  luminariasDelEstado, pedidoParaEstado, puntoDe, resumirLuminarias, sinLuminariasVacias, textoDeZona, zonasDeLuminarias,
 } from '../src/utils/luminarias.js'
 
 // Solo datos en memoria: no se modifica la base.
@@ -28,6 +28,18 @@ test('solo cuentan los lugares de tipo luminaria', () => {
   assert.equal(esLuminaria(null), false)
   const items = luminariasConEstado([resumen(1), resumen(2, { tipo: 'ESPACIO_VERDE' }), resumen(3, { tipo: 'CALLE' })])
   assert.deepEqual(items.map((i) => i.resumen.lugar.id), [1])
+})
+
+test('sinLuminariasVacias: "Todo el pueblo" sin las luminarias sin trabajos (salvo la elegida)', () => {
+  const conTrabajo = resumen(1, { ordenes: [otAbierta] })
+  const vacia = resumen(2)
+  const apagadaSinOt = resumen(3, { estadoOperativo: false })
+  const plazaVacia = resumen(4, { tipo: 'ESPACIO_VERDE' })
+  const calleVacia = resumen(5, { tipo: 'CALLE' })
+  // las otras clases de lugar no se tocan (las calles las saca sinCallesVacias)
+  assert.deepEqual(sinLuminariasVacias([conTrabajo, vacia, apagadaSinOt, plazaVacia, calleVacia]), [conTrabajo, plazaVacia, calleVacia])
+  assert.deepEqual(sinLuminariasVacias([conTrabajo, vacia, plazaVacia], 2), [conTrabajo, vacia, plazaVacia])
+  assert.deepEqual(sinLuminariasVacias([]), [])
 })
 
 test('una luminaria que funciona está "funciona", aunque tenga una OT abierta (ej. mantenimiento)', () => {

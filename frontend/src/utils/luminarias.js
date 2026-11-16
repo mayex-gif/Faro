@@ -46,6 +46,12 @@ export function luminariasConEstado(resumenes) {
     .map((resumen) => ({ resumen, estado: estadoLuminaria(resumen), antiguedad: antiguedadLuminaria(resumen.lugar) }))
 }
 
+// "Todo el pueblo" sin las luminarias que no tienen trabajos (esas se ven en la pestaña Luminarias), igual que las calles
+// (utils/calles.js → sinCallesVacias). La luminaria elegida se queda aunque no tenga trabajos (por ejemplo, si se la buscó arriba).
+export function sinLuminariasVacias(resumenes, lugarActivoId = null) {
+  return resumenes.filter((resumen) => !esLuminaria(resumen.lugar) || resumen.ordenes.length > 0 || resumen.lugar.id === lugarActivoId)
+}
+
 function contarPorEstado(items) {
   const cuenta = Object.fromEntries(ESTADOS_LUMINARIA.map((estado) => [estado.clave, 0]))
   for (const item of items) cuenta[item.estado] += 1

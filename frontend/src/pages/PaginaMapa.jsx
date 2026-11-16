@@ -25,7 +25,7 @@ import { PRIORIDADES } from '../utils/ordenesTrabajo'
 import { separarPorZona } from '../utils/zona'
 import {
   ESTADOS_LUMINARIA, antiguedadesParaFiltro, contarPorAntiguedad, esLuminaria, filtrarPorAntiguedad, filtrarPorEstado,
-  luminariasConEstado, resumirLuminarias,
+  luminariasConEstado, resumirLuminarias, sinLuminariasVacias,
 } from '../utils/luminarias'
 import { tiposParaAgregar } from '../utils/lugares'
 import { callesDe, conTramos, esCalle, resumirCalles, sinCallesVacias } from '../utils/calles'
@@ -247,10 +247,12 @@ function PaginaMapa({ params, onNavegar }) {
   // Las calles con trabajos llevan el tramo de cada OT abierta (utils/calles.js → conTramos)
   const resumenes = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertasFiltradas), todasLasCalles),
     [lugaresConUbicacion, abiertasFiltradas, todasLasCalles])
-  // "Todo el pueblo" no muestra las calles sin trabajos (quedan en la pestaña Calles), salvo la que está elegida
+  // "Todo el pueblo" no muestra las calles ni las luminarias sin trabajos (quedan en sus pestañas), salvo la que está elegida
   const lugarActivo = lugares.find((lugar) => lugar.id === lugarActivoId)
   const calleVaciaElegida = esCalle(lugarActivo) ? lugarActivoId : null
-  const enTodo = useMemo(() => sinCallesVacias(resumenes, calleVaciaElegida), [resumenes, calleVaciaElegida])
+  const luminariaVaciaElegida = esLuminaria(lugarActivo) ? lugarActivoId : null
+  const enTodo = useMemo(() => sinLuminariasVacias(sinCallesVacias(resumenes, calleVaciaElegida), luminariaVaciaElegida),
+    [resumenes, calleVaciaElegida, luminariaVaciaElegida])
   const enMapa = useMemo(() => filtrarLugares(enTodo, filtrosLugares), [enTodo, filtrosLugares])
   // La ficha muestra todos los trabajos abiertos del lugar, aunque "Más filtros" esconda algunos.
   const resumenesCompletos = useMemo(() => conTramos(agruparPorLugar(lugaresConUbicacion, abiertas), todasLasCalles),
@@ -390,6 +392,9 @@ function PaginaMapa({ params, onNavegar }) {
   } else if (resumenes.length === 0) {
     mensajeVacio = { titulo: 'Ningún lugar tiene la ubicación dentro del pueblo',
       texto: puedeRevisar ? 'Revisá las coordenadas en Infraestructura.' : 'Consultá al encargado para revisar las ubicaciones.' }
+  } else if (enTodo.length === 0) {
+    mensajeVacio = { titulo: 'No hay trabajos abiertos en el pueblo',
+      texto: 'Las luminarias y las calles sin trabajos se ven en sus pestañas del mapa.' }
   } else if (enMapa.length === 0) {
     mensajeVacio = {
       titulo: 'Ningún lugar coincide con los filtros',
