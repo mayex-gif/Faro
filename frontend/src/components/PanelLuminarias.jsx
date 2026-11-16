@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ESTADOS_LUMINARIA, luminariaEnZona, luminariasDelEstado, textoDeZona, zonasDeLuminarias } from '../utils/luminarias'
+import { ESTADOS_LUMINARIA, luminariasDelEstado } from '../utils/luminarias'
 import { htmlPoste } from '../utils/poste'
 import { subtituloLugar } from '../utils/listaLugares'
 import Icono from './Icono'
@@ -62,21 +62,14 @@ function ListaDelEstado({ id, titulo, ayuda, items, vacio, lugarActivoId, onEleg
 // - items: [{ resumen, estado }] de todas las luminarias (utils/luminarias.js)
 // - totales: resumirLuminarias(items) → { total, cuenta, porcentaje }
 // - lugarActivoId, onElegir(lugarId): como en la lista de lugares
-// - zonaElegida: clave de la zona marcada en el mapa (o null) · onElegirZona(zona | null)
 // - onAgregarAFuturo(): "Agregar luminaria a futuro" (solo si el usuario puede; si no, no se pasa)
-function PanelLuminarias({ items, totales, lugarActivoId, onElegir, zonaElegida = null, onElegirZona, onAgregarAFuturo }) {
+function PanelLuminarias({ items, totales, lugarActivoId, onElegir, onAgregarAFuturo }) {
   useEffect(() => {
     if (lugarActivoId == null) return
     document.getElementById(`fila-luminaria-${lugarActivoId}`)?.scrollIntoView({ block: 'nearest' })
   }, [lugarActivoId])
 
   const { total, cuenta, porcentaje } = totales
-  // "¿Dónde falta luz?": las zonas, primero la que tiene menos luminarias andando
-  const zonas = zonasDeLuminarias(items)
-  const zona = zonas.find((opcion) => opcion.clave === zonaElegida) ?? null
-  // Con una zona elegida, las listas de abajo muestran solo las de esa zona
-  const enLaZona = zona ? items.filter((item) => luminariaEnZona(item, zona)) : items
-  const deLaZona = zona ? ` · ${zona.nombre}` : ''
 
   return (
     <section className="columna-lugares panel-luminarias" aria-labelledby="titulo-luminarias">
@@ -111,33 +104,12 @@ function PanelLuminarias({ items, totales, lugarActivoId, onElegir, zonaElegida 
       </div>
 
       <div className="luminarias-listas">
-        {zonas.length > 1 && (
-          <section className="luminarias-seccion" aria-labelledby="titulo-zonas">
-            <h2 id="titulo-zonas">¿Dónde falta luz?</h2>
-            <p className="luminarias-ayuda">Zonas del pueblo, primero la que tiene menos luminarias andando. Tocá una para marcarla en el mapa.</p>
-            <ul className="luminarias-zonas">
-              {zonas.map((opcion) => {
-                const activa = opcion.clave === zonaElegida
-                return (
-                  <li key={opcion.clave}>
-                    <button type="button" aria-pressed={activa} className={activa ? 'zona-luz zona-luz-activa' : 'zona-luz'}
-                      onClick={() => onElegirZona?.(activa ? null : opcion)}>
-                      <span className="zona-luz-titulo"><strong>{opcion.nombre}</strong><strong>{opcion.porcentaje}%</strong></span>
-                      <span className="zona-luz-barra" aria-hidden="true"><span style={{ width: `${opcion.porcentaje}%` }} /></span>
-                      <span className="zona-luz-texto">{textoDeZona(opcion)}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
-        )}
-        <ListaDelEstado id="titulo-apagadas" titulo={`Apagadas sin arreglo${deLaZona}`} items={luminariasDelEstado(enLaZona, 'apagada')}
+        <ListaDelEstado id="titulo-apagadas" titulo="Apagadas sin arreglo" items={luminariasDelEstado(items, 'apagada')}
           ayuda="No andan y todavía no tienen una OT abierta." vacio="No hay luminarias apagadas sin arreglo."
           lugarActivoId={lugarActivoId} onElegir={onElegir} />
-        <ListaDelEstado id="titulo-en-arreglo" titulo={`En arreglo${deLaZona}`} items={luminariasDelEstado(enLaZona, 'arreglo')}
+        <ListaDelEstado id="titulo-en-arreglo" titulo="En arreglo" items={luminariasDelEstado(items, 'arreglo')}
           vacio="Ninguna luminaria está en arreglo." lugarActivoId={lugarActivoId} onElegir={onElegir} conOrden />
-        <ListaDelEstado id="titulo-a-futuro" titulo={`A futuro${deLaZona}`} items={luminariasDelEstado(enLaZona, 'falta')}
+        <ListaDelEstado id="titulo-a-futuro" titulo="A futuro" items={luminariasDelEstado(items, 'falta')}
           ayuda="Planificadas por el intendente. No llevan OT; cuando se ponen, se marcan como instaladas desde su ficha."
           vacio="No hay luminarias a futuro cargadas." lugarActivoId={lugarActivoId} onElegir={onElegir}
           accion={onAgregarAFuturo ? { texto: 'Agregar luminaria a futuro', alHacer: onAgregarAFuturo } : null} />

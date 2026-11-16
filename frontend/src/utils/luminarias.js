@@ -1,5 +1,5 @@
-// Pestaña "Luminarias" del mapa: en qué estado está cada luminaria, cuántas hay de cada una
-// y en qué zona del pueblo falta más luz. Es lo que pidió el intendente.
+// Pestaña "Luminarias" del mapa: en qué estado está cada luminaria y cuántas hay de cada una.
+// Es lo que pidió el intendente.
 // Son funciones puras (no tocan la pantalla ni el mapa), así se pueden probar con "npm test".
 // Trabajan sobre los "resúmenes" del mapa (utils/mapa.js → agruparPorLugar): { lugar, ordenes abiertas, principal }.
 import { cajaDe } from './mapa.js'
@@ -46,6 +46,12 @@ export function luminariasConEstado(resumenes) {
     .map((resumen) => ({ resumen, estado: estadoLuminaria(resumen), antiguedad: antiguedadLuminaria(resumen.lugar) }))
 }
 
+// "Todo el pueblo" sin las luminarias que no tienen trabajos (esas se ven en la pestaña Luminarias), igual que las calles
+// (utils/calles.js → sinCallesVacias). La luminaria elegida se queda aunque no tenga trabajos (por ejemplo, si se la buscó arriba).
+export function sinLuminariasVacias(resumenes, lugarActivoId = null) {
+  return resumenes.filter((resumen) => !esLuminaria(resumen.lugar) || resumen.ordenes.length > 0 || resumen.lugar.id === lugarActivoId)
+}
+
 function contarPorEstado(items) {
   const cuenta = Object.fromEntries(ESTADOS_LUMINARIA.map((estado) => [estado.clave, 0]))
   for (const item of items) cuenta[item.estado] += 1
@@ -71,72 +77,11 @@ export function luminariasDelEstado(items, clave) {
     .sort((a, b) => a.resumen.lugar.nombre.localeCompare(b.resumen.lugar.nombre, 'es'))
 }
 
-// ---------- Zonas: "¿Dónde falta luz?" ----------
-// El pueblo se parte en 4 cuadrantes con centro en el medio de todas las luminarias cargadas.
-// Más adelante se puede cambiar por barrios reales sin tocar la pantalla (misma forma de datos).
-const CUADRANTES = [
-  { clave: 'noroeste', nombre: 'Noroeste', norte: true, oeste: true },
-  { clave: 'noreste', nombre: 'Noreste', norte: true, oeste: false },
-  { clave: 'suroeste', nombre: 'Suroeste', norte: false, oeste: true },
-  { clave: 'sureste', nombre: 'Sureste', norte: false, oeste: false },
-]
-
 // El punto de una luminaria: [longitud, latitud] (GeoJSON). Si no es un punto, el centro de su caja.
 export function puntoDe(geometria) {
   if (geometria?.type === 'Point') return geometria.coordinates
   const caja = cajaDe(geometria)
   return caja ? [(caja.oeste + caja.este) / 2, (caja.sur + caja.norte) / 2] : null
-}
-
-// [{ clave, nombre, limites: { sur, norte, oeste, este }, instaladas, cuenta, porcentaje }]
-// Primero la zona con menos luz (porcentaje más bajo). Se saltean las zonas sin luminarias instaladas.
-export function zonasDeLuminarias(items) {
-  const conPunto = items
-    .map((item) => ({ ...item, punto: puntoDe(item.resumen.lugar.ubicacion) }))
-    .filter((item) => item.punto)
-  if (conPunto.length === 0) return []
-  const lngs = conPunto.map((item) => item.punto[0])
-  const lats = conPunto.map((item) => item.punto[1])
-  const caja = { oeste: Math.min(...lngs), este: Math.max(...lngs), sur: Math.min(...lats), norte: Math.max(...lats) }
-  const centro = { lng: (caja.oeste + caja.este) / 2, lat: (caja.sur + caja.norte) / 2 }
-
-  return CUADRANTES
-    .map((cuadrante) => {
-      const enZona = conPunto.filter(({ punto: [lng, lat] }) =>
-        (lat >= centro.lat) === cuadrante.norte && (lng < centro.lng) === cuadrante.oeste)
-      const cuenta = contarPorEstado(enZona)
-      return {
-        clave: cuadrante.clave,
-        nombre: cuadrante.nombre,
-        limites: {
-          sur: cuadrante.norte ? centro.lat : caja.sur,
-          norte: cuadrante.norte ? caja.norte : centro.lat,
-          oeste: cuadrante.oeste ? caja.oeste : centro.lng,
-          este: cuadrante.oeste ? centro.lng : caja.este,
-        },
-        instaladas: cuenta.funciona + cuenta.apagada + cuenta.arreglo,
-        cuenta,
-        porcentaje: porcentajeQueFunciona(cuenta),
-      }
-    })
-    .filter((zona) => zona.instaladas > 0)
-    .sort((a, b) => a.porcentaje - b.porcentaje || a.nombre.localeCompare(b.nombre, 'es'))
-}
-
-// ¿La luminaria cae en la zona? (para resaltar o filtrar las apagadas de una zona)
-export function luminariaEnZona(item, zona) {
-  const punto = puntoDe(item.resumen.lugar.ubicacion)
-  if (!punto || !zona) return false
-  const [lng, lat] = punto
-  return lat >= zona.limites.sur && lat <= zona.limites.norte && lng >= zona.limites.oeste && lng <= zona.limites.este
-}
-
-// Texto corto de la zona: "2 apagadas · 1 en arreglo"
-export function textoDeZona(zona) {
-  const { apagada, arreglo } = zona.cuenta
-  const partes = [`${apagada} ${apagada === 1 ? 'apagada' : 'apagadas'}`]
-  if (arreglo > 0) partes.push(`${arreglo} en arreglo`)
-  return partes.join(' · ')
 }
 
 // ---------- Cambiar el estado desde el mapa (ficha de la luminaria) ----------

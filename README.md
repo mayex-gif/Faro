@@ -90,7 +90,7 @@ La pantalla de acceso ya utiliza la API de autenticación. La protección por ro
 
 ## Mapa de luminarias (pestaña Luminarias)
 
-Ver [Pestaña Luminarias y luminarias a futuro](./frontend/MAPA_LUMINARIAS.md): el alumbrado público aparte en el mapa (postes por estado, % que funciona, "¿Dónde falta luz?", modo noche), cambiar el estado desde la ficha, la sección Más → Luminarias y las luminarias a futuro (sin OT hasta marcarlas como instaladas).
+Ver [Pestaña Luminarias y luminarias a futuro](./frontend/MAPA_LUMINARIAS.md): el alumbrado público aparte en el mapa (puntitos de lejos y postes de cerca por estado, % que funciona, nuevas y viejas, modo noche), cambiar el estado desde la ficha, la sección Más → Luminarias y las luminarias a futuro (sin OT hasta marcarlas como instaladas).
 
 ## Mantenimiento periódico y consulta de auditoría
 

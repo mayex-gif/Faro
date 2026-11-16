@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ANCLA_POSTE, TAMANO_POSTE, htmlPoste } from '../src/utils/poste.js'
+import { ANCLA_POSTE, ANCLA_PUNTO, TAMANO_POSTE, TAMANO_PUNTO, ZOOM_POSTES, htmlPoste, htmlPunto, seVenPostes } from '../src/utils/poste.js'
 
 test('el poste lleva la clase de su estado', () => {
   for (const estado of ['funciona', 'apagada', 'arreglo', 'falta']) {
@@ -32,4 +32,26 @@ test('nueva y vieja cambian solo la lámpara (clase extra); "Sin marcar" o nada 
   assert.equal(htmlPoste('funciona', 'sinMarcar'), htmlPoste('funciona'))
   assert.equal(htmlPoste('funciona', null), htmlPoste('funciona'))
   assert.equal(htmlPoste('funciona', '"><script>'), htmlPoste('funciona')) // nunca se mete texto ajeno
+})
+
+test('de lejos se ven puntitos y desde el zoom 17 los postes', () => {
+  assert.equal(ZOOM_POSTES, 17)
+  assert.equal(seVenPostes(15), false)
+  assert.equal(seVenPostes(16), false)
+  assert.equal(seVenPostes(17), true)
+  assert.equal(seVenPostes(19), true)
+})
+
+test('el puntito lleva la clase de su estado y, si se sabe, la de nueva o vieja', () => {
+  for (const estado of ['funciona', 'apagada', 'arreglo', 'falta']) {
+    assert.equal(htmlPunto(estado), `<span class="punto-luminaria punto-${estado}"></span>`)
+  }
+  assert.equal(htmlPunto('funciona', 'vieja'), '<span class="punto-luminaria punto-funciona punto-vieja"></span>')
+  assert.equal(htmlPunto('apagada', 'nueva'), '<span class="punto-luminaria punto-apagada punto-nueva"></span>')
+  assert.equal(htmlPunto('funciona', 'sinMarcar'), htmlPunto('funciona'))
+})
+
+test('el puntito tampoco mete texto ajeno en el HTML y su ancla es el centro', () => {
+  assert.equal(htmlPunto('<img src=x onerror=alert(1)>', '<b>'), htmlPunto('funciona'))
+  assert.deepEqual(ANCLA_PUNTO, [TAMANO_PUNTO[0] / 2, TAMANO_PUNTO[1] / 2])
 })

@@ -46,6 +46,17 @@
 /* Las que hay que mirar quedan arriba de las que funcionan */
 .marca-poste:has(.poste-apagada), .marca-poste:has(.poste-arreglo) { z-index: 500 !important; }
 
+/* ---- De lejos: el puntito (utils/poste.js → htmlPunto) ----
+   Relleno = color del estado. Borde = la lámpara: blanco (nueva o sin marcar) o naranja (vieja). */
+.marca-punto { background: none; border: 0; }
+.punto-luminaria { display: block; box-sizing: border-box; width: 100%; height: 100%; border: 2.5px solid #FFFFFF; border-radius: 50%; background: #2F9E5B; box-shadow: 0 0 0 1px rgb(0 0 0 / 35%), 0 1px 2px rgb(0 0 0 / 40%); }
+.punto-apagada { background: #B3261E; }
+.punto-arreglo { background: #F2B01E; }
+.punto-falta { border: 2px dashed #4F5D65; background: #FFFFFF; box-shadow: none; }
+.punto-vieja { border-color: #E8871E; }
+/* Las que hay que mirar quedan arriba de las que funcionan */
+.marca-punto:has(.punto-apagada), .marca-punto:has(.punto-arreglo) { z-index: 500 !important; }
+
 /* El poste chiquito de la leyenda, los conteos y las listas */
 .muestra-poste { display: inline-block; flex: none; width: 16px; height: 28px; }
 .muestra-poste .poste-insignia { top: -2px; left: -5px; width: 11px; height: 11px; }
@@ -114,16 +125,6 @@
 .leyenda-casilla:has(input:not(:checked)) .muestra-poste { opacity: 0.35; }
 .leyenda-cantidad { color: var(--texto-secundario); }
 
-/* ---- "¿Dónde falta luz?" (zonas del pueblo) ---- */
-.luminarias-zonas { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
-.zona-luz { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--blanco); color: var(--texto); font: inherit; text-align: left; cursor: pointer; }
-.zona-luz:hover { border-color: var(--borde-campo); }
-.zona-luz:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
-.zona-luz-activa { border: 2px solid var(--enlace); background: #EAF6F9; }
-.zona-luz-titulo { display: flex; justify-content: space-between; font-size: 0.9375rem; }
-.zona-luz-barra { display: block; height: 8px; overflow: hidden; border-radius: 4px; background: #FBE4E2; }
-.zona-luz-barra span { display: block; height: 100%; background: #2F9E5B; }
-.zona-luz-texto { color: var(--texto-secundario); font-size: 0.8125rem; }
 .luminarias-accion { margin: 2px 0 6px; }
 .estado-luminaria .boton-primario { align-self: stretch; }
 
@@ -144,16 +145,17 @@
 .mapa-noche .poste-funciona.poste-vieja::before { background: radial-gradient(circle, rgb(255 160 70 / 58%) 0%, rgb(250 140 50 / 24%) 38%, rgb(250 140 50 / 0%) 70%); }
 .mapa-noche .poste-funciona .poste-cono { opacity: 1; }
 .mapa-noche .poste-apagada .poste-base { stroke: #FF8A80; }
-/* El marco de "¿Dónde falta luz?" se tiene que ver sobre el fondo oscuro */
-.mapa-noche .leaflet-overlay-pane path { stroke: #5FC0D8; }
+.mapa-noche .punto-funciona { box-shadow: 0 0 8px 4px rgb(255 206 110 / 55%); }
+.mapa-noche .punto-funciona.punto-nueva { box-shadow: 0 0 8px 4px rgb(205 225 255 / 60%); }
+.mapa-noche .punto-funciona.punto-vieja { box-shadow: 0 0 8px 4px rgb(250 140 50 / 60%); }
+.mapa-noche .punto-apagada { box-shadow: 0 0 0 1.5px #FF8A80; }
 @media (prefers-reduced-motion: no-preference) {
   .mapa .leaflet-tile-pane { transition: filter 0.3s ease; }
 }
 
 @media (max-width: 1050px) {
-  /* Celular: debajo de "Ver resumen" */
+  /* Celular: debajo de "Ver resumen", para todos (sin "Agregar luminaria", como el capataz, también: 68px lo tapaba) */
   .pantalla-mapa-angosta .boton-modo-noche { top: 122px; right: 12px; }
-  .pantalla-mapa-angosta .boton-modo-noche-arriba { top: 68px; }
 }
 
 /* ---------- Nueva o vieja (utils/luminarias.js → ANTIGUEDADES) ----------
