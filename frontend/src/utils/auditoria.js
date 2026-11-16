@@ -79,7 +79,7 @@ const ETIQUETAS_RELACION = {
   estado: 'Estado', estadoAnterior: 'Estado', estadoNuevo: 'Estado',
   lugar: 'Lugar', puntoInfraestructura: 'Lugar', reglaMantenimiento: 'Regla de mantenimiento',
   cuadrilla: 'Cuadrilla', usuario: 'Usuario', transicionEstado: 'Transición de estado',
-  ordenTrabajo: 'Orden de trabajo',
+  ordenTrabajo: 'Orden de trabajo', orden: 'Orden de trabajo',
 }
 
 export function formatearValorCampo(valor, campo = '', relaciones = {}) {
@@ -90,6 +90,7 @@ export function formatearValorCampo(valor, campo = '', relaciones = {}) {
     if (nombre) return `${nombre} (ID ${valor.id ?? '?'})`
     const relacion = relaciones[campo]
     if (relacion && valor.id != null) return relacion.get(String(valor.id)) ?? `${ETIQUETAS_RELACION[campo] ?? campo} (ID ${valor.id})`
+    if (['orden', 'ordenTrabajo'].includes(campo) && valor.id != null) return `OT #${valor.id}`
     return Object.entries(valor).map(([clave, dato]) => `${clave}: ${String(dato)}`).join(', ')
   }
   return String(valor)
