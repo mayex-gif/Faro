@@ -75,10 +75,23 @@ export function diferenciasCampos(valoresAnteriores, valoresNuevos) {
 }
 
 // Un valor de "antes"/"después" puede ser texto, número, booleano, null o (si el campo es una relación) un objeto.
-export function formatearValorCampo(valor) {
+const ETIQUETAS_RELACION = {
+  estado: 'Estado', estadoAnterior: 'Estado', estadoNuevo: 'Estado',
+  lugar: 'Lugar', puntoInfraestructura: 'Lugar', reglaMantenimiento: 'Regla de mantenimiento',
+  cuadrilla: 'Cuadrilla', usuario: 'Usuario', transicionEstado: 'Transición de estado',
+  ordenTrabajo: 'Orden de trabajo',
+}
+
+export function formatearValorCampo(valor, campo = '', relaciones = {}) {
   if (valor === null || valor === undefined) return '—'
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No'
-  if (typeof valor === 'object') return JSON.stringify(valor)
+  if (typeof valor === 'object') {
+    const nombre = valor.nombre ?? valor.titulo ?? valor.descripcion ?? valor.email
+    if (nombre) return `${nombre} (ID ${valor.id ?? '?'})`
+    const relacion = relaciones[campo]
+    if (relacion && valor.id != null) return relacion.get(String(valor.id)) ?? `${ETIQUETAS_RELACION[campo] ?? campo} (ID ${valor.id})`
+    return Object.entries(valor).map(([clave, dato]) => `${clave}: ${String(dato)}`).join(', ')
+  }
   return String(valor)
 }
 
