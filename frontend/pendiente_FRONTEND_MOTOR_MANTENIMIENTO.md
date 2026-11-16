@@ -1,5 +1,7 @@
 # Frontend pendiente — Motor de Mantenimiento Periódico (Módulo 10)
 
+> **Actualización de implementación:** el recorrido realizado, las pruebas y los pendientes se documentan en [MANTENIMIENTO_PERIODICO.md](./MANTENIMIENTO_PERIODICO.md). Este archivo conserva la propuesta inicial: el backend actual guarda la regla sin crear una primera OT inmediata, por lo que no debe copiarse el ejemplo que llama automáticamente a `ejecutarRegla` después del alta.
+
 > **Enfoque adoptado:** el encargado configura actividades periódicas **directamente desde el formulario de OT**,
 > activando un toggle "¿Se repite periódicamente?". No hay una sección separada para crear reglas;
 > la gestión y monitoreo de las reglas existentes vive en una pantalla simple de solo lectura + acciones.

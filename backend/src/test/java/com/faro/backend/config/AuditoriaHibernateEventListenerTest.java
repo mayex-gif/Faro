@@ -1,7 +1,9 @@
 package com.faro.backend.config;
 
 import com.faro.backend.models.AccionAuditoria;
+import com.faro.backend.models.ComentarioOrden;
 import com.faro.backend.models.EventoOrden;
+import com.faro.backend.models.FotoComentario;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.Usuario;
 import com.faro.backend.services.AuditoriaActorProvider;
@@ -68,6 +70,29 @@ class AuditoriaHibernateEventListenerTest {
 
         verify(writer).registrar(AccionAuditoria.ELIMINACION, "Usuario", 8L, "admin@faro.gob.ar",
                 "{\"email\":\"baja@faro.gob.ar\"}", null);
+    }
+
+    @Test
+    void registraElBorradoDeUnComentarioYDeSuFoto() {
+        PostDeleteEvent comentario = mock(PostDeleteEvent.class);
+        EntityPersister persisterComentario = persister(ComentarioOrden.class, "texto");
+        when(comentario.getPersister()).thenReturn(persisterComentario);
+        when(comentario.getId()).thenReturn(4L);
+        when(comentario.getDeletedState()).thenReturn(new Object[]{"Foto de la lámpara rota"});
+        PostDeleteEvent foto = mock(PostDeleteEvent.class);
+        EntityPersister persisterFoto = persister(FotoComentario.class, "archivo");
+        when(foto.getPersister()).thenReturn(persisterFoto);
+        when(foto.getId()).thenReturn(6L);
+        when(foto.getDeletedState()).thenReturn(new Object[]{"comentarios/abc/0.jpg"});
+        when(actor.actorActual()).thenReturn("encargado@faro.gob.ar");
+
+        listener.onPostDelete(comentario);
+        listener.onPostDelete(foto);
+
+        verify(writer).registrar(AccionAuditoria.ELIMINACION, "ComentarioOrden", 4L, "encargado@faro.gob.ar",
+                "{\"texto\":\"Foto de la lámpara rota\"}", null);
+        verify(writer).registrar(AccionAuditoria.ELIMINACION, "FotoComentario", 6L, "encargado@faro.gob.ar",
+                "{\"archivo\":\"comentarios/abc/0.jpg\"}", null);
     }
 
     @Test

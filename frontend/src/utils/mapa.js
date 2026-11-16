@@ -11,6 +11,13 @@ export const COLORES_PRIORIDAD = {
   URGENTE: '#C0262D',
 }
 export const COLOR_SIN_TRABAJOS = '#9AA9B0'
+// En la leyenda del mapa, Pendiente debe distinguirse del gris de los lugares sin trabajos.
+export const COLOR_ESTADO_PENDIENTE_MAPA = '#9180BD'
+
+export function colorEstadoEnMapa(estado) {
+  if (estado?.nombre?.trim().toLocaleLowerCase('es') === 'pendiente') return COLOR_ESTADO_PENDIENTE_MAPA
+  return estado?.color ?? COLOR_SIN_TRABAJOS
+}
 
 // Una "orden abierta" es la que todavía no llegó a un estado de cierre (Finalizada, Cancelada...).
 // Se pregunta al backend cuáles son de cierre: los estados son configurables.
@@ -57,7 +64,7 @@ export function ordenarResumenes(resumenes) {
 // modo "estado": color del estado de la orden principal (lo informa el backend).
 export function colorDelResumen(resumen, modo) {
   if (!resumen.principal) return COLOR_SIN_TRABAJOS
-  if (modo === 'estado') return resumen.principal.estadoColor ?? COLOR_SIN_TRABAJOS
+  if (modo === 'estado') return colorEstadoEnMapa({ nombre: resumen.principal.estadoNombre, color: resumen.principal.estadoColor })
   return COLORES_PRIORIDAD[resumen.principal.prioridad] ?? COLOR_SIN_TRABAJOS
 }
 

@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static com.faro.backend.config.security.UsuariosDePrueba.capataz;
@@ -101,5 +102,58 @@ class OrdenTrabajoControllerEstadoTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.estado").value(403))
                 .andExpect(jsonPath("$.mensaje").value("Esta orden no es de tu cuadrilla"));
+    }
+
+    // ===================== Pop-up de "Finalizar": casilla y gasto total =====================
+
+    @Test
+    void alFinalizarLlegaAlServiceLaCasillaYElGastoTotal() throws Exception {
+        mockMvc.perform(patch(URL).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"estadoId\": 4, \"lugarFunciona\": true, \"gastoReal\": 15000.50 }"))
+                .andExpect(status().isOk());
+
+        verify(service).cambiarEstado(eq(7L), eq(new CambioEstadoRequestDTO(4L, true, new BigDecimal("15000.50"))),
+                any(Usuario.class));
+    }
+
+    @Test
+    void unGastoTotalNegativoResponde400() throws Exception {
+        mockMvc.perform(patch(URL).with(user(encargado())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"estadoId\": 4, \"gastoReal\": -1 }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.gastoReal").value("El gasto total no puede ser negativo"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void unGastoTotalConTresDecimalesResponde400() throws Exception {
+        mockMvc.perform(patch(URL).with(user(encargado())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"estadoId\": 4, \"gastoReal\": 10.555 }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.gastoReal").value("El gasto total admite hasta 12 enteros y 2 decimales"));
+    }
+
+    // ===================== Compatibilidad: el gasto adicional del pop-up viejo (#74) =====================
+
+    @Test
+    void elGastoAdicionalViejoSigueLlegandoAlService() throws Exception {
+        // Una pantalla que quedó guardada en un celular (service worker) todavía manda gastoAdicional
+        mockMvc.perform(patch(URL).with(user(capataz(1L))).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"estadoId\": 4, \"lugarFunciona\": true, \"gastoAdicional\": 8000.50 }"))
+                .andExpect(status().isOk());
+
+        verify(service).cambiarEstado(eq(7L),
+                eq(new CambioEstadoRequestDTO(4L, true, null, new BigDecimal("8000.50"))), any(Usuario.class));
+    }
+
+    @Test
+    void unGastoAdicionalNegativoResponde400() throws Exception {
+        mockMvc.perform(patch(URL).with(user(encargado())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"estadoId\": 4, \"gastoAdicional\": -1 }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.gastoAdicional").value("El gasto adicional no puede ser negativo"));
+
+        verifyNoInteractions(service);
     }
 }

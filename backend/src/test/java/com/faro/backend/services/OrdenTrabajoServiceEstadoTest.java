@@ -101,6 +101,66 @@ class OrdenTrabajoServiceEstadoTest {
         verify(ordenRepository).save(orden);
     }
 
+    // ===================== LUMINARIAS: al terminar el trabajo vuelven a funcionar =====================
+
+    private final EstadoOrden cancelada = estado(5L, "Cancelada", true);
+
+    private OrdenTrabajo ordenDeLuminaria(boolean funciona, boolean instalada) {
+        OrdenTrabajo orden = ordenEn(enCurso);
+        orden.getLugar().setTipo("LUMINARIA");
+        orden.getLugar().setEstadoOperativo(funciona);
+        orden.getLugar().setInstalada(instalada);
+        return orden;
+    }
+
+    private void pasarA(OrdenTrabajo orden, EstadoOrden destino) {
+        when(ordenRepository.findById(7L)).thenReturn(Optional.of(orden));
+        when(estadoRepository.findById(destino.getId())).thenReturn(Optional.of(destino));
+        when(transicionRepository.existsByOrigenIdAndDestinoId(3L, destino.getId())).thenReturn(true);
+        when(ordenRepository.save(any(OrdenTrabajo.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+        service.cambiarEstado(7L, new CambioEstadoRequestDTO(destino.getId()), ENCARGADO);
+    }
+
+    @Test
+    void cambiarEstado_finalizarLaOtDeUnaLuminariaApagada_laDejaFuncionando() {
+        OrdenTrabajo orden = ordenDeLuminaria(false, true);
+
+        pasarA(orden, finalizada);
+
+        assertTrue(orden.getLugar().getEstadoOperativo());
+    }
+
+    @Test
+    void cambiarEstado_finalizarUnaOtDeUnaLuminariaAFuturo_noLaMarcaComoInstalada() {
+        // No debería pasar (no se le pueden crear OT), pero si había una vieja, instalarla lo decide el encargado
+        OrdenTrabajo orden = ordenDeLuminaria(false, false);
+
+        pasarA(orden, finalizada);
+
+        assertFalse(orden.getLugar().getInstalada());
+        assertFalse(orden.getLugar().getEstadoOperativo());
+    }
+
+    @Test
+    void cambiarEstado_cancelarLaOtDeUnaLuminaria_laDejaComoEstaba() {
+        OrdenTrabajo orden = ordenDeLuminaria(false, true);
+
+        pasarA(orden, cancelada);
+
+        assertFalse(orden.getLugar().getEstadoOperativo());
+    }
+
+    @Test
+    void cambiarEstado_finalizarLaOtDeOtroTipoDeLugar_noTocaSuEstado() {
+        OrdenTrabajo orden = ordenEn(enCurso); // la plaza
+        orden.getLugar().setTipo("ESPACIO_VERDE");
+        orden.getLugar().setEstadoOperativo(false);
+
+        pasarA(orden, finalizada);
+
+        assertFalse(orden.getLugar().getEstadoOperativo());
+    }
+
     @Test
     void cambiarEstado_sinCaminoPermitido_lanzaErrorYNoGuarda() {
         when(ordenRepository.findById(7L)).thenReturn(Optional.of(ordenEn(pendiente)));

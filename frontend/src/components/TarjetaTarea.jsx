@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import Icono from './Icono'
+import PanelComentarios from './PanelComentarios'
 import { PRIORIDADES, TIPOS_TRABAJO, etiqueta } from '../utils/ordenesTrabajo'
 import { COLORES_PRIORIDAD } from '../utils/mapa'
 import { accionesDeTarea, textoAccion } from '../utils/tareas'
@@ -12,9 +14,11 @@ import { accionesDeTarea, textoAccion } from '../utils/tareas'
 // - onAccion(orden, estadoNuevo): se tocó "Iniciar", "Finalizar" u otra opción
 // - onVerFicha(lugarId): abre la ficha histórica del lugar
 // - orden.sinEnviar: true si el estado que se ve se cambió sin señal y todavía no llegó al servidor
+// Abajo de todo, "Comentarios y fotos" (el muro de la OT): se carga recién cuando se abre.
 function TarjetaTarea({ orden, estados = [], ocupada, bloqueada, onAccion, onVerFicha, soloLectura = false }) {
   const { principal, otras } = soloLectura ? { principal: null, otras: [] } : accionesDeTarea(orden, estados)
   const sinPermiso = ocupada || bloqueada
+  const [verComentarios, setVerComentarios] = useState(false)
 
   return (
     // El borde de color repite la prioridad (RNF11); el texto de la prioridad está siempre escrito.
@@ -72,6 +76,13 @@ function TarjetaTarea({ orden, estados = [], ocupada, bloqueada, onAccion, onVer
         aria-label={`Ver la ficha histórica de ${orden.lugarNombre}`}>
         <Icono nombre="historial" />Ficha del lugar
       </button>}
+
+      {orden.id != null && (
+        <details className="tarea-comentarios" onToggle={(evento) => setVerComentarios(evento.currentTarget.open)}>
+          <summary><Icono nombre="comentario" />Comentarios y fotos</summary>
+          {verComentarios && <PanelComentarios orden={orden} mostrarTitulo={false} />}
+        </details>
+      )}
     </li>
   )
 }

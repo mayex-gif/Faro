@@ -54,6 +54,17 @@ class AuditoriaSnapshotSerializerTest {
     }
 
     @Test
+    void serializaRelacionesQueTodaviaNoTienenIdentificador() throws Exception {
+        // Ej: al guardar un comentario nuevo, sus fotos todavía no tienen id (se guardan después que él)
+        EntidadRelacionada nueva = new EntidadRelacionada();
+
+        JsonNode json = mapper.readTree(serializer.serializar(new String[]{"fotos"}, new Object[]{List.of(nueva, nueva)}));
+
+        assertEquals(2, json.get("fotos").size());
+        assertTrue(json.get("fotos").get(0).get("id").isNull());
+    }
+
+    @Test
     void convierteValoresDesconocidosATexto() throws Exception {
         Object valor = new Object() {
             @Override

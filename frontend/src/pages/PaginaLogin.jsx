@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSesion } from '../context/useSesion'
 import { EVENTO_COLA, leerTodaLaCola, quitarDePersona } from '../offline/cola'
 import { cuadernoPorPersona } from '../offline/datosCola'
+import BotonAyuda from '../components/BotonAyuda'
 import '../estilos-sesion.css'
 
 function PaginaLogin() {
@@ -64,6 +65,7 @@ function PaginaLogin() {
           <img src="/logo-faro.png" alt="" className="marca-logo" width="40" height="40" />
           <div><span className="marca-nombre">FARO</span><span className="marca-lugar">Estación General Paz</span></div>
         </div>
+        <BotonAyuda clave="login" />
       </header>
       <main className="acceso-layout">
         <section className="acceso-presentacion" aria-labelledby="titulo-presentacion">

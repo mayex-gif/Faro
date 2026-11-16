@@ -4,7 +4,7 @@
 .pagina:focus { outline: none; }
 .encabezado-pagina { margin-bottom: 28px; }
 .sobre-titulo { margin-bottom: 9px; color: var(--enlace); font-size: 0.6875rem; font-weight: 700; letter-spacing: 1.5px; }
-.encabezado-pagina > p:last-child { margin-top: 12px; font-size: 0.9375rem; color: var(--texto-secundario); }
+.encabezado-pagina > p:last-child { max-width: 75ch; margin-top: 12px; font-size: 0.9375rem; color: var(--texto-secundario); text-wrap: pretty; }
 .panel { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 2px 5px rgb(20 61 72 / 3%); }
 .panel-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--borde); }
 .panel-encabezado p { margin-top: 4px; font-size: 0.8125rem; color: var(--texto-secundario); overflow-wrap: anywhere; }
@@ -21,6 +21,7 @@
 .seccion-ubicacion { padding-left: 32px; border-left: 1px solid var(--borde); }
 .campos { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px 16px; }
 .campo { min-width: 0; }
+.campo-nombre { grid-column: 1 / -1; }
 .campo-ancho { grid-column: 1 / -1; }
 .campo label { display: block; margin-bottom: 7px; font-size: 0.8125rem; font-weight: 600; }
 .campo label > span:not(.opcional) { color: #A44013; }
@@ -30,9 +31,13 @@
 .campo input:hover, .campo select:hover, .campo textarea:hover { border-color: var(--enlace); }
 .campo input:focus, .campo select:focus, .campo textarea:focus { outline: 2px solid var(--foco); outline-offset: 2px; border-color: var(--foco); }
 .campo input:disabled { background: var(--fondo); color: var(--texto-secundario); cursor: not-allowed; }
+.entrada-con-prefijo { display: flex; align-items: stretch; }
+.entrada-con-prefijo > span { display: grid; place-items: center; min-width: 42px; border: 1px solid var(--borde-campo); border-right: 0; border-radius: 7px 0 0 7px; background: var(--fondo); color: var(--texto-secundario); font-weight: 650; }
+.campo .entrada-con-prefijo input { border-radius: 0 7px 7px 0; }
 .ayuda-campo { margin-top: 7px; color: var(--texto-secundario); font-size: 0.75rem; line-height: 1.5; }
 .ayuda-seccion { margin: -6px 0 16px; color: var(--texto-secundario); font-size: 0.8125rem; }
 .coordenadas { grid-template-columns: 1fr 1fr; }
+.seccion-ubicacion > .boton { margin-top: 10px; }
 .campo-check { display: flex; align-items: flex-start; gap: 12px; padding: 14px; margin-top: 20px; border: 1px solid var(--borde); border-radius: 8px; cursor: pointer; background: #F8FAFB; }
 .campo-check input { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--enlace); }
 .campo-check strong { display: block; font-size: 0.8125rem; font-weight: 600; }
@@ -119,10 +124,6 @@
   .formulario-pie .botones { flex-direction: column-reverse; }
 }
 
-.error {
-  color: #b91c1c;
-  margin-bottom: 16px;
-}
 /* Filtros compartidos: reutilizan los controles .campo del formulario. */
 .bloque-filtros { padding: 24px 28px; border-bottom: 1px solid var(--borde); background: #FAFCFC; }
 .filtros-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
@@ -138,15 +139,21 @@
   .filtros-puntos, .filtros-ordenes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filtro-busqueda { grid-column: 1 / -1; }
 }
+/* Botón "Más filtros": solo en el celular (ver FiltrosOrdenes.jsx) */
+.boton-mas-filtros { display: none; }
+.icono-girado { transform: rotate(180deg); }
 @media (max-width: 760px) {
   .bloque-filtros { padding: 20px; }
   .filtros-encabezado { flex-wrap: wrap; }
+  .boton-mas-filtros { display: inline-flex; width: 100%; margin-top: 14px; }
+  .filtros-plegados .filtros > .campo:not(.filtro-busqueda), .filtros-plegados > .ayuda-campo { display: none; }
 }
 @media (max-width: 540px) {
   .filtros-puntos, .filtros-ordenes { grid-template-columns: minmax(0, 1fr); }
   .filtros-ordenes .filtro-busqueda { grid-column: auto; }
 }
 .numero-orden { display: block; margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; font-weight: 400; }
+.gasto-orden { display: block; margin-top: 6px; color: var(--texto-secundario); font-size: 0.75rem; white-space: nowrap; }
 .fecha-tabla { white-space: nowrap; }
 
 /* Prioridad: color + texto (nunca solo color) */
@@ -193,6 +200,7 @@
 .evento-encabezado time { color: var(--texto-secundario); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 .evento-encabezado strong { font-weight: 650; }
 .evento-detalle { margin-top: 3px; font-size: 0.8125rem; }
+.evento-datos-cierre { color: var(--texto-secundario); } /* lo del pop-up de "Finalizar": lugar funcionando, gasto adicional */
 .evento-orden { margin-top: 2px; color: var(--texto-secundario); font-size: 0.75rem; overflow-wrap: anywhere; }
 .marca-cierre { padding: 2px 8px; border: 1px solid var(--borde); border-radius: 5px; background: #F1F4F5; color: var(--texto); font-size: 0.6875rem; font-weight: 650; }
 @media (max-width: 760px) {

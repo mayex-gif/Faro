@@ -11,10 +11,14 @@ import com.faro.backend.repositories.RegistroAuditoriaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /** Consulta paginada y filtrable de la bitácora automática. */
@@ -36,8 +40,8 @@ public class AuditoriaConsultaService {
     public PaginaAuditoriaDTO buscar(AccionAuditoria accion, String tipoRegistro, String registroId,
                                     String actor, LocalDateTime desde, LocalDateTime hasta,
                                     int pagina, int tamanio) {
-        Page<RegistroAuditoria> resultados = repository.buscar(accion, limpiar(tipoRegistro),
-                limpiar(registroId), limpiar(actor), desde, hasta,
+        Page<RegistroAuditoria> resultados = repository.findAll(
+                filtros(accion, limpiar(tipoRegistro), limpiar(registroId), limpiar(actor), desde, hasta),
                 PageRequest.of(pagina, tamanio, ORDEN_MAS_RECIENTE));
         return new PaginaAuditoriaDTO(
                 resultados.getContent().stream().map(this::aDto).toList(),
@@ -48,6 +52,36 @@ public class AuditoriaConsultaService {
                 resultados.isFirst(),
                 resultados.isLast()
         );
+    }
+
+    /**
+     * Arma el WHERE solo con los filtros que vinieron (los vacíos no se mandan a la base).
+     * El actor se busca "contiene", sin importar mayúsculas: "enc" encuentra "encargado@...".
+     */
+    public static Specification<RegistroAuditoria> filtros(AccionAuditoria accion, String tipoRegistro, String registroId,
+                                                    String actor, LocalDateTime desde, LocalDateTime hasta) {
+        return (registro, consulta, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> condiciones = new ArrayList<>();
+            if (accion != null) {
+                condiciones.add(cb.equal(registro.get("accion"), accion));
+            }
+            if (tipoRegistro != null) {
+                condiciones.add(cb.equal(registro.get("tipoRegistro"), tipoRegistro));
+            }
+            if (registroId != null) {
+                condiciones.add(cb.equal(registro.get("registroId"), registroId));
+            }
+            if (actor != null) {
+                condiciones.add(cb.like(cb.lower(registro.get("actor")), "%" + actor.toLowerCase(Locale.ROOT) + "%"));
+            }
+            if (desde != null) {
+                condiciones.add(cb.greaterThanOrEqualTo(registro.get("fecha"), desde));
+            }
+            if (hasta != null) {
+                condiciones.add(cb.lessThanOrEqualTo(registro.get("fecha"), hasta));
+            }
+            return cb.and(condiciones.toArray(jakarta.persistence.criteria.Predicate[]::new));
+        };
     }
 
     private String limpiar(String valor) {

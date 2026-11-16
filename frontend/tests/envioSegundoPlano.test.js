@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { runInNewContext } from 'node:vm'
 import { codigoDelTrabajador, sinModulos } from '../scripts/armar-sw.js'
-import { crearCambioEstado, marcarConflicto } from '../src/offline/datosCola.js'
+import { crearCambioEstado, crearComentario, marcarConflicto } from '../src/offline/datosCola.js'
 
 // Se prueba el sw.js ARMADO (como en el build): el worker + las reglas del cuaderno + el envío en segundo plano.
 const codigo = await codigoDelTrabajador()
@@ -42,7 +42,7 @@ function preparar({ operaciones = [], sesion = { id: 'actual', usuarioId: 5, tok
   const pedidos = []
   const eventos = {}
   runInNewContext(codigo, {
-    URL, atob, JSON, Date, Promise, Map, Set, Number, String, Boolean, Math, Error, structuredClone, queueMicrotask, setTimeout, clearTimeout,
+    URL, atob, JSON, Date, Promise, FormData, Blob, Map, Set, Number, String, Boolean, Math, Error, structuredClone, queueMicrotask, setTimeout, clearTimeout,
     CACHE_FARO: 'faro-app-x', ARCHIVOS_FARO: [],
     indexedDB: { open() { const pedido = { result: base }; queueMicrotask(() => pedido.onsuccess()); return pedido } },
     self: { location: { origin: 'https://faro.test' }, clients: { claim: async () => {} }, navigator: {}, addEventListener: (nombre, accion) => { eventos[nombre] = accion } },
@@ -127,6 +127,21 @@ test('solo manda los renglones de la cuenta guardada y respeta los que esperan u
   const { pedidos, despertar } = preparar({ operaciones: [deJuan, chocado, despues], responder: bien })
   await despertar()
   assert.equal(pedidos.length, 0) // lo de Juan no es de esta cuenta; "b" espera que Carlos decida sobre "a"
+})
+
+test('un comentario con fotos se manda como formulario (sin Content-Type JSON) al PUT de comentarios', async () => {
+  const foto = new Blob(['jpeg'], { type: 'image/jpeg' })
+  const operacion = crearComentario(carlos, { id: 7 }, { texto: 'Con FARO cerrado', fotos: [foto] },
+    { ahora: new Date(Date.UTC(2026, 10, 8, 13, 15)), numero: 'c1' })
+  const { tablas, pedidos, despertar } = preparar({ operaciones: [operacion], responder: bien })
+  await despertar()
+  assert.equal(pedidos[0].url, 'https://faro-backend.test/api/ordenes-trabajo/7/comentarios/c1')
+  assert.equal(pedidos[0].opciones.headers['Content-Type'], undefined)
+  assert.equal(pedidos[0].opciones.headers.Authorization, `Bearer ${vigente}`)
+  assert.equal(pedidos[0].opciones.body.get('texto'), 'Con FARO cerrado')
+  assert.equal(pedidos[0].opciones.body.get('hechoEn'), '2026-11-08T13:15:00.000Z')
+  assert.equal(pedidos[0].opciones.body.getAll('fotos').length, 1)
+  assert.equal(tablas.operaciones.size, 0)
 })
 
 test('otros avisos de sincronización no lo despiertan', async () => {

@@ -86,3 +86,19 @@ test('el cierre por vencimiento informa a la interfaz y una respuesta vieja no c
   assert.equal(eventos[0].type, EVENTO_SESION_TERMINADA)
   assert.equal(eventos[0].detail, 'Tu sesión venció.')
 })
+
+test('sin señal se entra con el perfil guardado solo si el token está vigente y el perfil habilitado', async () => {
+  const { perfilParaTrabajarSinSenal } = await import('../src/utils/sesion.js')
+  const ahora = Date.parse('2026-11-10T12:00:00Z')
+  const jwt = (exp) => `a.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.c`
+  const vigente = jwt(ahora / 1000 + 3600)
+  const vencido = jwt(ahora / 1000 - 10)
+  const perfil = { id: 1, activo: true, rol: 'CAPATAZ_CUADRILLA' }
+  const rolOk = (rol) => rol === 'CAPATAZ_CUADRILLA'
+  assert.equal(perfilParaTrabajarSinSenal(vigente, perfil, rolOk, ahora), perfil)
+  assert.equal(perfilParaTrabajarSinSenal(vencido, perfil, rolOk, ahora), null)
+  assert.equal(perfilParaTrabajarSinSenal(vigente, { ...perfil, activo: false }, rolOk, ahora), null)
+  assert.equal(perfilParaTrabajarSinSenal(vigente, { ...perfil, rol: 'X' }, rolOk, ahora), null)
+  assert.equal(perfilParaTrabajarSinSenal(vigente, null, rolOk, ahora), null)
+  assert.equal(perfilParaTrabajarSinSenal('', perfil, rolOk, ahora), null)
+})

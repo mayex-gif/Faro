@@ -1,9 +1,11 @@
 package com.faro.backend.config;
 
 import com.faro.backend.models.AccionAuditoria;
+import com.faro.backend.models.ComentarioOrden;
 import com.faro.backend.models.Cuadrilla;
 import com.faro.backend.models.EstadoOrden;
 import com.faro.backend.models.EventoOrden;
+import com.faro.backend.models.FotoComentario;
 import com.faro.backend.models.OperacionSincronizada;
 import com.faro.backend.models.OrdenTrabajo;
 import com.faro.backend.models.PuntoInfraestructura;
@@ -36,7 +38,9 @@ public class AuditoriaHibernateEventListener implements PostInsertEventListener,
             EstadoOrden.class,
             TransicionEstado.class,
             EventoOrden.class,
-            OperacionSincronizada.class
+            OperacionSincronizada.class,
+            ComentarioOrden.class,
+            FotoComentario.class
     );
 
     private final RegistroAuditoriaWriter writer;

@@ -1,10 +1,11 @@
 // Textos y agrupaciones de la Ficha Histórica del Lugar.
 // Son funciones puras: reciben los datos del backend y devuelven lo que se muestra. No tocan la pantalla.
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta } from './ordenesTrabajo.js'
+import { diferenciaDeGasto, formatearPesos } from './cierreOrden.js'
 
 // Los tipos de lugar, con el texto que ve el usuario
 const NOMBRES_TIPO_LUGAR = {
-  ESPACIO_VERDE: 'Espacio verde',
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }
@@ -52,6 +53,30 @@ export function detalleEvento(evento) {
     return `De ${evento.estadoAnterior} a ${evento.estadoNuevo}`
   }
   return ''
+}
+
+// Cuánto se gastó al finalizar, comparado con lo declarado al crear la OT:
+// "Se gastó $ 15.000 ($ 5.000 menos de lo declarado)", "Se gastó $ 23.000 ($ 3.000 más de lo declarado)",
+// "Se gastó $ 20.000 (lo mismo que se declaró)" o, sin monto declarado, "Se gastó $ 15.000".
+export function textoGastoDelEvento(gastoReal, montoAproximado) {
+  if (gastoReal == null) return ''
+  const gastado = `Se gastó ${formatearPesos(gastoReal)}`
+  const diferencia = diferenciaDeGasto(gastoReal, montoAproximado)
+  if (diferencia == null) return gastado
+  if (diferencia === 0) return `${gastado} (lo mismo que se declaró)`
+  const cuanto = formatearPesos(Math.abs(diferencia))
+  return `${gastado} (${cuanto} ${diferencia < 0 ? 'menos' : 'más'} de lo declarado)`
+}
+
+// Lo que se marcó en el pop-up de "Finalizar" (solo en ese evento): si el lugar volvió a funcionar y cuánto se gastó.
+// Ej: "El lugar volvió a funcionar · Se gastó $ 15.000 ($ 5.000 menos de lo declarado)". Vacío si no hay nada de eso.
+export function cierreDelEvento(evento) {
+  if (evento?.tipo !== 'CAMBIO_ESTADO') return ''
+  const partes = []
+  if (evento.lugarFunciona === true) partes.push('El lugar volvió a funcionar')
+  if (evento.lugarFunciona === false) partes.push('El lugar siguió fuera de servicio')
+  if (evento.gastoReal != null) partes.push(textoGastoDelEvento(evento.gastoReal, evento.montoAproximado))
+  return partes.join(' · ')
 }
 
 // Las opciones para filtrar la línea de tiempo por el estado de las órdenes

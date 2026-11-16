@@ -19,9 +19,10 @@ export function filtrarPuntos(puntos, filtros) {
     }
     // 2. Tipo
     if (filtros.tipo !== '' && punto.tipo !== filtros.tipo) return false
-    // 3. Estado
+    // 3. Estado ("falla" = fuera de servicio pero instalada; "falta" = luminaria que todavía no se puso)
     if (filtros.estado === 'funciona' && !punto.estadoOperativo) return false
-    if (filtros.estado === 'falla' && punto.estadoOperativo) return false
+    if (filtros.estado === 'falla' && (punto.estadoOperativo || punto.instalada === false)) return false
+    if (filtros.estado === 'falta' && punto.instalada !== false) return false
 
     return true // pasó todos los filtros
   })

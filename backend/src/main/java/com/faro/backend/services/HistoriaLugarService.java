@@ -113,7 +113,12 @@ public class HistoriaLugarService {
                 nuevo != null ? nuevo.getColor() : null,
                 nuevo != null && nuevo.isCierre(),
                 cuadrilla != null ? cuadrilla.getNombre() : null,
-                cuadrillaAnterior != null ? cuadrillaAnterior.getNombre() : null
+                cuadrillaAnterior != null ? cuadrillaAnterior.getNombre() : null,
+                anotacion.getGastoReal(),
+                // Lo declarado al crear la OT, para que la ficha diga "($ 5.000 menos de lo declarado").
+                // Una OT finalizada ya no se edita: el monto de hoy es el mismo que tenía al finalizarla.
+                anotacion.getGastoReal() != null ? orden.getMontoAproximado() : null,
+                anotacion.getLugarFunciona()
         );
     }
 
