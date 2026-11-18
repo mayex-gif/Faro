@@ -88,6 +88,10 @@ La pantalla de acceso ya utiliza la API de autenticación. La protección por ro
 - [Consulta local de tareas](./frontend/PWA_CONSULTA_LOCAL.md): el capataz guarda una copia de sus tareas y la abre sin señal.
 - [Sincronización sin señal](./frontend/PWA_SINCRONIZACION.md): lo que se hace sin señal (iniciar/finalizar tareas, crear OT) se guarda en el celular, se manda solo cuando vuelve la red y el backend resuelve los conflictos (`/api/sincronizacion`). Incluye el aviso "Hay una versión nueva de FARO" después de cada deploy.
 
+## Mapa de luminarias (pestaña Luminarias)
+
+Ver [Pestaña Luminarias y luminarias a futuro](./frontend/MAPA_LUMINARIAS.md): el alumbrado público aparte en el mapa (puntitos de lejos y postes de cerca por estado, % que funciona, nuevas y viejas, modo noche), cambiar el estado desde la ficha, la sección Más → Luminarias y las luminarias a futuro (sin OT hasta marcarlas como instaladas).
+
 ## Mantenimiento periódico y consulta de auditoría
 
 Ver [recorrido de mantenimiento, integración de Auditoría y pendientes de coordinación](./frontend/MANTENIMIENTO_PERIODICO.md). Incluye creación de programaciones desde Trabajos, gestión de reglas, pruebas realizadas y el error de backend que todavía bloquea la verificación completa de Auditoría.
@@ -135,3 +139,7 @@ El encargado y la mesa de entradas gestionan el personal (altas, bajas, roles y 
 ## Comentarios y fotos de las OT
 
 Cada orden de trabajo tiene un muro de comentarios con fotos (evidencia del trabajo), también sin señal. Las fotos van a un almacén S3 aparte: RustFS en Docker y Backblaze B2 en Render. Ver [COMENTARIOS_Y_FOTOS.md](./COMENTARIOS_Y_FOTOS.md) (cómo probarlo en la compu) y [DESPLIEGUE.md](./DESPLIEGUE.md#9-almacén-de-fotos-backblaze-b2) (cómo configurarlo en Render).
+
+## Finalizar y cancelar una OT
+
+Al finalizar una OT sale un pop-up (todo opcional, también sin señal): si el lugar quedó funcionando, cuánto se gastó en total (viene cargado con el monto declarado y se corrige hacia arriba o hacia abajo), un comentario y fotos de evidencia. Al cancelar, un motivo opcional. Lo gastado y la diferencia con lo declarado se ven en Trabajos, en la ficha del lugar, en Reportes y en el CSV. Ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md).

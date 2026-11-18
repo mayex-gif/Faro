@@ -9,6 +9,7 @@ import AvisoVersionNueva from './components/AvisoVersionNueva'
 import { useSesion } from './context/useSesion'
 import { inicioDe, puedeVer, tieneRol } from './utils/permisos'
 import PaginaInfraestructura from './pages/PaginaInfraestructura'
+import PaginaLuminarias from './pages/PaginaLuminarias'
 import PaginaOrdenes from './pages/PaginaOrdenes'
 import PaginaAsignacion from './pages/PaginaAsignacion'
 import PaginaMapa from './pages/PaginaMapa'
@@ -29,6 +30,7 @@ const PaginaReportes = lazy(() => import('./pages/PaginaReportes'))
 // Para agregar una pantalla nueva: sumarla acá y en utils/navegacion.js.
 const PAGINAS = {
   infraestructura: PaginaInfraestructura,
+  luminarias: PaginaLuminarias,
   ordenes: PaginaOrdenes,
   asignacion: PaginaAsignacion,
   mapa: PaginaMapa,
@@ -81,13 +83,17 @@ function Aplicacion() {
       <a className="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
       <header className="barra-superior">
-        <div className="marca">
+        <a className="marca" href="#contenido" aria-label="FARO, volver al mapa de Todo el pueblo"
+          onClick={(evento) => {
+            evento.preventDefault()
+            navegar('mapa', { pestana: 'todo', vez: Date.now() })
+          }}>
           <img src="/logo-faro.png" alt="" className="marca-logo" width="40" height="40" />
           <div>
             <span className="marca-nombre">FARO</span>
             <span className="marca-lugar">Estación General Paz</span>
           </div>
-        </div>
+        </a>
 
         {/* Elegir un lugar o un trabajo lleva al mapa con ese lugar elegido.
             "vez" cambia en cada búsqueda: así el mapa se vuelve a armar aunque ya se esté viendo. */}

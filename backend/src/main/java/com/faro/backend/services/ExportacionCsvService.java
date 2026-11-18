@@ -32,8 +32,9 @@ public class ExportacionCsvService {
 
     /**
      * Genera el CSV completo de Órdenes de Trabajo para el período dado.
-     * Columnas: ID OT | Estado | Tipo Trabajo | Cuadrilla | Lugar | Fecha Creación |
-     *           Fecha Finalización | Origen | Prioridad
+     * Columnas: ID OT | Descripcion | Estado | Tipo Trabajo | Cuadrilla | Lugar | Origen | Prioridad |
+     *           Monto Aproximado Declarado | Gasto Real | Diferencia | Ubicacion de Calle |
+     *           Fecha Creacion | Fecha Finalizacion
      *
      * @param ordenes Lista de OTs con relaciones ya cargadas (sin lazy para evitar N+1).
      * @return Bytes del CSV codificados en UTF-8.
@@ -51,6 +52,10 @@ public class ExportacionCsvService {
           .append("Lugar").append(SEPARADOR)
           .append("Origen").append(SEPARADOR)
           .append("Prioridad").append(SEPARADOR)
+          .append("Monto Aproximado Declarado").append(SEPARADOR)
+          .append("Gasto Real").append(SEPARADOR)
+          .append("Diferencia").append(SEPARADOR)
+          .append("Ubicacion de Calle").append(SEPARADOR)
           .append("Fecha Creacion").append(SEPARADOR)
           .append("Fecha Finalizacion")
           .append(NUEVA_LINEA);
@@ -64,12 +69,28 @@ public class ExportacionCsvService {
               .append(escapar(ot.getLugar() != null ? ot.getLugar().getNombre() : "")).append(SEPARADOR)
               .append(escapar(ot.getOrigen().name())).append(SEPARADOR)
               .append(escapar(ot.getPrioridad().name())).append(SEPARADOR)
+              .append(ot.getMontoAproximado() != null ? ot.getMontoAproximado().toPlainString() : "").append(SEPARADOR)
+              .append(ot.getGastoReal() != null ? ot.getGastoReal().toPlainString() : "").append(SEPARADOR)
+              .append(diferenciaDeGasto(ot)).append(SEPARADOR)
+              .append(escapar(ubicacionCalle(ot))).append(SEPARADOR)
               .append(ot.getFechaCreacion() != null ? ot.getFechaCreacion().format(FMT_FECHA_HORA) : "").append(SEPARADOR)
               .append(ot.getFechaFinalizacion() != null ? ot.getFechaFinalizacion().format(FMT_FECHA_HORA) : "")
               .append(NUEVA_LINEA);
         }
 
         return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Gasto real − monto declarado (negativo = se gastó menos de lo declarado).
+     * Vacía si la OT no tiene gasto real (no se informó cuánto se gastó). Sin monto declarado, cuenta como 0.
+     */
+    private static String diferenciaDeGasto(OrdenTrabajo ot) {
+        if (ot.getGastoReal() == null) {
+            return "";
+        }
+        java.math.BigDecimal declarado = ot.getMontoAproximado() != null ? ot.getMontoAproximado() : java.math.BigDecimal.ZERO;
+        return ot.getGastoReal().subtract(declarado).toPlainString();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -131,5 +152,11 @@ public class ExportacionCsvService {
             return "\"" + valor.replace("\"", "\"\"") + "\"";
         }
         return valor;
+    }
+
+    private String ubicacionCalle(OrdenTrabajo ot) {
+        if (ot.getAltura() != null) return "Altura " + ot.getAltura();
+        if (ot.getCalleEntre1() != null) return "Entre " + ot.getCalleEntre1() + " y " + ot.getCalleEntre2();
+        return "";
     }
 }

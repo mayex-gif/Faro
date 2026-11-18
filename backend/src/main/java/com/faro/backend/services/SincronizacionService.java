@@ -1,7 +1,6 @@
 package com.faro.backend.services;
 
 import com.faro.backend.dto.AltaOrdenSinSenalDTO;
-import com.faro.backend.dto.CambioEstadoRequestDTO;
 import com.faro.backend.dto.CambioEstadoSinSenalDTO;
 import com.faro.backend.dto.OrdenTrabajoDTO;
 import com.faro.backend.exceptions.ConflictoSincronizacionException;
@@ -24,6 +23,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,6 +110,7 @@ public class SincronizacionService {
         }
         if (Objects.equals(actualId, pedido.estadoId())) {
             // Alguien ya la dejó como la querías: no hay nada que cambiar (y no se anota otro evento en la ficha)
+            guardarElGastoQueFaltaba(orden, pedido);
             return ordenService.obtener(pedido.ordenId());
         }
         if (actual != null && actual.isCierre()) {
@@ -126,7 +127,8 @@ public class SincronizacionService {
         }
         try {
             // Las reglas de siempre (permisos, caminos entre estados) y el evento de la ficha
-            return ordenService.cambiarEstado(pedido.ordenId(), new CambioEstadoRequestDTO(pedido.estadoId()), usuario);
+            // (con la casilla "El lugar quedó funcionando" y el gasto total, si es un cierre)
+            return ordenService.cambiarEstado(pedido.ordenId(), pedido.comoPedido(), usuario);
         } catch (RecursoNoEncontradoException e) {
             throw new ConflictoSincronizacionException(Motivo.DATO_NO_EXISTE,
                     e.getMessage() + ": tu cambio no se aplicó.", actualId, actualNombre, false);
@@ -136,6 +138,24 @@ public class SincronizacionService {
         } catch (SinPermisoException e) {
             throw new ConflictoSincronizacionException(Motivo.SIN_PERMISO,
                     e.getMessage() + ": tu cambio no se aplicó.", actualId, actualNombre, false);
+        }
+    }
+
+    /**
+     * Otra persona ya había finalizado la OT, pero el capataz (sin señal) había informado cuánto se gastó.
+     * Para no perder ese gasto: si la OT todavía no tiene gasto total, se guarda el del capataz (o, si su comanda
+     * es de antes y trae el "gasto adicional" viejo, lo declarado + el adicional). Si ya tiene, queda el primero
+     * que llegó (la misma regla de siempre: gana el primero). La casilla del lugar NO se aplica: el que la
+     * finalizó ya decidió. La OT la trajo Hibernate en esta transacción: el cambio se guarda solo al terminar.
+     */
+    private static void guardarElGastoQueFaltaba(OrdenTrabajo orden, CambioEstadoSinSenalDTO pedido) {
+        EstadoOrden estado = orden.getEstado();
+        boolean finalizada = estado != null && estado.isCierre() && !OrdenTrabajoService.esCancelacion(estado);
+        if (finalizada && orden.getGastoReal() == null) {
+            BigDecimal gastoReal = pedido.comoPedido().gastoTotal(orden.getMontoAproximado());
+            if (gastoReal != null) {
+                orden.setGastoReal(gastoReal);
+            }
         }
     }
 

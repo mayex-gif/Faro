@@ -10,6 +10,10 @@
 /* "isolation" encierra los niveles internos de Leaflet: así no tapan el enlace "Saltar al contenido" ni los menús. */
 .mapa { height: 560px; isolation: isolate; background: #E8EEF0; }
 .mapa:focus-visible { outline-offset: -3px; }
+/* Al tocar una calle o un área, Chrome le pone el foco a la línea del dibujo (SVG) y le dibuja el contorno
+   de foco: un rectángulo alrededor de la calle. Las marcas del mapa no se recorren con el teclado
+   (la lista de al lado tiene los mismos datos), así que ese contorno no ayuda a nadie y se saca. */
+.mapa path.leaflet-interactive:focus, .mapa path.leaflet-interactive:focus-visible { outline: none; }
 
 .leyenda { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 14px 24px; list-style: none; font-size: 0.8125rem; border-top: 1px solid var(--borde); }
 .leyenda li { display: inline-flex; align-items: center; gap: 8px; }

@@ -1,6 +1,7 @@
 import Icono from './Icono'
 import { ORIGENES, PRIORIDADES, TIPOS_TRABAJO, etiqueta, formatearFecha } from '../utils/ordenesTrabajo'
 import { fechaProgramada } from '../utils/recurrencia'
+import { textoGastoDeLaOrden } from '../utils/cierreOrden'
 
 // Props:
 // - ordenes: la lista a mostrar
@@ -46,6 +47,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
             <tr>
               <th scope="col">Trabajo</th>
               <th scope="col">Lugar</th>
+              <th scope="col">Ubicación</th>
               <th scope="col">Tipo</th>
               <th scope="col">Origen</th>
               <th scope="col">Prioridad</th>
@@ -76,6 +78,7 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                   </span>}
                 </th>
                 <td>{orden.lugarNombre}</td>
+                <td>{orden.altura ? `Altura ${orden.altura}` : (orden.calleEntre1 ? `Entre ${orden.calleEntre1} y ${orden.calleEntre2}` : '—')}</td>
                 <td><span className="tipo-lugar">{etiqueta(TIPOS_TRABAJO, orden.tipo)}</span></td>
                 <td>{etiqueta(ORIGENES, orden.origen)}</td>
                 <td>
@@ -92,6 +95,10 @@ function TablaOrdenes({ ordenes, idEditando, onEditar, errorCarga, estados = [],
                       {orden.estadoNombre}
                     </span>
                   ) : '—'}
+                  {/* Cuánto se gastó en total (pop-up de "Finalizar") y la diferencia con lo declarado al crearla */}
+                  {orden.gastoReal != null && (
+                    <span className="gasto-orden">{textoGastoDeLaOrden(orden)}</span>
+                  )}
                 </td>
                 <td className="fecha-tabla">{formatearFecha(orden.fechaCreacion)}</td>
                 {conAcciones && orden.sinEnviar && orden.id == null && (

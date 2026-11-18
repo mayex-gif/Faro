@@ -44,8 +44,11 @@ function base(usuario, tipo, ahora, numero) {
 }
 
 // "Pasé la OT a otro estado". Guarda en qué estado la VIO (estadoAnteriorId): con eso el backend detecta conflictos.
-export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero() } = {}) {
+// Al FINALIZAR, datosCierre trae lo del pop-up: { lugarFunciona?, gastoReal? } (lo que no vino, no se guarda:
+// así el backend hace lo de siempre, igual que con las comandas de antes del pop-up).
+export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Date(), numero = nuevoNumero(), datosCierre = {} } = {}) {
   return {
+    ...soloDatosDeCierre(datosCierre),
     ...base(usuario, CAMBIO_ESTADO, ahora, numero),
     ordenId: orden.id,
     estadoId: estadoNuevo.id,
@@ -59,12 +62,27 @@ export function crearCambioEstado(usuario, orden, estadoNuevo, { ahora = new Dat
   }
 }
 
-// "Cargué una OT nueva". datos = lo mismo que el alta normal: { descripcion, tipo, origen, prioridad, lugarId }.
+// La casilla "El lugar quedó funcionando" (true/false) y cuánto se gastó en total (un número ≥ 0), si vinieron.
+// También el "gastoAdicional" del pop-up viejo (#74): una comanda que quedó en el cuaderno antes de esta versión
+// lo sigue mandando tal cual, y el backend hace la cuenta (lo declarado + el adicional).
+function soloDatosDeCierre(datos = {}) {
+  const cierre = {}
+  if (typeof datos.lugarFunciona === 'boolean') cierre.lugarFunciona = datos.lugarFunciona
+  if (typeof datos.gastoReal === 'number' && Number.isFinite(datos.gastoReal)) cierre.gastoReal = datos.gastoReal
+  if (typeof datos.gastoAdicional === 'number' && Number.isFinite(datos.gastoAdicional)) cierre.gastoAdicional = datos.gastoAdicional
+  return cierre
+}
+
+// "Cargué una OT nueva". Copia los campos conocidos del alta normal, incluidos los opcionales añadidos después.
 export function crearAltaOrden(usuario, datos, lugarNombre, { ahora = new Date(), numero = nuevoNumero() } = {}) {
   const { descripcion, tipo, origen, prioridad, lugarId } = datos
+  const orden = { descripcion, tipo, origen, prioridad, lugarId }
+  for (const campo of ['calleEntre1', 'calleEntre2', 'altura', 'tramo', 'montoAproximado']) {
+    if (Object.hasOwn(datos, campo)) orden[campo] = datos[campo]
+  }
   return {
     ...base(usuario, ALTA_ORDEN, ahora, numero),
-    orden: { descripcion, tipo, origen, prioridad, lugarId },
+    orden,
     descripcion,
     lugarNombre,
   }
@@ -122,6 +140,7 @@ export function cuerpoDeEnvio(operacion) {
     estadoId: operacion.estadoId,
     estadoAnteriorId: operacion.estadoAnteriorId,
     hechoEn: operacion.creadaEn,
+    ...soloDatosDeCierre(operacion), // solo en un cierre hecho con el pop-up de "Finalizar"
   }
 }
 

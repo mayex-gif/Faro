@@ -1,12 +1,17 @@
 package com.faro.backend.controllers;
 
+import com.faro.backend.config.security.UsuarioDetalles;
 import com.faro.backend.dto.PuntoInfraestructuraDTO;
 import com.faro.backend.dto.PuntoInfraestructuraRequestDTO;
+import com.faro.backend.exceptions.SinPermisoException;
+import com.faro.backend.models.RolUsuario;
 import com.faro.backend.services.PuntoInfraestructuraService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +20,7 @@ import java.util.List;
  * ABM de lugares (puntos de infraestructura).
  * Consultar: cualquier usuario con sesión iniciada.
  * Agregar: encargado del corralón y mesa de entradas (ej.: un reclamo de un lugar que no estaba cargado).
+ * Las luminarias a futuro (instalada = false) las agrega solo el encargado.
  * Modificar y borrar: solo el encargado del corralón.
  * Si el rol no alcanza, @PreAuthorize corta antes de llegar al service y responde 403.
  */
@@ -45,7 +51,13 @@ public class PuntoInfraestructuraController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ENCARGADO_CORRALON', 'MESA_ENTRADAS')")
     @Operation(summary = "Registrar un nuevo lugar", description = "Crea un nuevo punto de infraestructura (espacio verde, calle o luminaria) geolocalizado.")
-    public ResponseEntity<PuntoInfraestructuraDTO> crear(@RequestBody PuntoInfraestructuraRequestDTO request) {
+    public ResponseEntity<PuntoInfraestructuraDTO> crear(@RequestBody PuntoInfraestructuraRequestDTO request,
+                                                         @Parameter(hidden = true) @AuthenticationPrincipal UsuarioDetalles usuario) {
+        // Las luminarias a futuro (plan del intendente) las carga solo el encargado; mesa registra lugares que ya existen
+        if (Boolean.FALSE.equals(request.instalada())
+                && (usuario == null || usuario.getUsuario().getRol() != RolUsuario.ENCARGADO_CORRALON)) {
+            throw new SinPermisoException("Solo el encargado del corralón puede cargar luminarias a futuro.");
+        }
         return ResponseEntity.ok(service.crearLugar(request));
     }
 

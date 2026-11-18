@@ -1,31 +1,15 @@
 import Icono from './Icono'
+import { claseEstadoLugar, describirUbicacion, textoEstadoLugar } from '../utils/lugares'
 
 const NOMBRES_TIPO = {
-  ESPACIO_VERDE: 'Espacio verde',
+  ESPACIO_VERDE: 'Lugar',
   CALLE: 'Calle',
   LUMINARIA: 'Luminaria',
 }
 
-function describirUbicacion(ubicacion) {
-  if (!ubicacion) return 'Sin ubicación'
-  switch (ubicacion.type) {
-    case 'Point': {
-      // Agregamos seguridad por si el backend manda mal las coordenadas
-      if (!ubicacion.coordinates || ubicacion.coordinates.length < 2) return 'Ubicación inválida'
-      const [longitud, latitud] = ubicacion.coordinates
-      return `${latitud.toFixed(4)}, ${longitud.toFixed(4)}`
-    }
-    case 'LineString':
-      return `Línea de ${ubicacion.coordinates?.length || 0} puntos`
-    case 'Polygon':
-      return 'Polígono'
-    default:
-      return ubicacion.type
-  }
-}
-
 // 1. Agregamos mensajeVacio a las props recibidas
-function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, onVerFicha, errorCarga, mensajeVacio }) {
+// mostrarTipo: false en Luminarias (todas son del mismo tipo, la columna sobra)
+function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, onVerFicha, errorCarga, mensajeVacio, mostrarTipo = true }) {
   
   // 2. Control de seguridad: verificamos que puntos exista antes de leer .length
   if (!puntos || puntos.length === 0) {
@@ -61,7 +45,7 @@ function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, onVerFicha, err
           <thead>
             <tr>
               <th scope="col">Lugar</th>
-              <th scope="col">Tipo</th>
+              {mostrarTipo && <th scope="col">Tipo</th>}
               <th scope="col">Datos técnicos</th>
               <th scope="col">Estado</th>
               <th scope="col">Ubicación</th>
@@ -75,12 +59,12 @@ function TablaPuntos({ puntos, idEditando, onEditar, onEliminar, onVerFicha, err
                   <span className="nombre-lugar">{punto.nombre}</span>
                   {punto.id === idEditando && <span className="marca-edicion">En edición</span>}
                 </th>
-                <td><span className="tipo-lugar">{NOMBRES_TIPO[punto.tipo] ?? punto.tipo}</span></td>
+                {mostrarTipo && <td><span className="tipo-lugar">{NOMBRES_TIPO[punto.tipo] ?? punto.tipo}</span></td>}
                 <td className="datos-tabla">{punto.datosTecnicos || 'Sin datos técnicos'}</td>
                 <td>
-                  <span className={punto.estadoOperativo ? 'estado estado-ok' : 'estado estado-falla'}>
+                  <span className={claseEstadoLugar(punto)}>
                     <span className="estado-punto" aria-hidden="true" />
-                    {punto.estadoOperativo ? 'Funciona' : 'Fuera de servicio'}
+                    {textoEstadoLugar(punto)}
                   </span>
                 </td>
                 <td className="ubicacion-tabla">{describirUbicacion(punto.ubicacion)}</td>

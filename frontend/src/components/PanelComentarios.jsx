@@ -19,9 +19,9 @@ import '../estilos-comentarios.css'
 // El muro "Comentarios y fotos" de una OT (tarjetas 16 + 21): arriba se escribe, abajo se lee.
 // Sin señal (o si se corta en el camino) el comentario y sus fotos quedan en el cuaderno del celular (#47)
 // y se mandan solos cuando vuelve la red; mientras tanto se ven arriba de todo con "Sin enviar".
-// Lo usan Mis tareas (dentro de cada tarjeta y después de Finalizar) y Trabajos (en una hoja).
+// Lo usan Mis tareas (dentro de cada tarjeta) y Trabajos (en una hoja). Las fotos al finalizar van en PopUpFinalizar.
 // Las reglas (quién comenta, límites) están en utils/comentarios.js; el backend las vuelve a revisar.
-// Props: orden (la OT), titulo (opcional, para el aviso después de Finalizar),
+// Props: orden (la OT), titulo (opcional: si no, "Comentarios y fotos"),
 //        mostrarTitulo (false dentro de la tarjeta de tarea, que ya dice "Comentarios y fotos" en su desplegable)
 function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
   const { usuario } = useSesion()
@@ -228,7 +228,8 @@ function PanelComentarios({ orden, titulo, mostrarTitulo = true }) {
             <Icono nombre="foto" />Elegir fotos
           </button>
           <button type="submit" className="boton boton-primario" disabled={ocupado}>
-            <Icono nombre="guardar" />{enviando ? 'Publicando…' : preparandoFotos ? 'Preparando fotos…' : 'Publicar'}
+            {ocupado ? <span className="indicador-carga" aria-hidden="true" /> : <Icono nombre="guardar" />}
+            {enviando ? 'Publicando…' : preparandoFotos ? 'Preparando fotos…' : 'Publicar'}
           </button>
         </div>
         <p className="ayuda-campo">Hasta 5 fotos por comentario. Se achican antes de enviarlas.</p>

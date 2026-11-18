@@ -5,8 +5,30 @@ import FormularioPunto from '../components/FormularioPunto'
 import TablaPuntos from '../components/TablaPuntos'
 import Icono from '../components/Icono'
 import { FILTROS_VACIOS, filtrarPuntos } from '../utils/filtros'
+import { lugaresDeCategoria, tiposDeCategoria } from '../utils/lugares'
+import '../estilos-luminarias.css'
 
-function PaginaInfraestructura({ onNavegar }) {
+// Textos de cada categoría. La misma pantalla sirve para las dos:
+// - "infraestructura" (Más → Infraestructura): plazas y otros lugares
+// - "luminarias" (Más → Luminarias): el alumbrado público, aparte (pedido del municipio)
+const TEXTOS = {
+  infraestructura: {
+    sobreTitulo: 'REGISTRO DE LUGARES', titulo: 'Puntos de infraestructura',
+    bajada: 'Registrá y mantené actualizada la información de las plazas y otros lugares. Las calles y luminarias tienen sus propias pestañas en el mapa.',
+    listado: 'Lugares registrados', ayudaListado: 'Consultá los datos y el estado operativo de cada lugar.',
+    contador: 'lugares', vacio: 'Todavía no hay lugares cargados.', cargando: 'Cargando lugares…',
+  },
+  luminarias: {
+    sobreTitulo: 'ALUMBRADO PÚBLICO', titulo: 'Luminarias',
+    bajada: 'Registrá las luminarias del pueblo, si funcionan y las luminarias a futuro que planificó el intendente. Para ver cómo está el alumbrado, entrá al Mapa → pestaña Luminarias.',
+    listado: 'Luminarias registradas', ayudaListado: 'Consultá los datos y el estado de cada luminaria.',
+    contador: 'luminarias', vacio: 'Todavía no hay luminarias cargadas.', cargando: 'Cargando luminarias…',
+  },
+}
+
+function PaginaInfraestructura({ onNavegar, categoria = 'infraestructura' }) {
+  const textos = TEXTOS[categoria] ?? TEXTOS.infraestructura
+  const tipos = tiposDeCategoria(categoria)
   const [puntos, setPuntos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -16,7 +38,10 @@ function PaginaInfraestructura({ onNavegar }) {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS)
 
   // No es un estado: se calcula de nuevo cada vez que cambian los puntos o los filtros
-  const puntosFiltrados = filtrarPuntos(puntos, filtros)
+  // Solo los registros de esta pantalla (Infraestructura: lugares; Luminarias: luminarias)
+  const deLaCategoria = lugaresDeCategoria(puntos, categoria)
+  const puntosFiltrados = filtrarPuntos(deLaCategoria, filtros)
+  const esLuminarias = categoria === 'luminarias'
 
   function cargarPuntos() {
     return listarPuntos()
@@ -63,7 +88,7 @@ function PaginaInfraestructura({ onNavegar }) {
     try {
       await eliminarPunto(punto.id)
       if (puntoEditando?.id === punto.id) setPuntoEditando(null)
-      setMensaje('El lugar se eliminó correctamente.')
+      setMensaje(esLuminarias ? 'La luminaria se eliminó correctamente.' : 'El lugar se eliminó correctamente.')
       recargarPuntos()
     } catch (e) {
       console.error(e)
@@ -75,14 +100,15 @@ function PaginaInfraestructura({ onNavegar }) {
   return (
     <>
       <div className="encabezado-pagina">
-        <p className="sobre-titulo">REGISTRO DE LUGARES</p>
-        <h1>Puntos de infraestructura</h1>
-        <p>Registrá y mantené actualizada la información de luminarias, espacios verdes y calles.</p>
+        <p className="sobre-titulo">{textos.sobreTitulo}</p>
+        <h1>{textos.titulo}</h1>
+        <p>{textos.bajada}</p>
       </div>
 
       <FormularioPunto
         key={puntoEditando?.id ?? 'nuevo'}
         puntoEditando={puntoEditando}
+        tipos={tipos}
         onGuardado={alGuardar}
         onCancelar={() => setPuntoEditando(null)}
       />
@@ -94,16 +120,17 @@ function PaginaInfraestructura({ onNavegar }) {
       <section className="panel listado" aria-labelledby="titulo-listado" aria-busy={cargando}>
         <div className="panel-encabezado">
           <div>
-            <h2 id="titulo-listado">Lugares registrados</h2>
-            <p>Consultá los datos y el estado operativo de cada lugar.</p>
+            <h2 id="titulo-listado">{textos.listado}</h2>
+            <p>{textos.ayudaListado}</p>
           </div>
           {!cargando && !error && (
-            <span className="contador">Mostrando {puntosFiltrados.length} de {puntos.length} puntos</span>
+            <span className="contador">Mostrando {puntosFiltrados.length} de {deLaCategoria.length} {textos.contador}</span>
           )}
         </div>
 
         <FiltrosPuntos
           filtros={filtros}
+          tipos={tipos}
           onCambiar={setFiltros}
           onLimpiar={() => setFiltros(FILTROS_VACIOS)}
         />
@@ -120,13 +147,13 @@ function PaginaInfraestructura({ onNavegar }) {
         {cargando ? (
           <div className="estado-listado" role="status">
             <span className="indicador-carga" aria-hidden="true" />
-            <p>Cargando lugares…</p>
+            <p>{textos.cargando}</p>
           </div>
         ) : (
           <TablaPuntos puntos={puntosFiltrados} idEditando={puntoEditando?.id}
-            onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)}
+            onEditar={editar} onEliminar={eliminar} errorCarga={Boolean(error)} mostrarTipo={tipos.length > 1}
             onVerFicha={(punto) => onNavegar('ficha', { lugarId: punto.id })}
-            mensajeVacio={puntos.length === 0 ? 'Todavía no hay puntos cargados.' : 'Ningún punto coincide con los filtros.'}
+            mensajeVacio={deLaCategoria.length === 0 ? textos.vacio : 'Ningún resultado coincide con los filtros.'}
           />
         )}
       </section>

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 /**
  * Servicio de reportes: orquesta las consultas JPA agrupadas y construye
@@ -81,9 +82,15 @@ public class ReporteService {
         List<OtsPorCuadrillaDTO>   porCuadrilla   = construirPorCuadrilla(desdeTs, hastaTs);
         List<OtsPorPeriodoDTO>     porPeriodo     = construirSerieTemporal(
                 desdeTs, hastaTs, granularidadEfectiva);
+        List<MontoPorPeriodoDTO> montoPorPeriodo = construirSerieMontos(
+                desdeTs, hastaTs, granularidadEfectiva);
 
         // Resumen de desvíos (solo PLAN_MANTENIMIENTO)
         ResumenDesviosGlobalDTO resumenDesvios = construirResumenDesvios(desdeEfectivo, hastaEfectivo);
+        BigDecimal declarado = java.util.Optional.ofNullable(reporteRepository.sumarMontosAproximados(desdeTs, hastaTs))
+                .orElse(BigDecimal.ZERO);
+        BigDecimal gastado = java.util.Optional.ofNullable(reporteRepository.sumarGastosReales(desdeTs, hastaTs))
+                .orElse(BigDecimal.ZERO);
 
         return new DashboardGerencialDTO(
                 desdeEfectivo,
@@ -96,8 +103,79 @@ public class ReporteService {
                 porTipoTrabajo,
                 porCuadrilla,
                 porPeriodo,
-                resumenDesvios
+                montoPorPeriodo,
+                resumenDesvios,
+                declarado,
+                gastado,
+                gastado.subtract(declarado),
+                construirResumenLuminarias(desdeTs, hastaTs)
         );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Luminarias: nuevas vs viejas
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Arma la sección "Luminarias": siempre los tres grupos (nueva, vieja, sinMarcar), aunque estén en cero.
+     * Cómo están (funcionan / apagadas / en arreglo) es de HOY; las OT y el gasto son del período.
+     */
+    ResumenLuminariasDTO construirResumenLuminarias(LocalDateTime desde, LocalDateTime hasta) {
+        Map<String, long[]> estados = new LinkedHashMap<>();       // clave → [cantidad, funcionan, apagadas, enArreglo]
+        for (Object[] fila : reporteRepository.contarLuminariasPorGrupo()) {
+            estados.put(claveDeGrupo(fila[0]), new long[] {
+                    comoCantidad(fila, 1), comoCantidad(fila, 2), comoCantidad(fila, 3), comoCantidad(fila, 4) });
+        }
+        Map<String, Long> ots = new LinkedHashMap<>();
+        for (Object[] fila : reporteRepository.contarOtsDeLuminariasPorGrupo(desde, hasta)) {
+            ots.put(claveDeGrupo(fila[0]), comoCantidad(fila, 1));
+        }
+        Map<String, BigDecimal> gastos = new LinkedHashMap<>();
+        for (Object[] fila : reporteRepository.sumarGastosDeLuminariasPorGrupo(desde, hasta)) {
+            gastos.put(claveDeGrupo(fila[0]), comoMonto(fila, 1));
+        }
+
+        List<GrupoLuminariasDTO> grupos = ResumenLuminariasDTO.CLAVES.stream()
+                .map(clave -> {
+                    long[] e = estados.getOrDefault(clave, new long[4]);
+                    return new GrupoLuminariasDTO(clave, e[0], e[1], e[2], e[3],
+                            ots.getOrDefault(clave, 0L), gastos.getOrDefault(clave, BigDecimal.ZERO));
+                })
+                .toList();
+        long aFuturo = reporteRepository.contarLuminariasAFuturo();
+        long instaladas = grupos.stream().mapToLong(GrupoLuminariasDTO::cantidad).sum();
+        return new ResumenLuminariasDTO(instaladas + aFuturo, aFuturo, grupos);
+    }
+
+    // El campo "nueva" del lugar: true → "nueva", false → "vieja", null → "sinMarcar"
+    private static String claveDeGrupo(Object nueva) {
+        if (nueva == null) return "sinMarcar";
+        return Boolean.TRUE.equals(nueva) || "true".equalsIgnoreCase(nueva.toString()) ? "nueva" : "vieja";
+    }
+
+    // Los COUNT de la base pueden llegar como Long, BigInteger u otro número
+    private static long comoCantidad(Object[] fila, int columna) {
+        if (fila.length <= columna || fila[columna] == null) return 0;
+        return ((Number) fila[columna]).longValue();
+    }
+
+    private List<MontoPorPeriodoDTO> construirSerieMontos(LocalDateTime desde, LocalDateTime hasta,
+                                                           GranularidadPeriodo granularidad) {
+        List<Object[]> filas = switch (granularidad) {
+            case DIA -> reporteRepository.sumarMontosPorDia(desde, hasta);
+            case SEMANA -> reporteRepository.sumarMontosPorSemana(desde, hasta);
+            case MES -> reporteRepository.sumarMontosPorMes(desde, hasta);
+        };
+        // Cada fila: [período, monto declarado, gasto total]
+        return filas.stream()
+                .map(fila -> MontoPorPeriodoDTO.de((String) fila[0], comoMonto(fila, 1), comoMonto(fila, 2)))
+                .toList();
+    }
+
+    // La base puede devolver la suma como BigDecimal u otro número; si la columna no vino, es cero
+    private static BigDecimal comoMonto(Object[] fila, int columna) {
+        if (fila.length <= columna || fila[columna] == null) return BigDecimal.ZERO;
+        return fila[columna] instanceof BigDecimal monto ? monto : new BigDecimal(fila[columna].toString());
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import com.faro.backend.models.OrigenOrden;
 import com.faro.backend.models.PrioridadOrden;
 import com.faro.backend.models.TipoTrabajo;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -13,6 +14,8 @@ import java.time.LocalDateTime;
  *  - "CAMBIO_ESTADO":      una OT pasó de un estado a otro (sale de la bitácora)
  *  - "CUADRILLA_ASIGNADA": a una OT se le asignó una cuadrilla (sale de la bitácora)
  *  - "CUADRILLA_REASIGNADA": una OT pasó de una cuadrilla a otra (sale de la bitácora)
+ * Al finalizar una OT, el CAMBIO_ESTADO trae también cuánto se gastó en total (y lo declarado al crearla,
+ * para mostrar la diferencia) y si el lugar volvió a funcionar.
  * Los campos que no corresponden a ese tipo de evento vienen en null.
  */
 public record EventoHistoriaDTO(
@@ -28,5 +31,17 @@ public record EventoHistoriaDTO(
         String estadoNuevoColor,      // "#9A4A12", para pintar el punto de la línea de tiempo
         boolean cierre,               // true si la OT pasó a un estado final (Finalizada, Cancelada)
         String cuadrilla,             // en CUADRILLA_ASIGNADA y CUADRILLA_REASIGNADA: la que quedó a cargo
-        String cuadrillaAnterior      // solo en CUADRILLA_REASIGNADA: la que la tenía antes
-) {}
+        String cuadrillaAnterior,     // solo en CUADRILLA_REASIGNADA: la que la tenía antes
+        BigDecimal gastoReal,         // solo al finalizar: cuánto se gastó en total (null = no se informó)
+        BigDecimal montoAproximado,   // solo al finalizar con gasto: lo declarado al crear la OT (null = no se declaró)
+        Boolean lugarFunciona         // solo al finalizar: true = volvió a funcionar, false = sigue fuera de servicio
+) {
+    /** Compatibilidad con el renglón anterior al pop-up de "Finalizar" (sin gasto ni estado del lugar). */
+    public EventoHistoriaDTO(LocalDateTime fecha, String tipo, Long ordenId, String ordenDescripcion,
+                             TipoTrabajo tipoTrabajo, OrigenOrden origen, PrioridadOrden prioridad,
+                             String estadoAnterior, String estadoNuevo, String estadoNuevoColor, boolean cierre,
+                             String cuadrilla, String cuadrillaAnterior) {
+        this(fecha, tipo, ordenId, ordenDescripcion, tipoTrabajo, origen, prioridad, estadoAnterior, estadoNuevo,
+                estadoNuevoColor, cierre, cuadrilla, cuadrillaAnterior, null, null, null);
+    }
+}

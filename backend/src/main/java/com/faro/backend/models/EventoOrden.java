@@ -2,6 +2,7 @@ package com.faro.backend.models;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -47,6 +48,17 @@ public class EventoOrden {
     @JoinColumn(name = "cuadrilla_anterior_id", updatable = false)
     private Cuadrilla cuadrillaAnterior;
 
+    // Solo al FINALIZAR una OT (pop-up de "Finalizar"): cuánto se gastó en total (null = no se informó).
+    // (La columna vieja "gasto_adicional" de #74 queda en la base: la pasa a esta InicializadorGastoReal.)
+    @Column(name = "gasto_real", precision = 14, scale = 2, updatable = false)
+    private BigDecimal gastoReal;
+
+    // Solo al FINALIZAR una OT: qué pasó con el lugar.
+    // true = estaba Fuera de servicio y volvió a funcionar · false = sigue Fuera de servicio
+    // null = no corresponde (ya funcionaba, o no es un cierre)
+    @Column(name = "lugar_funciona", updatable = false)
+    private Boolean lugarFunciona;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime fecha;
 
@@ -77,6 +89,18 @@ public class EventoOrden {
         return new EventoOrden(orden, TipoEventoOrden.CAMBIO_ESTADO, anterior, nuevo, null, null);
     }
 
+    /**
+     * La OT se FINALIZÓ: además del cambio de estado, se anota lo que dijo el pop-up de "Finalizar"
+     * (cuánto se gastó en total y si el lugar volvió a funcionar), para mostrarlo en la ficha del lugar.
+     */
+    public static EventoOrden finalizacion(OrdenTrabajo orden, EstadoOrden anterior, EstadoOrden nuevo,
+                                           BigDecimal gastoReal, Boolean lugarFunciona) {
+        EventoOrden evento = cambioDeEstado(orden, anterior, nuevo);
+        evento.gastoReal = gastoReal;
+        evento.lugarFunciona = lugarFunciona;
+        return evento;
+    }
+
     /** A la OT se le asignó una cuadrilla, y con eso pasó de un estado a otro. */
     public static EventoOrden asignacionDeCuadrilla(OrdenTrabajo orden, Cuadrilla cuadrilla,
                                                     EstadoOrden anterior, EstadoOrden nuevo) {
@@ -100,6 +124,8 @@ public class EventoOrden {
     public EstadoOrden getEstadoNuevo() { return estadoNuevo; }
     public Cuadrilla getCuadrilla() { return cuadrilla; }
     public Cuadrilla getCuadrillaAnterior() { return cuadrillaAnterior; }
+    public BigDecimal getGastoReal() { return gastoReal; }
+    public Boolean getLugarFunciona() { return lugarFunciona; }
     public LocalDateTime getFecha() { return fecha; }
 
     // Solo para los tests: en la aplicación la fecha la pone alRegistrar() y el id la base

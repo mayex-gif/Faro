@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  agruparPorDia, contar, detalleEvento, horaEvento, nombreDia, nombreTipoLugar, ordenDelEvento, tituloEvento,
+  agruparPorDia, cierreDelEvento, textoGastoDelEvento, contar, detalleEvento, horaEvento, nombreDia, nombreTipoLugar, ordenDelEvento, tituloEvento,
 } from '../src/utils/historia.js'
 
 // Solo datos en memoria, con la misma forma que devuelve GET /api/infraestructura/{id}/historia
@@ -71,7 +71,25 @@ test('singular y plural', () => {
 })
 
 test('el tipo de lugar se muestra con texto para el usuario', () => {
-  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Espacio verde')
+  assert.equal(nombreTipoLugar('ESPACIO_VERDE'), 'Lugar')
   assert.equal(nombreTipoLugar('LUMINARIA'), 'Luminaria')
   assert.equal(nombreTipoLugar('OTRO_TIPO'), 'OTRO_TIPO')
+})
+test('la finalización muestra lo que se marcó en el pop-up de "Finalizar"', () => {
+  const fin = { tipo: 'CAMBIO_ESTADO', estadoNuevo: 'Finalizada', cierre: true }
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: true, gastoReal: 15000, montoAproximado: 20000 }),
+    'El lugar volvió a funcionar · Se gastó $\u00a015.000 ($\u00a05.000 menos de lo declarado)')
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: false }), 'El lugar siguió fuera de servicio')
+  assert.equal(cierreDelEvento({ ...fin, lugarFunciona: null, gastoReal: 1500.5, montoAproximado: null }), 'Se gastó $\u00a01.500,50')
+  // Antes del pop-up (o un cambio de estado común) no dice nada
+  assert.equal(cierreDelEvento(fin), '')
+  assert.equal(cierreDelEvento({ tipo: 'ORDEN_CREADA', gastoReal: 5 }), '')
+})
+
+test('el gasto de la finalización se compara con lo declarado al crear la OT', () => {
+  assert.equal(textoGastoDelEvento(23000, 20000), 'Se gastó $\u00a023.000 ($\u00a03.000 más de lo declarado)')
+  assert.equal(textoGastoDelEvento(20000, 20000), 'Se gastó $\u00a020.000 (lo mismo que se declaró)')
+  assert.equal(textoGastoDelEvento(0, 5000), 'Se gastó $\u00a00 ($\u00a05.000 menos de lo declarado)')
+  assert.equal(textoGastoDelEvento(8000, undefined), 'Se gastó $\u00a08.000')
+  assert.equal(textoGastoDelEvento(null, 20000), '')
 })

@@ -40,7 +40,7 @@ export const AYUDA = {
 
   mapa: {
     titulo: 'Mapa',
-    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo todos los lugares (luminarias, espacios verdes y calles) y los trabajos que tienen abiertos.',
+    resumen: 'La pantalla principal de FARO. Muestra en el mapa del pueblo los lugares (luminarias, plazas y espacios verdes, y las calles con trabajos) y los trabajos que tienen abiertos. La pestaña Luminarias muestra solo el alumbrado público y cómo está; la pestaña Calles, todas las calles y sus trabajos.',
     secciones: [
       {
         titulo: 'Qué ves',
@@ -49,18 +49,47 @@ export const AYUDA = {
           'En el celular el mapa ocupa toda la pantalla. Con "Ver como lista" ves los lugares en una lista y con "Ver mapa" volvés.',
           'Cada marca es un lugar. Su color indica la prioridad del trabajo más urgente: cuanto más urgente, más grande es la marca. La leyenda dice qué significa cada color.',
           'En "Colorear por" podés cambiar a "Estado" para que el color muestre en qué estado está cada trabajo.',
+          'En "Todo el pueblo" una calle aparece solo si tiene trabajos abiertos, y se pinta solo el tramo donde se trabaja (o toda la calle si el trabajo es de toda la calle). Todas las calles están en la pestaña Calles. Lo mismo con las luminarias: en "Todo el pueblo" se ven solo las que tienen trabajos abiertos; todas están en la pestaña Luminarias.',
         ],
       },
       {
         titulo: 'Qué podés hacer',
         items: [
           'Tocá un lugar (en el mapa o en la lista) para ver su ficha: estado, trabajos abiertos e historia. "Ver toda la historia" abre la Ficha histórica completa.',
-          'Usá los botoncitos "Con trabajos abiertos", "Luminarias", "Espacios verdes" y "Calles" para ver solo esos lugares. Si no prendés ningún tipo, se ven todos.',
+          'Usá los botoncitos "Con trabajos abiertos", "Luminarias", "Otros lugares" y "Calles" para ver solo esos lugares. Si no prendés ningún tipo, se ven todos.',
           'En "Más filtros" podés buscar por estado, prioridad, tipo de trabajo, origen, lugar y fechas. También podés hacer que la lista muestre solo lo que se ve en el mapa.',
           'Con el buscador de arriba encontrás un lugar, una calle o un trabajo escribiendo al menos 2 letras.',
           { texto: '"Nueva OT acá" crea una orden de trabajo para ese lugar, con el lugar ya elegido.', roles: [ENCARGADO, MESA] },
           { texto: 'En la ficha, los trabajos que esperan cuadrilla se pueden asignar ahí mismo: elegí la cuadrilla y tocá "Asignar".', roles: [ENCARGADO] },
-          { texto: '"Agregar lugar": tocá el mapa donde está el lugar, completá nombre y tipo, y tocá "Registrar lugar". Si el pin no quedó justo, arrastralo o tocá otro punto.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar lugar": elegí qué es (Lugar, Calle o Luminaria), tocá el mapa para marcarlo, completá el nombre y tocá "Registrar lugar". Un lugar (plaza, espacio verde) se marca con su contorno; una calle, con varios puntos siguiendo su recorrido. Si elegís Luminaria, el mapa pasa a la pestaña Luminarias.', roles: [ENCARGADO, MESA] },
+        ],
+      },
+      {
+        titulo: 'Pestaña Luminarias',
+        items: [
+          'Arriba del mapa, "Luminarias" muestra solo el alumbrado público: se ve cómo está cada luminaria. De lejos cada una es un puntito del color de su estado (borde naranja = vieja); acercate (con + o los dedos) y se ven los postes. "Todo el pueblo" vuelve al mapa de siempre.',
+          'Poste verde con la lámpara prendida: funciona. Rojo con una ✕: apagada y sin OT. Amarillo con una llave: en arreglo (tiene una OT abierta). Poste "fantasma" con la base punteada: luminaria a futuro (planificada, todavía no se puso).',
+          'La lámpara dice si es nueva o vieja: blanca (tipo LED) = nueva, naranja = vieja. Amarilla = todavía no se marcó. El color de abajo sigue siendo el del estado.',
+          'A la izquierda (en el celular, "Ver resumen"): qué porcentaje del alumbrado instalado funciona, cuántas hay de cada estado y las listas de apagadas, en arreglo y a futuro.',
+          'En "Mostrar en el mapa" destildá un estado para sacarlo del mapa (por ejemplo, dejá solo las apagadas). Abajo, "Nuevas" y "Viejas" hacen lo mismo con la antigüedad, y se combinan: por ejemplo, solo las apagadas que son viejas. Los números no cambian.',
+          '"Modo noche" oscurece el mapa y hace que las luminarias que funcionan tiren luz: así se ve rápido dónde falta.',
+          { texto: 'Tocá una luminaria y, en su ficha, cambiala entre "Funciona" y "Apagada". Si está apagada, "Crear OT de arreglo" abre la orden con el tipo Alumbrado. Al finalizar esa OT, dejá marcado "El lugar quedó funcionando" y la luminaria vuelve a "Funciona".', roles: [ENCARGADO] },
+          { texto: 'En la ficha, "Nueva o vieja" dice cuál es. "Marcar como vieja" (o "como nueva") la cambia: te pide confirmación por si te equivocaste, y se puede volver a cambiar.', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria a futuro" (sección "A futuro") carga una luminaria que planificó el intendente. No se le pueden asignar OT; cuando la pongan, en su ficha tocá "Marcar como instalada" y queda funcionando (y marcada como nueva).', roles: [ENCARGADO] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está, completá el nombre, elegí si es nueva o vieja (es obligatorio) y registrala. Las luminarias a futuro las carga el encargado.', roles: [MESA] },
+          { texto: '"Agregar luminaria": tocá el mapa donde está, completá el nombre, elegí si es nueva o vieja (es obligatorio) y registrala.', roles: [ENCARGADO] },
+        ],
+      },
+      {
+        titulo: 'Pestaña Calles',
+        items: [
+          'Arriba del mapa, "Calles" muestra todas las calles del pueblo en gris, con un borde blanco. Encima, de color, el tramo de cada trabajo abierto: el color es el de su prioridad (o su estado) y el más urgente queda arriba.',
+          'A la izquierda (en el celular, "Ver como lista"): cuántas calles tienen trabajos abiertos, la lista de las que tienen (las más urgentes arriba, con dónde es el trabajo: "entre Catamarca y La Rioja") y la de las que no. Con "Buscar una calle" la encontrás escribiendo parte del nombre, con o sin tildes.',
+          'En la ficha de una calle, cada trabajo dice en qué parte de la calle es: el tramo, entre qué calles, la altura o "Toda la calle".',
+          'Las calles del pueblo ya vienen cargadas (se tomaron de OpenStreetMap): no hace falta dibujarlas una por una.',
+          { texto: 'Tocá una calle para ver su ficha y "Nueva OT acá" para crearle una orden (por ejemplo, un bacheo). Primero te pregunta "¿Dónde es el trabajo?": "Toda la calle" o "Un tramo". "Volver al mapa" te trae de nuevo a esta pestaña.', roles: [ENCARGADO, MESA] },
+          { texto: '"Un tramo": la calle queda resaltada y las esquinas llevan el nombre de la calle que cruza. Tocá en la calle dónde empieza el trabajo y dónde termina (puede ser en la mitad de una cuadra; si tocás cerca de una esquina, se pega a ella). El tramo se ve en naranja. "Deshacer" borra el último toque, "Elegir otra vez" los borra todos y Escape cancela. "Seguir" abre la orden con el tramo y las calles que lo limitan ya cargados.', roles: [ENCARGADO, MESA] },
+          { texto: '"Agregar calle": tocá varios puntos siguiendo el recorrido de la calle y registrala. Sirve para calles nuevas o que no estaban en la carga inicial.', roles: [ENCARGADO, MESA] },
         ],
       },
     ],
@@ -75,6 +104,7 @@ export const AYUDA = {
         titulo: 'Registrar una orden',
         items: [
           'Completá la descripción (qué hay que hacer, hasta 500 letras), el tipo de trabajo, el origen (reclamo vecinal, plan de mantenimiento u orden directa), el lugar y la prioridad.',
+          'Si el lugar es una calle, en "Ubicación dentro de la calle" elegí dónde es: "Toda la calle"; "Entre calles" (solo aparecen las calles que la cruzan, y con las dos se marca el tramo en el mapa); "Por altura"; o "Tramo marcado", si lo marcaste en el mapa (ahí solo se ofrecen las calles que lo limitan, y "Usar toda la calle" lo saca).',
           'Tocá "Registrar orden". La orden queda pendiente de asignar a una cuadrilla.',
           { texto: 'Si el trabajo se repite (por ejemplo, cortar el pasto cada 15 días), marcá "Sí, programar este trabajo" y elegí cada cuánto. FARO va a crear las órdenes solo, en cada fecha.', roles: [ENCARGADO] },
         ],
@@ -85,14 +115,17 @@ export const AYUDA = {
           'La lista "Órdenes registradas" va de la más reciente a la más antigua.',
           'En "Buscar y filtrar órdenes" podés buscar por descripción, lugar o número, y filtrar por estado, prioridad, tipo, origen, lugar y fechas de creación.',
           '"Comentarios" abre lo que se fue contando del trabajo, con fotos. Ahí también podés sumar un comentario (hasta 5 fotos por comentario).',
+          'En las órdenes finalizadas, debajo del estado se ve cuánto se gastó en total y, entre paréntesis, la diferencia con lo declarado al crearlas (ej: "Gastado $ 15.000 (−$ 5.000)").',
         ],
       },
       {
         titulo: 'Modificar una orden',
         roles: [ENCARGADO],
         items: [
-          { texto: '"Editar" carga la orden en el formulario de arriba para corregir sus datos. Después tocá "Guardar cambios".', roles: [ENCARGADO] },
-          { texto: 'Los botones "Pasar a…" cambian el estado de la orden. Finalizada y Cancelada piden confirmación porque después ya no se puede modificar.', roles: [ENCARGADO] },
+          { texto: '"Editar" carga la orden en el formulario de arriba para corregir sus datos. Después tocá "Guardar cambios". Si la orden es en un tramo de calle, el tramo se mantiene mientras no cambies la ubicación.', roles: [ENCARGADO] },
+          { texto: 'Los botones "Pasar a…" cambian el estado de la orden. Finalizada y Cancelada no tienen vuelta atrás: después la orden ya no se puede modificar.', roles: [ENCARGADO] },
+          { texto: '"Pasar a Finalizada" abre una ventana para contar cómo quedó el trabajo. Todo es opcional: si el lugar quedó funcionando (aparece si estaba fuera de servicio), cuánto se gastó en total (viene cargado con el monto declarado: corregilo si se gastó más o menos; debajo se ve la diferencia), un comentario y hasta 5 fotos. "Finalizar la OT" lo guarda todo.', roles: [ENCARGADO] },
+          { texto: '"Pasar a Cancelada" pide el motivo (opcional): queda como comentario de la orden.', roles: [ENCARGADO] },
           { texto: '"Ver programaciones" lleva a Mantenimiento periódico, donde están los trabajos que se repiten.', roles: [ENCARGADO] },
         ],
       },
@@ -124,14 +157,39 @@ export const AYUDA = {
     ],
   },
 
+  luminarias: {
+    titulo: 'Luminarias',
+    resumen: 'El registro del alumbrado público: cada luminaria del pueblo, sus datos técnicos, si funciona y las luminarias a futuro que planificó el intendente.',
+    secciones: [
+      {
+        titulo: 'Registrar una luminaria',
+        items: [
+          'Completá el nombre (por ejemplo "Luminaria San Martín y Belgrano") y los datos técnicos (potencia, altura del poste, tipo de lámpara…).',
+          'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448). También podés agregarla tocando el mapa: Mapa → pestaña Luminarias → "Agregar luminaria".',
+          'Elegí si es nueva (por ejemplo, LED) o vieja: es obligatorio. Si está apagada, desmarcá "Funciona correctamente". Después tocá "Registrar luminaria".',
+          'Para cambiar una luminaria de nueva a vieja (o al revés), tocá "Editar", elegí la otra opción y "Guardar cambios": te pide confirmación. También se puede desde su ficha en el mapa.',
+          'Si es una luminaria que el intendente planificó y todavía no se puso, marcá "Luminaria a futuro". No se le pueden asignar órdenes de trabajo hasta que se instale: ahí, en el Mapa → pestaña Luminarias, tocala y elegí "Marcar como instalada".',
+        ],
+      },
+      {
+        titulo: 'Consultar y modificar',
+        items: [
+          'Filtrá por nombre, datos técnicos o estado: Funciona, Fuera de servicio o A futuro.',
+          '"Editar" carga la luminaria en el formulario; "Ficha" abre su historia; "Borrar" la elimina (si tiene órdenes de trabajo, FARO no deja borrarla).',
+          'Para ver cómo está todo el alumbrado de un vistazo, entrá al Mapa → pestaña Luminarias. Ahí también podés cambiar el estado de una luminaria tocándola.',
+        ],
+      },
+    ],
+  },
+
   infraestructura: {
     titulo: 'Infraestructura',
-    resumen: 'El registro de todos los lugares del pueblo que mantiene el corralón: luminarias, espacios verdes y calles, con sus datos y si funcionan o no.',
+    resumen: 'El registro de los lugares (plazas y espacios verdes) y las calles que mantiene el corralón, con sus datos y si están en condiciones o no. Las luminarias están aparte, en Más → Luminarias.',
     secciones: [
       {
         titulo: 'Registrar un lugar',
         items: [
-          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (potencia, altura del poste, características…).',
+          'Completá el nombre (uno fácil de reconocer, por ejemplo "Plaza San Martín"), el tipo de lugar y los datos técnicos (superficie, características…).',
           'Escribí la latitud y la longitud en grados decimales, con punto (por ejemplo -31.1448).',
           'Si el lugar está fuera de servicio, desmarcá "Funciona correctamente". Después tocá "Registrar lugar".',
         ],
@@ -158,7 +216,7 @@ export const AYUDA = {
         items: [
           'Arriba, el lugar elegido. Si llegaste desde el Mapa, Infraestructura o Mis tareas, ya viene elegido; si no, elegilo en la lista "Lugar".',
           'Los datos del lugar: tipo, estado operativo, ubicación, datos técnicos y cuántas órdenes tuvo.',
-          'La "Línea de tiempo": cada orden registrada y cada cambio de estado, del más reciente al más antiguo.',
+          'La "Línea de tiempo": cada orden registrada y cada cambio de estado, del más reciente al más antiguo. Al finalizar una orden también dice si el lugar volvió a funcionar y cuánto se gastó (ej: "Se gastó $ 15.000 ($ 5.000 menos de lo declarado)").',
         ],
       },
       {
@@ -187,9 +245,9 @@ export const AYUDA = {
       {
         titulo: 'Qué podés hacer',
         items: [
-          '"Iniciar tarea" cuando la cuadrilla empieza el trabajo y "Finalizar tarea" cuando lo termina. Finalizar pide confirmación porque después no se puede modificar.',
-          'En "Otras opciones" están los demás estados posibles (por ejemplo, cancelar).',
-          'Al finalizar, FARO te ofrece sumar fotos del trabajo terminado.',
+          '"Iniciar tarea" cuando la cuadrilla empieza el trabajo y "Finalizar tarea" cuando lo termina.',
+          '"Finalizar tarea" abre una ventana para contar cómo quedó. Todo es opcional: "El lugar quedó funcionando" (si el lugar tiene otro trabajo abierto viene desmarcada: marcala solo si ya anda), "¿Cuánto se gastó en total?" (viene cargado con el monto declarado: corregilo si se gastó más o menos, contando nafta, materiales o repuestos), un comentario y fotos del trabajo terminado (con "Sacar foto" o "Elegir fotos").',
+          'En "Otras opciones" están los demás estados posibles. Cancelar pide el motivo (opcional), que queda como comentario.',
           '"Comentarios y fotos" sirve para contar cómo va el trabajo o mandar fotos (hasta 5 por comentario).',
           '"Ficha del lugar" muestra todo lo que se hizo antes en ese lugar.',
           '"Actualizar tareas" trae los trabajos recién asignados.',
@@ -199,7 +257,7 @@ export const AYUDA = {
         titulo: 'Sin señal',
         roles: [CAPATAZ],
         items: [
-          { texto: 'Lo que inicies o finalices sin señal queda guardado en el celular, marcado "Sin enviar", y se envía solo cuando vuelve la señal. Arriba se ve cuántos cambios faltan enviar.', roles: [CAPATAZ] },
+          { texto: 'Lo que inicies, finalices o canceles sin señal queda guardado en el celular, marcado "Sin enviar", y se envía solo cuando vuelve la señal: también el comentario, las fotos, si el lugar quedó funcionando y cuánto se gastó. Arriba se ve cuántos cambios faltan enviar.', roles: [CAPATAZ] },
           { texto: 'Antes de salir, tocá "Guardar copia local" para poder consultar tus tareas aunque abras FARO sin señal. "Ver copia local" la muestra y "Eliminar copia local" la borra del celular.', roles: [CAPATAZ] },
           { texto: 'Si dice "para revisar", el trabajo cambió mientras no tenías señal: FARO te muestra qué pasó y vos decidís qué hacer.', roles: [CAPATAZ] },
         ],
@@ -293,16 +351,18 @@ export const AYUDA = {
       {
         titulo: 'Qué ves',
         items: [
-          'Arriba, los totales: órdenes creadas, resueltas, las que siguen abiertas y qué parte del plan se cumplió a tiempo.',
+          'Arriba, los totales: órdenes creadas, resueltas, las que siguen abiertas, el total gastado en las finalizadas (con lo declarado al crearlas y la diferencia debajo) y qué parte del plan se cumplió a tiempo.',
           '"Evolución": órdenes creadas y cerradas en cada día, semana o mes.',
+          '"Monto gastado": en cada día, semana o mes, dos barras una al lado de la otra: lo declarado al crear las órdenes finalizadas (verde) y lo que se gastó en total al finalizarlas (naranja). Si una orden se finalizó sin decir cuánto se gastó, cuenta lo declarado.',
           '"Por estado", "Por tipo de trabajo" y "Por cuadrilla": cómo se reparten las órdenes del período.',
           '"Mantenimiento programado": cómo vienen las órdenes del plan con fecha en el período.',
+          '"Luminarias: nuevas y viejas": cuántas hay de cada una (y a futuro), cómo están hoy (funcionan, apagadas, en arreglo; nuevas en azul y viejas en naranja) y, en el período, cuántas órdenes tuvo cada grupo, cuántas por luminaria y cuánto se gastó.',
         ],
       },
       {
         titulo: 'Descargar',
         items: [
-          '"Trabajos finalizados (CSV)" y "Desvíos del plan (CSV)" bajan los datos del período en un archivo que se abre con Excel.',
+          '"Trabajos finalizados (CSV)" y "Desvíos del plan (CSV)" bajan los datos del período en un archivo que se abre con Excel. El de trabajos trae, de cada orden, el monto declarado, el gasto real y la diferencia.',
         ],
       },
     ],

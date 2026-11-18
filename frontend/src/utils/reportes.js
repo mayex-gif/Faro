@@ -152,3 +152,108 @@ export function altoBarras(cantidadFilas) {
 export function tableroVacio(tablero) {
   return !tablero || (tablero.totalOts === 0 && (tablero.resumenDesvios?.totalConPlanificacion ?? 0) === 0)
 }
+
+// ===================== Montos gastados =====================
+
+// Colores de la serie de montos (validados juntos con el validador de la skill dataviz: se distinguen también
+// con daltonismo). Verde = lo declarado al crear la OT; naranja = lo que se gastó en total al finalizarla.
+export const COLORES_MONTOS = { declarado: '#1F8A6A', gastado: '#C2571A' }
+
+// Pesos sin centavos para el tablero: "$ 37.000"
+export function pesos(valor) {
+  return Number(valor ?? 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
+}
+
+// La diferencia con signo para el tablero: "−$ 5.000", "+$ 3.000" o "$ 0" (el signo menos de verdad: "−")
+export function pesosConSigno(valor) {
+  const numero = Number(valor ?? 0) || 0
+  if (Math.round(numero) === 0) return pesos(0)
+  return `${numero < 0 ? '\u2212' : '+'}${pesos(Math.abs(numero))}`
+}
+
+// Lo gastado en las OT finalizadas del período (lo calcula el backend):
+// - declarado: lo que se declaró al crearlas (monto aproximado)
+// - gastado: lo que se gastó en total al finalizarlas (si una OT no lo informó, cuenta lo declarado)
+// - diferencia: gastado − declarado (negativa = se gastó menos)
+export function resumenGastos(tablero) {
+  const declarado = Number(tablero?.montoAproximadoTotal ?? 0) || 0
+  const gastado = Number(tablero?.gastoRealTotal ?? declarado) || 0
+  const diferencia = Number(tablero?.diferenciaGastoTotal ?? gastado - declarado) || 0
+  return { declarado, gastado, diferencia }
+}
+
+// La serie del gráfico de montos: lo declarado, lo gastado y la diferencia de cada período, con sus etiquetas
+export function serieMontos(serie = []) {
+  return serie.map((punto) => {
+    const declarado = Number(punto.montoAproximado ?? 0) || 0
+    const gastado = Number(punto.gastoReal ?? declarado) || 0
+    return {
+      periodo: punto.periodo,
+      declarado,
+      gastado,
+      diferencia: Number(punto.diferencia ?? gastado - declarado) || 0,
+      etiqueta: etiquetaPeriodo(punto.periodo),
+      etiquetaLarga: etiquetaPeriodo(punto.periodo, { larga: true }),
+    }
+  })
+}
+
+// ===================== Luminarias: nuevas y viejas =====================
+// La sección "Luminarias" de Reportes. El backend manda tablero.luminarias = { total, aFuturo, grupos: [...] }, con
+// siempre tres grupos ("nueva", "vieja", "sinMarcar"): cómo están HOY (cantidad, funcionan, apagadas, enArreglo)
+// y lo del PERÍODO elegido (otsDelPeriodo, gastoDelPeriodo).
+
+// Colores de las barras (validados juntos con el validador de la skill dataviz, sobre fondo blanco: pasan las seis
+// pruebas, también con daltonismo). Azul = nuevas (como la luz LED del mapa), naranja = viejas (la luz de sodio).
+// "Sin marcar" no va en el gráfico: se muestra en los números y en las tablas.
+export const COLORES_LUMINARIAS = { nueva: '#2A78D6', vieja: '#EB6834' }
+
+const NOMBRES_GRUPO = { nueva: 'Nuevas', vieja: 'Viejas', sinMarcar: 'Sin marcar' }
+const ESTADOS_GRUPO = [
+  { clave: 'funcionan', nombre: 'Funcionan' },
+  { clave: 'apagadas', nombre: 'Apagadas' },
+  { clave: 'enArreglo', nombre: 'En arreglo' },
+]
+
+function grupoVacio(clave) {
+  return { clave, cantidad: 0, funcionan: 0, apagadas: 0, enArreglo: 0, otsDelPeriodo: 0, gastoDelPeriodo: 0 }
+}
+
+// Todo lo que muestra la sección, ya calculado. null si no hay ninguna luminaria cargada (la sección no se muestra).
+export function resumenLuminarias(tablero) {
+  const datos = tablero?.luminarias
+  if (!datos || !datos.total) return null
+  const porClave = Object.fromEntries((datos.grupos ?? []).map((grupo) => [grupo.clave, grupo]))
+  const grupo = (clave) => ({ ...grupoVacio(clave), ...porClave[clave], nombre: NOMBRES_GRUPO[clave] })
+  const nueva = grupo('nueva')
+  const vieja = grupo('vieja')
+  const sinMarcar = grupo('sinMarcar')
+  // Los grupos que van en las tablas: nuevas y viejas siempre; "Sin marcar" solo si hay alguna
+  const grupos = sinMarcar.cantidad > 0 ? [nueva, vieja, sinMarcar] : [nueva, vieja]
+
+  // Los números de arriba: cuántas hay de cada una, con su parte del total (las a futuro también cuentan en el total)
+  const tarjetas = [
+    ...grupos.map((g) => ({ clave: g.clave, nombre: g.nombre, cantidad: g.cantidad })),
+    { clave: 'aFuturo', nombre: 'A futuro', cantidad: datos.aFuturo ?? 0 },
+  ].map((tarjeta) => ({ ...tarjeta, porcentaje: porcentaje(tarjeta.cantidad, datos.total) }))
+
+  // El gráfico "Cómo están hoy": una fila por estado, con las nuevas y las viejas una al lado de la otra
+  const estados = ESTADOS_GRUPO.map((estado) => ({
+    clave: estado.clave, nombre: estado.nombre, nueva: nueva[estado.clave], vieja: vieja[estado.clave],
+    sinMarcar: sinMarcar[estado.clave],
+  }))
+
+  return { total: datos.total, aFuturo: datos.aFuturo ?? 0, grupos, tarjetas, estados }
+}
+
+// Cuántas veces hubo que ir, por luminaria del grupo: 6 OT en 5 viejas → "1,2". Sin luminarias en el grupo → "—".
+// Sirve para comparar grupos de distinto tamaño (40 nuevas no se comparan con 75 viejas por el total de OT).
+export function otsPorLuminaria(grupo) {
+  if (!grupo?.cantidad) return '—'
+  return (grupo.otsDelPeriodo / grupo.cantidad).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
+// "40 nuevas · 75 viejas · 10 a futuro" (para el lector de pantalla y el resumen del gráfico)
+export function textoCantidadesLuminarias(resumen) {
+  return resumen.tarjetas.map((t) => `${t.cantidad} ${t.nombre.toLowerCase()}`).join(' · ')
+}

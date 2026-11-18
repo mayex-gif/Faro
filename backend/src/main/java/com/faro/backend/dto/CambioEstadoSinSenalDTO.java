@@ -1,7 +1,10 @@
 package com.faro.backend.dto;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
@@ -22,5 +25,28 @@ public record CambioEstadoSinSenalDTO(
         Long estadoAnteriorId,
 
         // Cuándo se hizo en el celular (opcional, ej: "2026-10-26T10:32:00-03:00")
-        OffsetDateTime hechoEn
-) {}
+        OffsetDateTime hechoEn,
+
+        // Los datos del pop-up de "Finalizar" (opcionales, iguales a los de CambioEstadoRequestDTO).
+        // Las comandas que quedaron en la cola antes del pop-up no los traen: llegan como null.
+        // Las que quedaron con el pop-up de #74 traen gastoAdicional (el dato viejo) en vez de gastoReal.
+        Boolean lugarFunciona,
+
+        @DecimalMin(value = "0.00", message = "El gasto total no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El gasto total admite hasta 12 enteros y 2 decimales")
+        BigDecimal gastoReal,
+
+        @DecimalMin(value = "0.00", message = "El gasto adicional no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El gasto adicional admite hasta 12 enteros y 2 decimales")
+        BigDecimal gastoAdicional
+) {
+    /** Un cambio de estado sin los datos del cierre (como llegaban antes del pop-up de "Finalizar"). */
+    public CambioEstadoSinSenalDTO(Long ordenId, Long estadoId, Long estadoAnteriorId, OffsetDateTime hechoEn) {
+        this(ordenId, estadoId, estadoAnteriorId, hechoEn, null, null, null);
+    }
+
+    /** El pedido de siempre, con los datos del cierre (lo que recibe OrdenTrabajoService). */
+    public CambioEstadoRequestDTO comoPedido() {
+        return new CambioEstadoRequestDTO(estadoId, lugarFunciona, gastoReal, gastoAdicional);
+    }
+}

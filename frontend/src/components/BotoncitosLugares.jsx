@@ -1,6 +1,6 @@
 import { FILTROS_TIPO, alternarTipo } from '../utils/listaLugares'
 
-// Los botoncitos para filtrar lugares: "Con trabajos abiertos", Luminarias, Espacios verdes y Calles.
+// Los botoncitos para filtrar lugares: "Con trabajos abiertos", Luminarias, Otros lugares y Calles.
 // Los usan la lista de lugares y, en el celular, la fila que va arriba del mapa.
 // aria-pressed: el lector de pantalla anuncia si cada botoncito está prendido o apagado.
 // Props: filtros ({ conTrabajos, tipos }), onCambiar(filtrosNuevos), className (clase extra del grupo)

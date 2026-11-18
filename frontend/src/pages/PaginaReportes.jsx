@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { descargarDesvios, descargarOrdenesResueltas, obtenerTablero } from '../api/reportes'
 import SelectorPeriodo from '../components/SelectorPeriodo'
 import GraficoEvolucion from '../components/GraficoEvolucion'
+import GraficoMontos from '../components/GraficoMontos'
 import GraficoBarras from '../components/GraficoBarras'
 import GraficoDona from '../components/GraficoDona'
+import SeccionLuminarias from '../components/SeccionLuminarias'
 import Icono from '../components/Icono'
 import {
-  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, nombreTipoTrabajo, parametrosReporte, porcentaje,
-  tableroVacio,
+  PERIODO_INICIAL, describirRango, errorPeriodo, filasBarras, filasDesvios, formatearDia, nombreTipoTrabajo, parametrosReporte, pesos, porcentaje,
+  pesosConSigno, resumenGastos, resumenLuminarias, tableroVacio,
 } from '../utils/reportes'
 import '../estilos-reportes.css'
 
@@ -82,6 +84,7 @@ function PaginaReportes() {
 
   const desvios = tablero?.resumenDesvios
   const finalizadasPlan = desvios ? desvios.aTiempo + desvios.adelantadas + desvios.demoradas : 0
+  const gastos = resumenGastos(tablero)
 
   return (
     <>
@@ -95,7 +98,7 @@ function PaginaReportes() {
         <div className="panel-encabezado">
           <div>
             <h2 id="titulo-periodo">Qué período mirar</h2>
-            <p>{tablero && !cargando && !error ? `Mostrando del ${describirRango(tablero.desde, tablero.hasta)}.` : 'Elegí un período para ver sus números.'}</p>
+            <p>{tablero && !cargando && !error ? `Mostrando ${periodo.atajo === 'SEMANA' ? `desde ${formatearDia(tablero.desde)} hasta ${formatearDia(tablero.hasta)}` : `del ${describirRango(tablero.desde, tablero.hasta)}`}.` : 'Elegí un período para ver sus números.'}</p>
           </div>
           <div className="botones botones-descarga">
             <button type="button" className="boton boton-secundario" disabled={descargando !== null || problemaPeriodo !== null}
@@ -160,6 +163,12 @@ function PaginaReportes() {
                   <span className="indicador-detalle">pendientes, asignadas o en curso</span>
                 </li>
                 <li>
+                  {/* Lo que se gastó en total al finalizar las OT; debajo, lo declarado al crearlas y la diferencia */}
+                  <span className="indicador-nombre">Total gastado en OTs finalizadas</span>
+                  <strong className="indicador-valor">{pesos(gastos.gastado)}</strong>
+                  <span className="indicador-detalle">Declarado {pesos(gastos.declarado)} · Diferencia {pesosConSigno(gastos.diferencia)}</span>
+                </li>
+                <li>
                   <span className="indicador-nombre">Plan cumplido a tiempo</span>
                   <strong className="indicador-valor">{finalizadasPlan > 0 ? `${Math.round(desvios.porcentajeCumplimiento)}%` : '—'}</strong>
                   <span className="indicador-detalle">
@@ -177,6 +186,13 @@ function PaginaReportes() {
                 </div>
               </div>
               <GraficoEvolucion serie={tablero.otsPorPeriodo ?? []} />
+            </section>
+
+            <section className="panel panel-reporte" aria-labelledby="titulo-montos">
+              <div className="panel-encabezado">
+                <div><h2 id="titulo-montos">Monto gastado</h2><p>Lo declarado al crear las órdenes finalizadas en cada día, semana o mes, y lo que se gastó de más al finalizarlas.</p></div>
+              </div>
+              <GraficoMontos serie={tablero.montoPorPeriodo ?? []} />
             </section>
 
             <div className="reportes-columnas">
@@ -228,6 +244,11 @@ function PaginaReportes() {
             </div>
           </>
         ))}
+
+        {/* Luminarias nuevas y viejas: se muestra aunque no haya órdenes en el período (cuántas hay y cómo están es de hoy) */}
+        {!cargando && !error && !problemaPeriodo && resumenLuminarias(tablero) && (
+          <SeccionLuminarias resumen={resumenLuminarias(tablero)} />
+        )}
       </div>
     </>
   )

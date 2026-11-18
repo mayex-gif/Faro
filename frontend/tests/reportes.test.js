@@ -5,6 +5,7 @@ import { nombreDeArchivo } from '../src/api/cliente.js'
 import {
   PERIODO_INICIAL, altoBarras, describirRango, errorPeriodo, etiquetaPeriodo, filasBarras, filasDesvios, formatearDia,
   granularidadSugerida, nombreTipoTrabajo, parametrosReporte, porcentaje, serieEvolucion, tableroVacio,
+  pesos, pesosConSigno, resumenGastos, serieMontos,
 } from '../src/utils/reportes.js'
 
 // ---------- API ----------
@@ -151,4 +152,44 @@ test('tableroVacio solo cuando no hubo órdenes ni programadas', () => {
   assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 0 } }), true)
   assert.equal(tableroVacio({ totalOts: 0, resumenDesvios: { totalConPlanificacion: 2 } }), false)
   assert.equal(tableroVacio({ totalOts: 4, resumenDesvios: null }), false)
+})
+
+// ===================== Montos gastados (declarado, gastado y diferencia) =====================
+
+test('el total gastado trae lo declarado, lo gastado y la diferencia del backend', () => {
+  assert.deepEqual(resumenGastos({ montoAproximadoTotal: 20000, gastoRealTotal: 15000, diferenciaGastoTotal: -5000 }),
+    { declarado: 20000, gastado: 15000, diferencia: -5000 })
+  // Sin la diferencia, se calcula; sin el gasto real (backend anterior), se gastó lo declarado
+  assert.deepEqual(resumenGastos({ montoAproximadoTotal: 20000, gastoRealTotal: 23000 }), { declarado: 20000, gastado: 23000, diferencia: 3000 })
+  assert.deepEqual(resumenGastos({ montoAproximadoTotal: 1000 }), { declarado: 1000, gastado: 1000, diferencia: 0 })
+  assert.deepEqual(resumenGastos(null), { declarado: 0, gastado: 0, diferencia: 0 })
+})
+
+test('la serie de montos trae lo declarado, lo gastado y la diferencia de cada período', () => {
+  const serie = serieMontos([
+    { periodo: '2026-10', montoAproximado: 25000, gastoReal: 20000.5, diferencia: -4999.5 },
+    { periodo: '2026-11', montoAproximado: 12000, gastoReal: 15000 },  // sin la diferencia: se calcula
+    { periodo: '2026-12', montoAproximado: 7000 },                      // backend anterior: se gastó lo declarado
+  ])
+  assert.equal(serie[0].declarado, 25000)
+  assert.equal(serie[0].gastado, 20000.5)
+  assert.equal(serie[0].diferencia, -4999.5)
+  assert.equal(serie[1].diferencia, 3000)
+  assert.equal(serie[2].gastado, 7000)
+  assert.equal(serie[2].diferencia, 0)
+  assert.equal(serie[1].etiqueta, etiquetaPeriodo('2026-11'))
+  assert.deepEqual(serieMontos(), [])
+})
+
+test('la diferencia del tablero lleva signo y va sin centavos', () => {
+  assert.equal(pesosConSigno(-5000).replace(/\s/g, ' '), '\u2212$ 5.000')
+  assert.equal(pesosConSigno(3000.4).replace(/\s/g, ' '), '+$ 3.000')
+  assert.equal(pesosConSigno(0).replace(/\s/g, ' '), '$ 0')
+  assert.equal(pesosConSigno(0.3).replace(/\s/g, ' '), '$ 0') // menos de medio peso: sin signo
+  assert.equal(pesosConSigno(null).replace(/\s/g, ' '), '$ 0')
+})
+
+test('los pesos del tablero van sin centavos', () => {
+  assert.equal(pesos(46500.5).replace(/\s/g, ' '), '$ 46.501')
+  assert.equal(pesos(null).replace(/\s/g, ' '), '$ 0')
 })

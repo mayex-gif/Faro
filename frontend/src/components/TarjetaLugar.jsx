@@ -1,35 +1,45 @@
 import Icono from './Icono'
 import { textoTrabajos } from '../utils/listaLugares'
 import { etiquetaTipoLugar, textoEstadoOperativo } from '../utils/lugares'
+import { antiguedadLuminaria, datosDeAntiguedad } from '../utils/luminarias'
 import { useSesion } from '../context/useSesion'
 import { puedeCrearOrden } from '../utils/permisos'
 
 // Tarjeta que sube desde abajo en el celular al tocar un lugar (pantalla Mapa, propuesta A).
 // Es el resumen del lugar; "Ver ficha e historia" abre la ficha completa (PanelLugar) encima del mapa.
 // Props:
-// - resumen: { lugar, ordenes } (ordenes = las abiertas)
+// - resumen: { lugar, ordenes, tramos? } (ordenes = las abiertas; tramos: solo calles, ver utils/calles.js → conTramos)
 // - onCerrar(): cerrar la tarjeta
 // - onVerFicha(): abrir la ficha completa
 // - onNuevaOrden(lugarId): "+ Nueva OT acá"
 function TarjetaLugar({ resumen, onCerrar, onVerFicha, onNuevaOrden }) {
   const { usuario } = useSesion()
   const { lugar, ordenes } = resumen
+  const antiguedad = datosDeAntiguedad(antiguedadLuminaria(lugar)) // solo luminarias puestas: "Nueva", "Vieja" o "Sin marcar"
 
   return (
     <section className="tarjeta-lugar" aria-labelledby="titulo-tarjeta-lugar">
       <span className="tarjeta-lugar-agarre" aria-hidden="true" />
       <div className="tarjeta-lugar-cabecera">
         <div className="panel-lugar-datos">
-          <p className="panel-lugar-tipo">{etiquetaTipoLugar(lugar.tipo)} · {textoEstadoOperativo(lugar.estadoOperativo)}</p>
+          <p className="panel-lugar-tipo">
+            {etiquetaTipoLugar(lugar.tipo)} · {textoEstadoOperativo(lugar.estadoOperativo)}{antiguedad && ` · ${antiguedad.nombre}`}
+          </p>
           <h2 id="titulo-tarjeta-lugar">{lugar.nombre}</h2>
           <p className="tarjeta-lugar-trabajos">{textoTrabajos(ordenes)}</p>
+          {/* En una calle: dónde es el trabajo más urgente (el tramo, "entre calles" o la altura) */}
+          {resumen.tramos?.length > 0 && (
+            <p className="tarjeta-lugar-tramo">
+              <Icono nombre="calle" />{resumen.tramos.length > 1 ? `La más urgente: ${resumen.tramos[0].texto}` : resumen.tramos[0].texto}
+            </p>
+          )}
         </div>
         <button type="button" className="boton-cerrar" onClick={onCerrar} aria-label={`Cerrar ${lugar.nombre}`}>
           <Icono nombre="cerrar" />
         </button>
       </div>
       <div className="tarjeta-lugar-botones">
-        {puedeCrearOrden(usuario) && <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
+        {puedeCrearOrden(usuario) && lugar.instalada !== false && <button type="button" className="boton boton-primario" onClick={() => onNuevaOrden(lugar.id)}>
           <Icono nombre="agregar" />Nueva OT acá
         </button>}
         <button type="button" className="boton boton-secundario" onClick={onVerFicha}>

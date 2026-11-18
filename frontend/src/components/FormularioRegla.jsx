@@ -101,7 +101,8 @@ function FormularioRegla({ reglaEditando, lugares, cuadrillas, onGuardado, onCan
             <label htmlFor="regla-lugar">Lugar <span aria-hidden="true">*</span></label>
             <select id="regla-lugar" name="lugarId" value={datos.lugarId} onChange={cambiar} required {...marcaError('lugarId')}>
               <option value="">Elegí el lugar</option>
-              {lugares.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+              {/* Sin luminarias a futuro: no llevan mantenimiento hasta que se instalan */}
+              {lugares.filter((l) => l.instalada !== false).map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
             </select>
             <ErrorCampo campo="lugarId" mensaje={errores.lugarId} />
           </div>

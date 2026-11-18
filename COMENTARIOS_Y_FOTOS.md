@@ -16,8 +16,8 @@ La auditoría (Más → Auditoría) anota quién escribió y quién borró (`Com
 
 ## 2. Dónde está en la pantalla
 
-- **Mis tareas** (celular): en cada tarea, el desplegable **"Comentarios y fotos"**. Al **Finalizar** una tarea, la tarjeta
-  sale de la lista y aparece arriba el aviso **"¿Sumás fotos del trabajo terminado?"** con el muro de esa OT.
+- **Mis tareas** (celular): en cada tarea, el desplegable **"Comentarios y fotos"**. Al **Finalizar** una tarea, el pop-up de
+  cierre permite sumar un comentario y fotos de evidencia; al **Cancelar**, el motivo queda como comentario (ver [CIERRE_DE_OT.md](./CIERRE_DE_OT.md)).
 - **Trabajos** (Órdenes de trabajo): botón **"Comentarios"** en cada fila → se abre una hoja al costado.
 - **Sacar foto** abre la cámara del celular; **Elegir fotos**, la galería (en la compu, el explorador de archivos).
 - Tocando una miniatura se abre el **visor** (flechas para pasar, Escape o "Cerrar" para salir).
